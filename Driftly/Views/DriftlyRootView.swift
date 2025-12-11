@@ -65,9 +65,8 @@ struct DriftlyRootView: View {
             AbyssGlowView(config: engine.currentMode.config)
         case .starlitMist:
             StarlitMistView(config: engine.currentMode.config)
-        default:
-            // For now, fall back to Nebula Lake for unimplemented modes
-            NebulaLakeView(config: engine.currentMode.config)
+        case .lunarDrift:
+            LunarDriftView(config: engine.currentMode.config)
         }
     }
     
