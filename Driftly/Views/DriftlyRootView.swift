@@ -8,17 +8,15 @@ struct DriftlyRootView: View {
     
     @StateObject private var motionManager = DriftMotionManager()
     
-    @State private var didAppear = false
     @State private var isModePickerPresented = false
     @State private var isSettingsPresented = false
     @State private var isSleepTimerDialogPresented = false
     @State private var sleepTimerHasExpired = false
+    @State private var sleepTimerAllowsLock = false
     @State private var lastAutoDriftChange: Date = Date()
     
     var body: some View {
         ZStack {
-            // Lamp canvas, fades out when sleep timer expires
-            // Lamp canvas, fades out when sleep timer expires
             activeModeView
                 .offset(motionManager.parallaxOffset)
                 .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
@@ -61,16 +59,31 @@ struct DriftlyRootView: View {
             DriftHaptics.chromeToggled()
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.8)) {
-                didAppear = true
-            }
             updateIdleTimer()
+            resetAutoDriftClock()
+            startMotionIfNeeded()
         }
-        .onChange(of: scenePhase) { _ in
+        .onChange(of: scenePhase) { phase in
             updateIdleTimer()
+            handleMotion(for: phase)
         }
         .onChange(of: engine.preventAutoLock) { _ in
             updateIdleTimer()
+        }
+        .onChange(of: engine.autoDriftEnabled) { enabled in
+            if enabled {
+                resetAutoDriftClock()
+            }
+        }
+        .onChange(of: engine.autoDriftIntervalMinutes) { _ in
+            if engine.autoDriftEnabled {
+                resetAutoDriftClock()
+            }
+        }
+        .onChange(of: engine.currentMode) { _ in
+            if engine.autoDriftEnabled {
+                resetAutoDriftClock()
+            }
         }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
             handleSleepTimerTick(now: now)
@@ -91,6 +104,8 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 0.6)) {
                     sleepTimerHasExpired = false
                 }
+                sleepTimerAllowsLock = false
+                updateIdleTimer()
                 DriftHaptics.sleepTimerSet()
             }
             Button("15 minutes") {
@@ -98,6 +113,7 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 0.6)) {
                     sleepTimerHasExpired = false
                 }
+                sleepTimerAllowsLock = false
                 DriftHaptics.sleepTimerSet()
             }
             Button("30 minutes") {
@@ -105,6 +121,7 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 0.6)) {
                     sleepTimerHasExpired = false
                 }
+                sleepTimerAllowsLock = false
                 DriftHaptics.sleepTimerSet()
             }
             Button("60 minutes") {
@@ -112,6 +129,7 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 0.6)) {
                     sleepTimerHasExpired = false
                 }
+                sleepTimerAllowsLock = false
                 DriftHaptics.sleepTimerSet()
             }
             Button("Cancel", role: .cancel) {}
@@ -250,7 +268,25 @@ struct DriftlyRootView: View {
     
     private func updateIdleTimer() {
 #if os(iOS)
-        UIApplication.shared.isIdleTimerDisabled = engine.preventAutoLock && scenePhase == .active
+        let shouldPreventLock = engine.preventAutoLock && !sleepTimerAllowsLock && scenePhase == .active
+        UIApplication.shared.isIdleTimerDisabled = shouldPreventLock
+#endif
+    }
+
+    private func handleMotion(for phase: ScenePhase) {
+#if os(iOS)
+        switch phase {
+        case .active:
+            motionManager.startIfNeeded()
+        default:
+            motionManager.stopUpdates()
+        }
+#endif
+    }
+
+    private func startMotionIfNeeded() {
+#if os(iOS)
+        motionManager.startIfNeeded()
 #endif
     }
     
@@ -263,8 +299,9 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 1.5)) {
                     sleepTimerHasExpired = true
                 }
-                // Once timer fires, allow device to auto-lock again
-                engine.preventAutoLock = false
+                // Once timer fires, allow device to auto-lock again without changing the persisted setting
+                sleepTimerAllowsLock = true
+                updateIdleTimer()
             }
         } else {
             // If timer was cleared, reset fade state
@@ -273,6 +310,8 @@ struct DriftlyRootView: View {
                     sleepTimerHasExpired = false
                 }
             }
+            sleepTimerAllowsLock = false
+            updateIdleTimer()
         }
         
         // Auto drift logic (only when awake & not faded out)
@@ -291,5 +330,9 @@ struct DriftlyRootView: View {
             DriftHaptics.autoDriftTick()
             lastAutoDriftChange = now
         }
+    }
+
+    private func resetAutoDriftClock() {
+        lastAutoDriftChange = Date()
     }
 }

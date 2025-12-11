@@ -7,6 +7,7 @@ final class DriftMotionManager: ObservableObject {
     #if os(iOS)
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()
+    private var isUpdating = false
     #endif
 
     @Published var xTilt: Double = 0
@@ -17,9 +18,24 @@ final class DriftMotionManager: ObservableObject {
         guard motionManager.isDeviceMotionAvailable else { return }
 
         motionManager.deviceMotionUpdateInterval = 1.0 / 30.0 // ~30fps
+        #endif
+    }
+
+    deinit {
+        #if os(iOS)
+        motionManager.stopDeviceMotionUpdates()
+        #endif
+    }
+
+    #if os(iOS)
+    func startIfNeeded() {
+        guard !isUpdating, motionManager.isDeviceMotionAvailable else { return }
+
+        isUpdating = true
+
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical,
                                                to: queue) { [weak self] motion, _ in
-            guard let self, let motion else { return }
+            guard let self, let motion, self.isUpdating else { return }
 
             let roll = motion.attitude.roll    // left/right tilt
             let pitch = motion.attitude.pitch  // forward/back tilt
@@ -34,14 +50,14 @@ final class DriftMotionManager: ObservableObject {
                 self.yTilt = clampedPitch
             }
         }
-        #endif
     }
 
-    deinit {
-        #if os(iOS)
+    func stopUpdates() {
+        guard isUpdating else { return }
         motionManager.stopDeviceMotionUpdates()
-        #endif
+        isUpdating = false
     }
+    #endif
 
     var parallaxOffset: CGSize {
         let maxOffset: CGFloat = 12 // max pixels in any direction
