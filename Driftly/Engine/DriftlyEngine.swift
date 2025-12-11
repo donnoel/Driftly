@@ -78,7 +78,6 @@ final class DriftlyEngine: ObservableObject {
         if storedBrightness == 0 {
             brightness = 1.0
         } else {
-            // Clamp in case of weird old values
             brightness = max(0.2, min(1.0, storedBrightness))
         }
     }
@@ -110,6 +109,10 @@ final class DriftlyEngine: ObservableObject {
         UserDefaults.standard.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
     }
 
+    private func persistBrightness() {
+        UserDefaults.standard.set(brightness, forKey: DriftlyDefaultsKey.brightness)
+    }
+
     private func persistAnimationSpeed() {
         UserDefaults.standard.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
     }
@@ -120,11 +123,5 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistChromeVisibility() {
         UserDefaults.standard.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
-    }
-
-    private func persistBrightness() {
-        let clamped = max(0.2, min(1.0, brightness))
-        brightness = clamped
-        UserDefaults.standard.set(clamped, forKey: DriftlyDefaultsKey.brightness)
     }
 }
