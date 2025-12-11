@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import Combine
 
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
@@ -29,7 +28,20 @@ struct DriftlyRootView: View {
                         .padding(.horizontal, 24)
                 }
             }
+
+            // Edge brightness gesture zones (left & right)
+            HStack {
+                brightnessEdgeView(isLeading: true)
+                Spacer()
+                brightnessEdgeView(isLeading: false)
+            }
         }
+        // Screen darkening overlay based on brightness
+        .overlay(
+            Color.black
+                .opacity(1 - engine.brightness)
+                .allowsHitTesting(false)
+        )
         // Global animation speed for all lamp views
         .environment(\.driftAnimationSpeed, engine.animationSpeed)
         .background(Color.black)
@@ -203,6 +215,25 @@ struct DriftlyRootView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    // MARK: - Brightness edges
+
+    private func brightnessEdgeView(isLeading: Bool) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(width: 44)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 5)
+                    .onChanged { value in
+                        // Drag up (negative height) → increase brightness
+                        // Drag down (positive height) → decrease brightness
+                        let delta = -value.translation.height / 300.0
+                        let newBrightness = engine.brightness + Double(delta)
+                        engine.brightness = max(0.2, min(1.0, newBrightness))
+                    }
+            )
     }
 
     // MARK: - Idle timer handling

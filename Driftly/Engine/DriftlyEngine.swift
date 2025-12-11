@@ -6,6 +6,7 @@ private enum DriftlyDefaultsKey {
     static let animationSpeed   = "driftly.animationSpeed"
     static let preventAutoLock  = "driftly.preventAutoLock"
     static let isChromeVisible  = "driftly.isChromeVisible"
+    static let brightness       = "driftly.brightness"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -27,6 +28,11 @@ final class DriftlyEngine: ObservableObject {
     /// When true, Driftly will try to prevent auto-lock while active
     @Published var preventAutoLock: Bool {
         didSet { persistPreventAutoLock() }
+    }
+
+    /// 0.2 (dim) ... 1.0 (full brightness)
+    @Published var brightness: Double {
+        didSet { persistBrightness() }
     }
 
     /// When set, Driftly will fade out once this time is reached (not persisted across launches)
@@ -65,6 +71,15 @@ final class DriftlyEngine: ObservableObject {
             preventAutoLock = defaults.bool(forKey: DriftlyDefaultsKey.preventAutoLock)
         } else {
             preventAutoLock = false
+        }
+
+        // brightness (default: 1.0)
+        let storedBrightness = defaults.double(forKey: DriftlyDefaultsKey.brightness)
+        if storedBrightness == 0 {
+            brightness = 1.0
+        } else {
+            // Clamp in case of weird old values
+            brightness = max(0.2, min(1.0, storedBrightness))
         }
     }
 
@@ -105,5 +120,11 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistChromeVisibility() {
         UserDefaults.standard.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
+    }
+
+    private func persistBrightness() {
+        let clamped = max(0.2, min(1.0, brightness))
+        brightness = clamped
+        UserDefaults.standard.set(clamped, forKey: DriftlyDefaultsKey.brightness)
     }
 }
