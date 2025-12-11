@@ -2,11 +2,13 @@ import SwiftUI
 import Combine
 
 private enum DriftlyDefaultsKey {
-    static let currentMode      = "driftly.currentMode"
-    static let animationSpeed   = "driftly.animationSpeed"
-    static let preventAutoLock  = "driftly.preventAutoLock"
-    static let isChromeVisible  = "driftly.isChromeVisible"
-    static let brightness       = "driftly.brightness"
+    static let currentMode           = "driftly.currentMode"
+    static let animationSpeed        = "driftly.animationSpeed"
+    static let preventAutoLock       = "driftly.preventAutoLock"
+    static let isChromeVisible       = "driftly.isChromeVisible"
+    static let brightness            = "driftly.brightness"
+    static let autoDriftEnabled      = "driftly.autoDriftEnabled"
+    static let autoDriftIntervalMins = "driftly.autoDriftIntervalMins"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -33,6 +35,16 @@ final class DriftlyEngine: ObservableObject {
     /// 0.2 (dim) ... 1.0 (full brightness)
     @Published var brightness: Double {
         didSet { persistBrightness() }
+    }
+
+    /// Auto-drift: whether Driftly should automatically change modes
+    @Published var autoDriftEnabled: Bool {
+        didSet { persistAutoDriftEnabled() }
+    }
+
+    /// Auto-drift interval in minutes
+    @Published var autoDriftIntervalMinutes: Int {
+        didSet { persistAutoDriftInterval() }
     }
 
     /// When set, Driftly will fade out once this time is reached (not persisted across launches)
@@ -80,6 +92,21 @@ final class DriftlyEngine: ObservableObject {
         } else {
             brightness = max(0.2, min(1.0, storedBrightness))
         }
+
+        // autoDriftEnabled (default: false)
+        if defaults.object(forKey: DriftlyDefaultsKey.autoDriftEnabled) != nil {
+            autoDriftEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftEnabled)
+        } else {
+            autoDriftEnabled = false
+        }
+
+        // autoDriftIntervalMinutes (default: 15)
+        let storedInterval = defaults.integer(forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
+        if storedInterval == 0 {
+            autoDriftIntervalMinutes = 15
+        } else {
+            autoDriftIntervalMinutes = max(3, storedInterval)
+        }
     }
 
     // MARK: - Public API
@@ -109,10 +136,6 @@ final class DriftlyEngine: ObservableObject {
         UserDefaults.standard.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
     }
 
-    private func persistBrightness() {
-        UserDefaults.standard.set(brightness, forKey: DriftlyDefaultsKey.brightness)
-    }
-
     private func persistAnimationSpeed() {
         UserDefaults.standard.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
     }
@@ -123,5 +146,17 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistChromeVisibility() {
         UserDefaults.standard.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
+    }
+
+    private func persistBrightness() {
+        UserDefaults.standard.set(brightness, forKey: DriftlyDefaultsKey.brightness)
+    }
+
+    private func persistAutoDriftEnabled() {
+        UserDefaults.standard.set(autoDriftEnabled, forKey: DriftlyDefaultsKey.autoDriftEnabled)
+    }
+
+    private func persistAutoDriftInterval() {
+        UserDefaults.standard.set(autoDriftIntervalMinutes, forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
     }
 }

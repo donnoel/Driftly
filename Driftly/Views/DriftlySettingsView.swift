@@ -4,6 +4,9 @@ struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
 
+    // Preset intervals we expose in the UI
+    private let autoDriftOptions: [Int] = [5, 10, 15, 30]
+
     var body: some View {
         NavigationStack {
             Form {
@@ -30,6 +33,19 @@ struct DriftlySettingsView: View {
                                 .font(.caption2)
                         }
                     }
+                }
+
+                Section("Auto Drift") {
+                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+
+                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                        ForEach(autoDriftOptions, id: \.self) { minutes in
+                            Text("\(minutes) minutes")
+                                .tag(minutes)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(!engine.autoDriftEnabled)
                 }
 
                 Section("Screen") {

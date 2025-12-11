@@ -11,6 +11,7 @@ struct DriftlyRootView: View {
     @State private var isSettingsPresented = false
     @State private var isSleepTimerDialogPresented = false
     @State private var sleepTimerHasExpired = false
+    @State private var lastAutoDriftChange: Date = Date()
 
     var body: some View {
         ZStack {
@@ -245,25 +246,40 @@ struct DriftlyRootView: View {
         #endif
     }
 
-    // MARK: - Sleep timer tick
+    // MARK: - Sleep timer tick & auto drift
 
     private func handleSleepTimerTick(now: Date) {
-        guard let end = engine.sleepTimerEndDate else {
+        // Sleep timer logic
+        if let end = engine.sleepTimerEndDate {
+            if now >= end && !sleepTimerHasExpired {
+                withAnimation(.easeInOut(duration: 1.5)) {
+                    sleepTimerHasExpired = true
+                }
+                // Once timer fires, allow device to auto-lock again
+                engine.preventAutoLock = false
+            }
+        } else {
             // If timer was cleared, reset fade state
             if sleepTimerHasExpired {
                 withAnimation(.easeInOut(duration: 0.8)) {
                     sleepTimerHasExpired = false
                 }
             }
-            return
         }
 
-        if now >= end && !sleepTimerHasExpired {
-            withAnimation(.easeInOut(duration: 1.5)) {
-                sleepTimerHasExpired = true
+        // Auto drift logic (only when awake & not faded out)
+        guard engine.autoDriftEnabled,
+              !sleepTimerHasExpired
+        else { return }
+
+        let interval = max(3, engine.autoDriftIntervalMinutes)
+        let seconds = Double(interval * 60)
+        let elapsed = now.timeIntervalSince(lastAutoDriftChange)
+
+        if elapsed >= seconds {
+            withAnimation(.easeInOut(duration: 0.9)) {
+                engine.goToNextMode()
             }
-            // Once timer fires, allow device to auto-lock again
-            engine.preventAutoLock = false
+            lastAutoDriftChange = now
         }
     }
-}
