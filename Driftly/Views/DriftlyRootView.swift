@@ -6,6 +6,8 @@ struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.scenePhase) private var scenePhase
     
+    @StateObject private var motionManager = DriftMotionManager()
+    
     @State private var didAppear = false
     @State private var isModePickerPresented = false
     @State private var isSettingsPresented = false
@@ -16,7 +18,10 @@ struct DriftlyRootView: View {
     var body: some View {
         ZStack {
             // Lamp canvas, fades out when sleep timer expires
+            // Lamp canvas, fades out when sleep timer expires
             activeModeView
+                .offset(motionManager.parallaxOffset)
+                .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
                 .opacity(sleepTimerHasExpired ? 0.0 : 1.0)
                 .ignoresSafeArea()
             
