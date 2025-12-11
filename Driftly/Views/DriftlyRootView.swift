@@ -1,16 +1,20 @@
 import SwiftUI
+import UIKit
 
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var didAppear = false
     @State private var isModePickerPresented = false
+    @State private var isSettingsPresented = false
     
     var body: some View {
         ZStack {
             // Lamp canvas
             activeModeView
                 .ignoresSafeArea()
-            
+
             // Minimal chrome (bottom overlay)
             if engine.isChromeVisible {
                 VStack {
@@ -22,6 +26,8 @@ struct DriftlyRootView: View {
                 }
             }
         }
+        // Global animation speed for all lamp views
+        .environment(\.driftAnimationSpeed, engine.animationSpeed)
         .background(Color.black)
         .ignoresSafeArea()
         .statusBar(hidden: true)
@@ -34,6 +40,13 @@ struct DriftlyRootView: View {
             withAnimation(.easeInOut(duration: 0.8)) {
                 didAppear = true
             }
+            updateIdleTimer()
+        }
+        .onChange(of: scenePhase) { _ in
+            updateIdleTimer()
+        }
+        .onChange(of: engine.preventAutoLock) { _ in
+            updateIdleTimer()
         }
         .confirmationDialog(
             "Driftly Mode",
@@ -47,8 +60,12 @@ struct DriftlyRootView: View {
                     }
                 }
             }
-            
+
             Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $isSettingsPresented) {
+            DriftlySettingsView()
+                .environmentObject(engine)
         }
     }
     
@@ -78,7 +95,7 @@ struct DriftlyRootView: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
                 
-                Text("Tap name to change • Tap anywhere to hide controls")
+                Text("Tap anywhere to hide controls")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -96,13 +113,13 @@ struct DriftlyRootView: View {
                 CircleButton(systemName: "sparkles") {
                     isModePickerPresented = true
                 }
-                
+
                 CircleButton(systemName: "moon.zzz") {
                     // future: sleep timer
                 }
-                
+
                 CircleButton(systemName: "gearshape") {
-                    // future: settings / options
+                    isSettingsPresented = true
                 }
             }
             
@@ -118,6 +135,12 @@ struct DriftlyRootView: View {
                     )
             )
         }
+    }
+    
+    private func updateIdleTimer() {
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = engine.preventAutoLock && scenePhase == .active
+        #endif
     }
     
     private struct CircleButton: View {

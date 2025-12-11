@@ -5,6 +5,12 @@ final class DriftlyEngine: ObservableObject {
     @Published var currentMode: DriftMode = .nebulaLake
     @Published var isChromeVisible: Bool = true
 
+    /// 1.0 = normal speed, 0.5 = slower, 1.5 = faster
+    @Published var animationSpeed: Double = 1.0
+
+    /// When true, Driftly will try to prevent auto-lock while active
+    @Published var preventAutoLock: Bool = false
+
     var allModes: [DriftMode] {
         DriftMode.allCases
     }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LunarDriftView: View {
     let config: DriftModeConfig
+    @Environment(\.driftAnimationSpeed) private var speedMultiplier
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -38,7 +39,7 @@ struct LunarDriftView: View {
     }
 
     private func normalizedPhase(for date: Date) -> Double {
-        let raw = date.timeIntervalSinceReferenceDate
+        let raw = date.timeIntervalSinceReferenceDate * max(speedMultiplier, 0.1)
         let cycle = max(config.cycleDuration, 12)
         let wrapped = raw.truncatingRemainder(dividingBy: cycle)
         return wrapped / cycle // 0...1

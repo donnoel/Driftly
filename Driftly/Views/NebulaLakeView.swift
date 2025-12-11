@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NebulaLakeView: View {
     let config: DriftModeConfig
+    @Environment(\.driftAnimationSpeed) private var speedMultiplier
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -32,7 +33,7 @@ struct NebulaLakeView: View {
     }
 
     private func normalizedPhase(for date: Date) -> Double {
-        let raw = date.timeIntervalSinceReferenceDate
+        let raw = date.timeIntervalSinceReferenceDate * max(speedMultiplier, 0.1)
         let wrapped = raw.truncatingRemainder(dividingBy: config.cycleDuration)
         return wrapped / config.cycleDuration
     }
