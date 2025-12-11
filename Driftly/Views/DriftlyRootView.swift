@@ -30,7 +30,6 @@ struct DriftlyRootView: View {
             }
         }
         .onAppear {
-            // Optional: subtle fade in
             withAnimation(.easeInOut(duration: 0.8)) {
                 didAppear = true
             }
@@ -41,10 +40,12 @@ struct DriftlyRootView: View {
     private var activeModeView: some View {
         switch engine.currentMode {
         case .nebulaLake:
-            NebulaLakeView()
+            NebulaLakeView(config: engine.currentMode.config)
+        case .cosmicTide:
+            CosmicTideView(config: engine.currentMode.config)
         default:
-            // For now, use Nebula Lake as placeholder for all until we design others
-            NebulaLakeView()
+            // For now, fall back to Nebula Lake for unimplemented modes
+            NebulaLakeView(config: engine.currentMode.config)
         }
     }
 
@@ -56,17 +57,19 @@ struct DriftlyRootView: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
 
-                Text("Tap to hide controls")
+                Text("Tap anywhere to hide controls")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.6))
             }
 
             Spacer()
 
-            // Right: tiny buttons (non-functional for now)
+            // Right: tiny buttons
             HStack(spacing: 12) {
                 CircleButton(systemName: "sparkles") {
-                    // future: mode picker
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        engine.goToNextMode()
+                    }
                 }
 
                 CircleButton(systemName: "moon.zzz") {

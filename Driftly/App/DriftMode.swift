@@ -1,9 +1,8 @@
-import Foundation
+import SwiftUI
 
 enum DriftMode: String, CaseIterable, Identifiable {
     case nebulaLake
-    case // placeholder for future modes
-         cosmicTide
+    case cosmicTide
     case auroraVeil
     case abyssGlow
     case starlitMist
@@ -21,4 +20,51 @@ enum DriftMode: String, CaseIterable, Identifiable {
         case .lunarDrift:  return "Lunar Drift"
         }
     }
+
+    var config: DriftModeConfig {
+        switch self {
+        case .nebulaLake:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 40
+            )
+        case .cosmicTide:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 28
+            )
+        case .auroraVeil:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 36
+            )
+        case .abyssGlow:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 32
+            )
+        case .starlitMist:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 45
+            )
+        case .lunarDrift:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 38
+            )
+        }
+    }
+}
+
+struct DriftModeConfig: Identifiable, Equatable {
+    let id: DriftMode
+    let displayName: String
+    let cycleDuration: TimeInterval
 }

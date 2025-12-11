@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct NebulaLakeView: View {
-    // 40s cycle, matching your spec
-    private let cycleDuration: TimeInterval = 40
+    let config: DriftModeConfig
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -37,6 +36,7 @@ struct NebulaLakeView: View {
 
     private func normalizedPhase(for date: Date) -> Double {
         let raw = date.timeIntervalSinceReferenceDate
+        let cycleDuration = max(config.cycleDuration, 8) // safety lower bound
         let wrapped = raw.truncatingRemainder(dividingBy: cycleDuration)
         return wrapped / cycleDuration // 0...1
     }
@@ -114,7 +114,6 @@ struct NebulaLakeView: View {
 
     @ViewBuilder
     private func starDustLayer(phase t: Double) -> some View {
-        // Super-cheap faux stardust: layered gradients that slowly drift
         RadialGradient(
             colors: [
                 Color.white.opacity(0.22),
