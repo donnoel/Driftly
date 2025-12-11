@@ -8,24 +8,21 @@ struct NebulaLakeView: View {
             let t = normalizedPhase(for: context.date)
 
             ZStack {
-                // Deep background
+                // Background uses palette
                 LinearGradient(
                     colors: [
-                        Color(red: 0.02, green: 0.03, blue: 0.09),
-                        Color(red: 0.03, green: 0.05, blue: 0.16),
-                        Color(red: 0.01, green: 0.02, blue: 0.05)
+                        config.palette.backgroundTop,
+                        config.palette.backgroundBottom
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .opacity(0.98)
 
-                // Soft nebula blobs
+                // Nebula blobs use primary/secondary/tertiary
                 nebulaLayer(phase: t)
                     .blendMode(.screen)
                     .opacity(0.95)
 
-                // Subtle star dust
                 starDustLayer(phase: t)
                     .blendMode(.screen)
                     .opacity(0.45)
@@ -36,9 +33,8 @@ struct NebulaLakeView: View {
 
     private func normalizedPhase(for date: Date) -> Double {
         let raw = date.timeIntervalSinceReferenceDate
-        let cycleDuration = max(config.cycleDuration, 8) // safety lower bound
-        let wrapped = raw.truncatingRemainder(dividingBy: cycleDuration)
-        return wrapped / cycleDuration // 0...1
+        let wrapped = raw.truncatingRemainder(dividingBy: config.cycleDuration)
+        return wrapped / config.cycleDuration
     }
 
     @ViewBuilder
@@ -63,49 +59,52 @@ struct NebulaLakeView: View {
             )
 
             ZStack {
+                // PRIMARY
                 Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color(red: 0.15, green: 0.8, blue: 0.85).opacity(0.9),
-                                Color(red: 0.05, green: 0.15, blue: 0.25).opacity(0.0)
+                                config.palette.primary.opacity(0.9),
+                                config.palette.backgroundBottom.opacity(0.0)
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: base * 1.0
+                        )
+                    )
+                    .frame(width: base * 1.4, height: base * 1.4)
+                    .position(offset1)
+
+                // SECONDARY
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                config.palette.secondary.opacity(0.9),
+                                config.palette.backgroundBottom.opacity(0.0)
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: base * 1.2
+                        )
+                    )
+                    .frame(width: base * 1.7, height: base * 1.7)
+                    .position(offset2)
+
+                // TERTIARY
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                config.palette.tertiary.opacity(0.55),
+                                config.palette.backgroundBottom.opacity(0.0)
                             ],
                             center: .center,
                             startRadius: 0,
                             endRadius: base * 0.9
                         )
                     )
-                    .frame(width: base * 1.4, height: base * 1.4)
-                    .position(offset1)
-
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(red: 0.6, green: 0.35, blue: 1.0).opacity(0.9),
-                                Color(red: 0.15, green: 0.05, blue: 0.3).opacity(0.0)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: base * 1.1
-                        )
-                    )
-                    .frame(width: base * 1.7, height: base * 1.7)
-                    .position(offset2)
-
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(red: 0.4, green: 0.8, blue: 1.0).opacity(0.55),
-                                Color(red: 0.15, green: 0.2, blue: 0.4).opacity(0.0)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: base * 0.8
-                        )
-                    )
-                    .frame(width: base * 1.1, height: base * 1.1)
+                    .frame(width: base * 1.2, height: base * 1.2)
                     .position(offset3)
                     .blur(radius: base * 0.08)
             }
@@ -116,7 +115,7 @@ struct NebulaLakeView: View {
     private func starDustLayer(phase t: Double) -> some View {
         RadialGradient(
             colors: [
-                Color.white.opacity(0.22),
+                Color.white.opacity(0.20),
                 Color.white.opacity(0.0)
             ],
             center: UnitPoint(
@@ -129,7 +128,7 @@ struct NebulaLakeView: View {
         .overlay(
             RadialGradient(
                 colors: [
-                    Color.white.opacity(0.15),
+                    Color.white.opacity(0.12),
                     Color.white.opacity(0.0)
                 ],
                 center: UnitPoint(
@@ -140,18 +139,6 @@ struct NebulaLakeView: View {
                 endRadius: 420
             )
         )
-        .overlay(
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.05),
-                    Color.white.opacity(0.0),
-                    Color.white.opacity(0.05)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .opacity(0.4)
-        )
-        .blur(radius: 1.0)
+        .blur(radius: 1.5)
     }
 }
