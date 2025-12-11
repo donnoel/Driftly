@@ -3,7 +3,7 @@ import CoreMotion
 import SwiftUI
 import Combine
 
-final class DriftMotionManager: ObservableObject {
+final class DriftMotionManager: ObservableObject, MotionControlling {
     #if os(iOS)
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()

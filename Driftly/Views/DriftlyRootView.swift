@@ -275,12 +275,7 @@ struct DriftlyRootView: View {
 
     private func handleMotion(for phase: ScenePhase) {
 #if os(iOS)
-        switch phase {
-        case .active:
-            motionManager.startIfNeeded()
-        default:
-            motionManager.stopUpdates()
-        }
+        MotionPhaseHandler.updateMotion(for: phase, motionController: motionManager)
 #endif
     }
 
@@ -319,11 +314,11 @@ struct DriftlyRootView: View {
               !sleepTimerHasExpired
         else { return }
         
-        let interval = max(3, engine.autoDriftIntervalMinutes)
-        let seconds = Double(interval * 60)
-        let elapsed = now.timeIntervalSince(lastAutoDriftChange)
-        
-        if elapsed >= seconds {
+        if engine.shouldAutoDrift(
+            now: now,
+            lastChange: lastAutoDriftChange,
+            sleepTimerHasExpired: sleepTimerHasExpired
+        ) {
             withAnimation(.easeInOut(duration: 0.9)) {
                 engine.goToNextMode()
             }

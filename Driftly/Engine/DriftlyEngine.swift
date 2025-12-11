@@ -136,6 +136,20 @@ final class DriftlyEngine: ObservableObject {
         UserDefaults.standard.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
     }
 
+    func shouldAutoDrift(
+        now: Date,
+        lastChange: Date,
+        sleepTimerHasExpired: Bool
+    ) -> Bool {
+        guard autoDriftEnabled, !sleepTimerHasExpired else { return false }
+
+        let intervalMinutes = max(3, autoDriftIntervalMinutes)
+        let intervalSeconds = Double(intervalMinutes * 60)
+        let elapsed = now.timeIntervalSince(lastChange)
+
+        return elapsed >= intervalSeconds
+    }
+
     private func persistAnimationSpeed() {
         UserDefaults.standard.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
     }
