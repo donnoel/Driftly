@@ -11,6 +11,9 @@ final class DriftlyEngine: ObservableObject {
     /// When true, Driftly will try to prevent auto-lock while active
     @Published var preventAutoLock: Bool = false
 
+    /// When set, Driftly will fade out once this time is reached
+    @Published var sleepTimerEndDate: Date? = nil
+
     var allModes: [DriftMode] {
         DriftMode.allCases
     }
@@ -23,5 +26,14 @@ final class DriftlyEngine: ObservableObject {
         }
         let nextIndex = modes.index(after: index)
         currentMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+    }
+
+    /// minutes = nil → turn timer off
+    func setSleepTimer(minutes: Int?) {
+        if let minutes {
+            sleepTimerEndDate = Date().addingTimeInterval(Double(minutes) * 60.0)
+        } else {
+            sleepTimerEndDate = nil
+        }
     }
 }

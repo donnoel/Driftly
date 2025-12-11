@@ -8,15 +8,18 @@ struct DriftlyRootView: View {
     @State private var didAppear = false
     @State private var isModePickerPresented = false
     @State private var isSettingsPresented = false
-    
+    @State private var isSleepTimerDialogPresented = false
+    @State private var sleepTimerHasExpired = false
+
     var body: some View {
         ZStack {
-            // Lamp canvas
+            // Lamp canvas, fades out when sleep timer expires
             activeModeView
+                .opacity(sleepTimerHasExpired ? 0.0 : 1.0)
                 .ignoresSafeArea()
 
-            // Minimal chrome (bottom overlay)
-            if engine.isChromeVisible {
+            // Minimal chrome (hidden when asleep)
+            if engine.isChromeVisible && !sleepTimerHasExpired {
                 VStack {
                     Spacer()
                     bottomChrome
@@ -48,6 +51,10 @@ struct DriftlyRootView: View {
         .onChange(of: engine.preventAutoLock) { _ in
             updateIdleTimer()
         }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
+            handleSleepTimerTick(now: now)
+        }
+        // Mode picker (sparkles)
         .confirmationDialog(
             "Driftly Mode",
             isPresented: $isModePickerPresented,
@@ -63,12 +70,47 @@ struct DriftlyRootView: View {
 
             Button("Cancel", role: .cancel) {}
         }
+        // Sleep timer picker (moon)
+        .confirmationDialog(
+            "Sleep Timer",
+            isPresented: $isSleepTimerDialogPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Off") {
+                engine.setSleepTimer(minutes: nil)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    sleepTimerHasExpired = false
+                }
+            }
+            Button("15 minutes") {
+                engine.setSleepTimer(minutes: 15)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    sleepTimerHasExpired = false
+                }
+            }
+            Button("30 minutes") {
+                engine.setSleepTimer(minutes: 30)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    sleepTimerHasExpired = false
+                }
+            }
+            Button("60 minutes") {
+                engine.setSleepTimer(minutes: 60)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    sleepTimerHasExpired = false
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        // Settings sheet (gear)
         .sheet(isPresented: $isSettingsPresented) {
             DriftlySettingsView()
                 .environmentObject(engine)
         }
     }
-    
+
+    // MARK: - Active mode
+
     @ViewBuilder
     private var activeModeView: some View {
         switch engine.currentMode {
@@ -86,7 +128,9 @@ struct DriftlyRootView: View {
             LunarDriftView(config: engine.currentMode.config)
         }
     }
-    
+
+    // MARK: - Chrome
+
     private var bottomChrome: some View {
         HStack(spacing: 16) {
             // Left: current mode
@@ -94,8 +138,8 @@ struct DriftlyRootView: View {
                 Text(engine.currentMode.displayName)
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
-                
-                Text("Tap anywhere to hide controls")
+
+                Text("Tap name to change • Tap anywhere to hide controls")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -105,9 +149,9 @@ struct DriftlyRootView: View {
                     engine.goToNextMode()
                 }
             }
-            
+
             Spacer()
-            
+
             // Right: tiny buttons
             HStack(spacing: 12) {
                 CircleButton(systemName: "sparkles") {
@@ -115,38 +159,31 @@ struct DriftlyRootView: View {
                 }
 
                 CircleButton(systemName: "moon.zzz") {
-                    // future: sleep timer
+                    isSleepTimerDialogPresented = true
                 }
 
                 CircleButton(systemName: "gearshape") {
                     isSettingsPresented = true
                 }
             }
-            
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.black.opacity(0.35))
-                    .blur(radius: 18)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(.white.opacity(0.08))
-                    )
-            )
         }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.black.opacity(0.35))
+                .blur(radius: 18)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.08))
+                )
+        )
     }
-    
-    private func updateIdleTimer() {
-        #if os(iOS)
-        UIApplication.shared.isIdleTimerDisabled = engine.preventAutoLock && scenePhase == .active
-        #endif
-    }
-    
+
     private struct CircleButton: View {
         let systemName: String
         let action: () -> Void
-        
+
         var body: some View {
             Button(action: action) {
                 Image(systemName: systemName)
@@ -164,6 +201,36 @@ struct DriftlyRootView: View {
                     )
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Idle timer handling
+
+    private func updateIdleTimer() {
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = engine.preventAutoLock && scenePhase == .active
+        #endif
+    }
+
+    // MARK: - Sleep timer tick
+
+    private func handleSleepTimerTick(now: Date) {
+        guard let end = engine.sleepTimerEndDate else {
+            // If timer was cleared, reset fade state
+            if sleepTimerHasExpired {
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    sleepTimerHasExpired = false
+                }
+            }
+            return
+        }
+
+        if now >= end && !sleepTimerHasExpired {
+            withAnimation(.easeInOut(duration: 1.5)) {
+                sleepTimerHasExpired = true
+            }
+            // Once timer fires, allow device to auto-lock again
+            engine.preventAutoLock = false
         }
     }
 }
