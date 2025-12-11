@@ -102,15 +102,16 @@ private struct CircleButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
-                .frame(width: 28, height: 28)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.95))
+                .frame(width: 36, height: 36)
                 .background(
                     Circle()
                         .fill(.black.opacity(0.45))
+                        .blur(radius: 0.5)
                         .overlay(
                             Circle()
-                                .stroke(.white.opacity(0.12))
+                                .stroke(.white.opacity(0.14))
                         )
                 )
         }
