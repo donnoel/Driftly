@@ -51,6 +51,10 @@ struct DriftlySettingsView: View {
                 Section("Screen") {
                     Toggle("Stay Awake (Prevent Auto-Lock)", isOn: $engine.preventAutoLock)
                 }
+
+                Section("About") {
+                    LabeledContent("Version", value: versionString)
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -74,5 +78,11 @@ struct DriftlySettingsView: View {
         default:
             return "Lively"
         }
+    }
+
+    private var versionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+        return "\(version) (\(build))"
     }
 }
