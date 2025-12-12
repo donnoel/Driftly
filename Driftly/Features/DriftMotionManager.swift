@@ -1,17 +1,19 @@
 import Foundation
+#if os(iOS)
 import CoreMotion
+#endif
 import SwiftUI
 import Combine
 
 @MainActor
 final class DriftMotionManager: ObservableObject, MotionControlling {
-    #if os(iOS)
+#if os(iOS)
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()
     private var isUpdating = false
     private var filteredRoll: Double = 0
     private var filteredPitch: Double = 0
-    #endif
+#endif
 
     @Published var xTilt: Double = 0
     @Published var yTilt: Double = 0
@@ -34,7 +36,7 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         #endif
     }
 
-    #if os(iOS)
+#if os(iOS)
     func startIfNeeded() {
         guard !isUpdating else { return }
         guard motionManager.isDeviceMotionAvailable else {
@@ -76,7 +78,7 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         isUpdating = false
         motionManager.stopDeviceMotionUpdates()
     }
-    #endif
+#endif
 
     var parallaxOffset: CGSize {
         let maxOffset: CGFloat = 12 // max pixels in any direction
@@ -89,3 +91,10 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         return CGSize(width: x, height: y)
     }
 }
+
+#if !os(iOS)
+extension DriftMotionManager {
+    func startIfNeeded() {}
+    func stopUpdates() {}
+}
+#endif

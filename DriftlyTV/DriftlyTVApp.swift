@@ -1,15 +1,13 @@
-#if os(iOS)
 import SwiftUI
 
 @main
-struct DriftlyApp: App {
+struct DriftlyTVApp: App {
     @StateObject private var engine = DriftlyEngine()
 
     var body: some Scene {
         WindowGroup {
-            DriftlyRootView()
+            ContentView()
                 .environmentObject(engine)
         }
     }
 }
-#endif

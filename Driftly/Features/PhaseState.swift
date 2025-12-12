@@ -3,36 +3,37 @@ import Foundation
 /// Keeps animation phase continuous, even when pausing/resuming, by shifting the start date.
 struct PhaseController {
     private var startDate: Date = Date()
-    private var pausedPhase: Double? = nil
+    private var pausedElapsed: TimeInterval? = nil
 
     mutating func resetStart(date: Date = Date()) {
         startDate = date
-        pausedPhase = nil
+        pausedElapsed = nil
     }
 
+    /// Returns a continuously increasing phase (not wrapped), scaled by cycle duration.
     mutating func phase(for date: Date, speed: Double, cycleDuration: TimeInterval, paused: Bool) -> Double {
         if paused {
-            if let pausedPhase {
-                return pausedPhase
+            if let pausedElapsed {
+                return pausedElapsed / max(cycleDuration, 0.0001)
             } else {
-                let phase = rawPhase(date: date, speed: speed, cycleDuration: cycleDuration)
-                pausedPhase = phase
-                return phase
+                let elapsed = rawElapsed(date: date, speed: speed)
+                pausedElapsed = elapsed
+                return elapsed / max(cycleDuration, 0.0001)
             }
         } else {
-            if let pausedPhase {
-                // Shift start so the resumed phase continues smoothly
-                let elapsed = pausedPhase * cycleDuration / max(speed, 0.0001)
+            if let pausedElapsed {
+                // Shift start so the resumed phase continues smoothly from pausedElapsed
+                let elapsed = pausedElapsed / max(speed, 0.0001)
                 startDate = date.addingTimeInterval(-elapsed)
-                self.pausedPhase = nil
+                self.pausedElapsed = nil
             }
-            return rawPhase(date: date, speed: speed, cycleDuration: cycleDuration)
+            let elapsed = rawElapsed(date: date, speed: speed)
+            return elapsed / max(cycleDuration, 0.0001)
         }
     }
 
-    private func rawPhase(date: Date, speed: Double, cycleDuration: TimeInterval) -> Double {
-        let elapsed = date.timeIntervalSince(startDate) * max(speed, 0.0001)
-        return wrap01(elapsed / max(cycleDuration, 0.001))
+    private func rawElapsed(date: Date, speed: Double) -> TimeInterval {
+        date.timeIntervalSince(startDate) * max(speed, 0.0001)
     }
 }
 

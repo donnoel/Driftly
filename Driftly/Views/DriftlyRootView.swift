@@ -13,6 +13,13 @@ struct DriftlyRootView: View {
     @State private var isModePickerPresented = false
     @State private var isSettingsPresented = false
     @State private var isSleepTimerDialogPresented = false
+#if os(tvOS)
+    @FocusState private var focusedButton: FocusTarget?
+
+    private enum FocusTarget: Hashable {
+        case modePicker, sleepTimer, settings
+    }
+#endif
     
     var body: some View {
         ZStack {
@@ -35,11 +42,13 @@ struct DriftlyRootView: View {
             }
             
             // Edge brightness gesture zones (left & right)
+#if os(iOS)
             HStack {
                 brightnessEdgeView(isLeading: true)
                 Spacer()
                 brightnessEdgeView(isLeading: false)
             }
+#endif
         }
         // Screen darkening overlay based on brightness
         .overlay(
@@ -63,13 +72,42 @@ struct DriftlyRootView: View {
         .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
         .background(Color.black)
         .ignoresSafeArea()
+#if os(iOS)
         .statusBar(hidden: true)
+#endif
+#if os(iOS)
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.35)) {
                 engine.isChromeVisible.toggle()
             }
             DriftHaptics.chromeToggled()
         }
+#elseif os(tvOS)
+        .onPlayPauseCommand {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                engine.isChromeVisible.toggle()
+            }
+            if engine.isChromeVisible {
+                focusedButton = .modePicker
+            }
+        }
+        .onMoveCommand { direction in
+            switch direction {
+            case .up:
+                adjustBrightness(by: 0.04)
+            case .down:
+                adjustBrightness(by: -0.04)
+            default:
+                break
+            }
+        }
+        .onExitCommand {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                engine.isChromeVisible = true
+                focusedButton = .modePicker
+            }
+        }
+#endif
         .onAppear {
             updateIdleTimer()
             SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
@@ -200,6 +238,9 @@ struct DriftlyRootView: View {
                 Text("Tap name to change • Tap anywhere to hide controls")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.6))
+#if os(tvOS)
+                    .opacity(0.0) // hide small helper text on tvOS
+#endif
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -216,14 +257,23 @@ struct DriftlyRootView: View {
                 CircleButton(systemName: "sparkles", accessibilityIdentifier: "modePickerButton") {
                     isModePickerPresented = true
                 }
+#if os(tvOS)
+                .focused($focusedButton, equals: .modePicker)
+#endif
                 
                 CircleButton(systemName: "moon.zzz", accessibilityIdentifier: "sleepTimerButton") {
                     isSleepTimerDialogPresented = true
                 }
+#if os(tvOS)
+                .focused($focusedButton, equals: .sleepTimer)
+#endif
                 
                 CircleButton(systemName: "gearshape", accessibilityIdentifier: "settingsButton") {
                     isSettingsPresented = true
                 }
+#if os(tvOS)
+                .focused($focusedButton, equals: .settings)
+#endif
             }
         }
         .padding(.vertical, 10)
@@ -268,6 +318,9 @@ struct DriftlyRootView: View {
     // MARK: - Brightness edges
     
     private func brightnessEdgeView(isLeading: Bool) -> some View {
+#if os(tvOS)
+        Rectangle().fill(Color.clear).frame(width: 44)
+#else
         Rectangle()
             .fill(Color.clear)
             .frame(width: 44)
@@ -277,19 +330,10 @@ struct DriftlyRootView: View {
                     .onChanged { value in
                         // Drag up (negative height) → increase brightness
                         // Drag down (positive height) → decrease brightness
-                        let delta = -value.translation.height / 300.0
-                        let proposed = engine.brightness + Double(delta)
-                        let clamped = max(0.2, min(1.0, proposed))
-
-                        // If we tried to go past the limits and just hit them, give a tiny rigid tap
-                        if (proposed < 0.2 && engine.brightness > 0.2) ||
-                           (proposed > 1.0 && engine.brightness < 1.0) {
-                            DriftHaptics.brightnessLimitHit()
-                        }
-
-                        engine.brightness = clamped
+                        adjustBrightness(by: -value.translation.height / 300.0)
                     }
             )
+#endif
     }
     
     // MARK: - Idle timer handling
@@ -370,5 +414,17 @@ struct DriftlyRootView: View {
 #if os(iOS)
         motionManager.stopUpdates()
 #endif
+    }
+
+    private func adjustBrightness(by delta: Double) {
+        let proposed = engine.brightness + Double(delta)
+        let clamped = max(0.2, min(1.0, proposed))
+
+        if (proposed < 0.2 && engine.brightness > 0.2) ||
+            (proposed > 1.0 && engine.brightness < 1.0) {
+            DriftHaptics.brightnessLimitHit()
+        }
+
+        engine.brightness = clamped
     }
 }

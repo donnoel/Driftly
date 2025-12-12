@@ -25,7 +25,9 @@ struct DriftModePickerView: View {
             }
             .background(Color.black.ignoresSafeArea())
             .navigationTitle("Select Mode")
+            #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {

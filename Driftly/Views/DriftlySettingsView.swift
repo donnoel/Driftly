@@ -20,6 +20,14 @@ struct DriftlySettingsView: View {
                                 .foregroundStyle(.secondary)
                         }
 
+#if os(tvOS)
+                        Picker("Animation Speed", selection: $engine.animationSpeed) {
+                            Text("Gentle").tag(0.6)
+                            Text("Normal").tag(1.0)
+                            Text("Lively").tag(1.4)
+                        }
+                        .pickerStyle(.segmented)
+#else
                         Slider(
                             value: $engine.animationSpeed,
                             in: 0.5...1.5
@@ -32,6 +40,7 @@ struct DriftlySettingsView: View {
                             Text("Faster")
                                 .font(.caption2)
                         }
+#endif
                     }
                 }
 
@@ -57,7 +66,9 @@ struct DriftlySettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
