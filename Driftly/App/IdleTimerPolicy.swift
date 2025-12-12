@@ -6,5 +6,5 @@ func shouldPreventLock(
     sleepTimerAllowsLock: Bool,
     scenePhase: ScenePhase
 ) -> Bool {
-    preventAutoLock && !sleepTimerAllowsLock && scenePhase == .active
+    preventAutoLock && !sleepTimerAllowsLock && scenePhase != .background
 }

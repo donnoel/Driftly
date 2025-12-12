@@ -17,7 +17,7 @@ struct IdleTimerPolicyTests {
             sleepTimerAllowsLock: false,
             scenePhase: .inactive
         )
-        #expect(inactivePrevent == false)
+        #expect(inactivePrevent == true)
 
         let sleepAllowsLock = shouldPreventLock(
             preventAutoLock: true,
