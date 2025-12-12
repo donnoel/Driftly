@@ -4,13 +4,13 @@ struct StarlitMistView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
     @Environment(\.driftAnimationsPaused) private var animationsPaused
-    @State private var phaseState = PhaseState()
+    @State private var phaseController = PhaseController()
 
     var body: some View {
         TimelineView(.animation) { context in
             content(phase: currentPhase(for: context.date))
         }
-        .onChange(of: animationsPaused) { handlePauseToggle(paused: $0) }
+        .onChange(of: animationsPaused) { _ in }
     }
 
     @ViewBuilder
@@ -44,31 +44,13 @@ struct StarlitMistView: View {
         .compositingGroup()
     }
 
-    private func normalizedPhase(for date: Date) -> Double {
-        let raw = date.timeIntervalSinceReferenceDate * max(speedMultiplier, 0.1)
-        let cycle = max(config.cycleDuration, 12)
-        let wrapped = raw.truncatingRemainder(dividingBy: cycle)
-        return wrapped / cycle
-    }
-
     private func currentPhase(for date: Date) -> Double {
-        let base = normalizedPhase(for: date)
-        if animationsPaused {
-            return phaseState.frozenPhase
-        } else {
-            let phase = wrap01(base + phaseState.phaseOffset)
-            phaseState.frozenPhase = phase
-            return phase
-        }
-    }
-
-    private func handlePauseToggle(paused: Bool) {
-        let base = normalizedPhase(for: Date())
-        if paused {
-            phaseState.frozenPhase = wrap01(base + phaseState.phaseOffset)
-        } else {
-            phaseState.phaseOffset = wrap01(phaseState.frozenPhase - base)
-        }
+        phaseController.phase(
+            for: date,
+            speed: speedMultiplier,
+            cycleDuration: max(config.cycleDuration, 12),
+            paused: animationsPaused
+        )
     }
 
     // MARK: - Starfield
