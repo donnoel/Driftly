@@ -36,7 +36,14 @@ final class DriftlyEngine: ObservableObject {
 
     /// 0.2 (dim) ... 1.0 (full brightness)
     @Published var brightness: Double {
-        didSet { persistBrightness() }
+        didSet {
+            let clamped = Self.clampBrightness(brightness)
+            if clamped != brightness {
+                brightness = clamped
+                return
+            }
+            persistBrightness()
+        }
     }
 
     /// Auto-drift: whether Driftly should automatically change modes
@@ -92,7 +99,7 @@ final class DriftlyEngine: ObservableObject {
         if storedBrightness == 0 {
             brightness = 1.0
         } else {
-            brightness = max(0.2, min(1.0, storedBrightness))
+            brightness = Self.clampBrightness(storedBrightness)
         }
 
         // autoDriftEnabled (default: false)
@@ -174,5 +181,9 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistAutoDriftInterval() {
         defaults.set(autoDriftIntervalMinutes, forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
+    }
+
+    static func clampBrightness(_ value: Double) -> Double {
+        max(0.2, min(1.0, value))
     }
 }

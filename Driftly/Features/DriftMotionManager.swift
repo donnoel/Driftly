@@ -9,6 +9,8 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()
     private var isUpdating = false
+    private var filteredRoll: Double = 0
+    private var filteredPitch: Double = 0
     #endif
 
     @Published var xTilt: Double = 0
@@ -49,8 +51,13 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
                 let clampedRoll  = max(-maxAngle, min(maxAngle, roll))
                 let clampedPitch = max(-maxAngle, min(maxAngle, pitch))
 
-                self.xTilt = clampedRoll
-                self.yTilt = clampedPitch
+                // Simple low-pass filter to smooth jitter
+                let smoothing: Double = 0.15
+                filteredRoll += smoothing * (clampedRoll - filteredRoll)
+                filteredPitch += smoothing * (clampedPitch - filteredPitch)
+
+                self.xTilt = filteredRoll
+                self.yTilt = filteredPitch
             }
         }
     }

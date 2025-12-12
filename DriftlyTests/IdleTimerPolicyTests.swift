@@ -1,0 +1,29 @@
+import SwiftUI
+import Testing
+@testable import Driftly
+
+struct IdleTimerPolicyTests {
+
+    @Test func preventsLockOnlyWhenActiveAndAllowed() async throws {
+        let activePrevent = shouldPreventLock(
+            preventAutoLock: true,
+            sleepTimerAllowsLock: false,
+            scenePhase: .active
+        )
+        #expect(activePrevent == true)
+
+        let inactivePrevent = shouldPreventLock(
+            preventAutoLock: true,
+            sleepTimerAllowsLock: false,
+            scenePhase: .inactive
+        )
+        #expect(inactivePrevent == false)
+
+        let sleepAllowsLock = shouldPreventLock(
+            preventAutoLock: true,
+            sleepTimerAllowsLock: true,
+            scenePhase: .active
+        )
+        #expect(sleepAllowsLock == false)
+    }
+}
