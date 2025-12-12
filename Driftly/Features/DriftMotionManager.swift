@@ -15,10 +15,14 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
 
     @Published var xTilt: Double = 0
     @Published var yTilt: Double = 0
+    @Published var motionUnavailable: Bool = false
 
     init() {
         #if os(iOS)
-        guard motionManager.isDeviceMotionAvailable else { return }
+        guard motionManager.isDeviceMotionAvailable else {
+            motionUnavailable = true
+            return
+        }
 
         motionManager.deviceMotionUpdateInterval = 1.0 / 30.0 // ~30fps
         #endif
@@ -32,9 +36,14 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
 
     #if os(iOS)
     func startIfNeeded() {
-        guard !isUpdating, motionManager.isDeviceMotionAvailable else { return }
+        guard !isUpdating else { return }
+        guard motionManager.isDeviceMotionAvailable else {
+            motionUnavailable = true
+            return
+        }
 
         isUpdating = true
+        motionUnavailable = false
 
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical,
                                                to: queue) { [weak self] motion, _ in

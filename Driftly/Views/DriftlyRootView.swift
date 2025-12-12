@@ -47,8 +47,20 @@ struct DriftlyRootView: View {
                 .opacity(1 - engine.brightness)
                 .allowsHitTesting(false)
         )
+        .overlay(alignment: .top) {
+            if motionManager.motionUnavailable {
+                Text("Motion unavailable")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.55), in: Capsule())
+                    .padding(.top, 18)
+                    .padding(.horizontal, 16)
+            }
+        }
         // Global animation speed for all lamp views
         .environment(\.driftAnimationSpeed, engine.animationSpeed)
+        .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
         .background(Color.black)
         .ignoresSafeArea()
         .statusBar(hidden: true)
@@ -201,15 +213,15 @@ struct DriftlyRootView: View {
             
             // Right: tiny buttons
             HStack(spacing: 12) {
-                CircleButton(systemName: "sparkles") {
+                CircleButton(systemName: "sparkles", accessibilityIdentifier: "modePickerButton") {
                     isModePickerPresented = true
                 }
                 
-                CircleButton(systemName: "moon.zzz") {
+                CircleButton(systemName: "moon.zzz", accessibilityIdentifier: "sleepTimerButton") {
                     isSleepTimerDialogPresented = true
                 }
                 
-                CircleButton(systemName: "gearshape") {
+                CircleButton(systemName: "gearshape", accessibilityIdentifier: "settingsButton") {
                     isSettingsPresented = true
                 }
             }
@@ -230,6 +242,7 @@ struct DriftlyRootView: View {
     private struct CircleButton: View {
         let systemName: String
         let action: () -> Void
+        var accessibilityIdentifier: String? = nil
         
         var body: some View {
             Button(action: action) {
@@ -247,6 +260,7 @@ struct DriftlyRootView: View {
                             )
                     )
             }
+            .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
             .buttonStyle(.plain)
         }
     }

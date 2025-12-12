@@ -3,34 +3,44 @@ import SwiftUI
 struct AuroraVeilView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let t = normalizedPhase(for: context.date)
-
-            ZStack {
-                // Background driven by palette
-                LinearGradient(
-                    colors: [
-                        config.palette.backgroundTop,
-                        config.palette.backgroundBottom
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                // Main aurora curtains
-                auroraCurtains(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.95)
-
-                // Soft mist / haze
-                auroraMist(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.6)
+        Group {
+            if animationsPaused {
+                content(phase: 0)
+            } else {
+                TimelineView(.animation) { context in
+                    content(phase: normalizedPhase(for: context.date))
+                }
             }
-            .compositingGroup()
         }
+    }
+
+    @ViewBuilder
+    private func content(phase t: Double) -> some View {
+        ZStack {
+            // Background driven by palette
+            LinearGradient(
+                colors: [
+                    config.palette.backgroundTop,
+                    config.palette.backgroundBottom
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Main aurora curtains
+            auroraCurtains(phase: t)
+                .blendMode(.screen)
+                .opacity(0.95)
+
+            // Soft mist / haze
+            auroraMist(phase: t)
+                .blendMode(.screen)
+                .opacity(0.6)
+        }
+        .compositingGroup()
     }
 
     private func normalizedPhase(for date: Date) -> Double {

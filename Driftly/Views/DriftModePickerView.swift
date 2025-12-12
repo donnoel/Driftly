@@ -88,6 +88,7 @@ private struct ModeRow: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("modeRow-\(mode.rawValue)")
     }
 
     private var description: String {

@@ -3,32 +3,42 @@ import SwiftUI
 struct CosmicTideView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let t = normalizedPhase(for: context.date)
-
-            ZStack {
-                // Background from palette
-                LinearGradient(
-                    colors: [
-                        config.palette.backgroundTop,
-                        config.palette.backgroundBottom
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                tideBandsLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.9)
-
-                shimmerLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.55)
+        Group {
+            if animationsPaused {
+                content(phase: 0)
+            } else {
+                TimelineView(.animation) { context in
+                    content(phase: normalizedPhase(for: context.date))
+                }
             }
-            .compositingGroup()
         }
+    }
+
+    @ViewBuilder
+    private func content(phase t: Double) -> some View {
+        ZStack {
+            // Background from palette
+            LinearGradient(
+                colors: [
+                    config.palette.backgroundTop,
+                    config.palette.backgroundBottom
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            tideBandsLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.9)
+
+            shimmerLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.55)
+        }
+        .compositingGroup()
     }
 
     private func normalizedPhase(for date: Date) -> Double {

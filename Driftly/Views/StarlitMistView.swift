@@ -3,39 +3,49 @@ import SwiftUI
 struct StarlitMistView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let t = normalizedPhase(for: context.date)
-
-            ZStack {
-                // Background: soft night sky
-                LinearGradient(
-                    colors: [
-                        config.palette.backgroundTop,
-                        config.palette.backgroundBottom
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                // Starfield
-                starField(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.9)
-
-                // Mist / fog
-                mistLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.7)
-
-                // Gentle sweeping light band
-                sweepLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.4)
+        Group {
+            if animationsPaused {
+                content(phase: 0)
+            } else {
+                TimelineView(.animation) { context in
+                    content(phase: normalizedPhase(for: context.date))
+                }
             }
-            .compositingGroup()
         }
+    }
+
+    @ViewBuilder
+    private func content(phase t: Double) -> some View {
+        ZStack {
+            // Background: soft night sky
+            LinearGradient(
+                colors: [
+                    config.palette.backgroundTop,
+                    config.palette.backgroundBottom
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Starfield
+            starField(phase: t)
+                .blendMode(.screen)
+                .opacity(0.9)
+
+            // Mist / fog
+            mistLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.7)
+
+            // Gentle sweeping light band
+            sweepLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.4)
+        }
+        .compositingGroup()
     }
 
     private func normalizedPhase(for date: Date) -> Double {

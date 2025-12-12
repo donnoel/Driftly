@@ -3,39 +3,49 @@ import SwiftUI
 struct LunarDriftView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let t = normalizedPhase(for: context.date)
-
-            ZStack {
-                // Soft night-sky background
-                LinearGradient(
-                    colors: [
-                        config.palette.backgroundTop,
-                        config.palette.backgroundBottom
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                // Main moon + halo
-                moonLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.95)
-
-                // Reflection / ground glow
-                reflectionLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.75)
-
-                // Horizontal drift haze
-                driftHazeLayer(phase: t)
-                    .blendMode(.screen)
-                    .opacity(0.55)
+        Group {
+            if animationsPaused {
+                content(phase: 0)
+            } else {
+                TimelineView(.animation) { context in
+                    content(phase: normalizedPhase(for: context.date))
+                }
             }
-            .compositingGroup()
         }
+    }
+
+    @ViewBuilder
+    private func content(phase t: Double) -> some View {
+        ZStack {
+            // Soft night-sky background
+            LinearGradient(
+                colors: [
+                    config.palette.backgroundTop,
+                    config.palette.backgroundBottom
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Main moon + halo
+            moonLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.95)
+
+            // Reflection / ground glow
+            reflectionLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.75)
+
+            // Horizontal drift haze
+            driftHazeLayer(phase: t)
+                .blendMode(.screen)
+                .opacity(0.55)
+        }
+        .compositingGroup()
     }
 
     private func normalizedPhase(for date: Date) -> Double {
