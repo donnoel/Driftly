@@ -4,17 +4,13 @@ struct NebulaLakeView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @State private var phaseState = PhaseState()
 
     var body: some View {
-        Group {
-            if animationsPaused {
-                content(phase: 0)
-            } else {
-                TimelineView(.animation) { context in
-                    content(phase: normalizedPhase(for: context.date))
-                }
-            }
+        TimelineView(.animation) { context in
+            content(phase: currentPhase(for: context.date))
         }
+        .onChange(of: animationsPaused) { handlePauseToggle(paused: $0) }
     }
 
     @ViewBuilder
@@ -46,6 +42,26 @@ struct NebulaLakeView: View {
         let raw = date.timeIntervalSinceReferenceDate * max(speedMultiplier, 0.1)
         let wrapped = raw.truncatingRemainder(dividingBy: config.cycleDuration)
         return wrapped / config.cycleDuration
+    }
+
+    private func currentPhase(for date: Date) -> Double {
+        let base = normalizedPhase(for: date)
+        if animationsPaused {
+            return phaseState.frozenPhase
+        } else {
+            let phase = wrap01(base + phaseState.phaseOffset)
+            phaseState.frozenPhase = phase
+            return phase
+        }
+    }
+
+    private func handlePauseToggle(paused: Bool) {
+        let base = normalizedPhase(for: Date())
+        if paused {
+            phaseState.frozenPhase = wrap01(base + phaseState.phaseOffset)
+        } else {
+            phaseState.phaseOffset = wrap01(phaseState.frozenPhase - base)
+        }
     }
 
     @ViewBuilder
