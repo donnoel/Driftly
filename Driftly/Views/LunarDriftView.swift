@@ -63,8 +63,8 @@ struct LunarDriftView: View {
             let size = proxy.size
             let base = min(size.width, size.height)
 
-            let verticalDrift = CGFloat(sin(t * .pi * 2)) * base * 0.02
-            let subtlePulse = 0.9 + 0.1 * sin(t * .pi * 2)
+            let verticalDrift = CGFloat(sin(t * .pi * 2)) * base * 0.08
+            let subtlePulse = 0.75 + 0.25 * sin(t * .pi * 2)
 
             ZStack {
                 // Halo
@@ -72,7 +72,7 @@ struct LunarDriftView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                config.palette.secondary.opacity(0.6 * subtlePulse),
+                                config.palette.secondary.opacity(0.7 * subtlePulse),
                                 Color.clear
                             ],
                             center: .center,
@@ -118,7 +118,7 @@ struct LunarDriftView: View {
             let size = proxy.size
             let base = min(size.width, size.height)
 
-            let wobble = CGFloat(sin(t * .pi * 2)) * base * 0.015
+            let wobble = CGFloat(sin(t * .pi * 2)) * base * 0.08
 
             RoundedRectangle(cornerRadius: base * 0.35, style: .continuous)
                 .fill(
@@ -133,8 +133,8 @@ struct LunarDriftView: View {
                 )
                 .frame(width: size.width * 0.85, height: base * 0.28)
                 .position(
-                    x: size.width * 0.5 + wobble * 0.2,
-                    y: size.height * 0.72 + wobble * 0.35
+                    x: size.width * 0.5 + wobble * 0.25,
+                    y: size.height * 0.72 + wobble * 0.45
                 )
                 .blur(radius: base * 0.18)
         }
@@ -148,21 +148,21 @@ struct LunarDriftView: View {
             let size = proxy.size
             let base = min(size.width, size.height)
 
-            let driftOffset = CGFloat(sin(t * .pi * 2)) * size.width * 0.08
+            let driftOffset = CGFloat(sin(t * .pi * 2)) * size.width * 0.22
 
             ZStack {
                 RoundedRectangle(cornerRadius: base * 0.4, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                config.palette.secondary.opacity(0.18),
+                                config.palette.secondary.opacity(0.26),
                                 Color.clear
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: size.width * 1.3, height: base * 0.22)
+                    .frame(width: size.width * 1.45, height: base * 0.26)
                     .position(
                         x: size.width * 0.5 + driftOffset,
                         y: size.height * 0.5
@@ -172,16 +172,16 @@ struct LunarDriftView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                config.palette.tertiary.opacity(0.15),
+                                config.palette.tertiary.opacity(0.22),
                                 Color.clear
                             ],
                             startPoint: .trailing,
                             endPoint: .leading
                         )
                     )
-                    .frame(width: size.width * 1.2, height: base * 0.18)
+                    .frame(width: size.width * 1.35, height: base * 0.22)
                     .position(
-                        x: size.width * 0.5 - driftOffset * 0.6,
+                        x: size.width * 0.5 - driftOffset * 0.7,
                         y: size.height * 0.58
                     )
             }

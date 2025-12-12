@@ -37,7 +37,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 40,
+                cycleDuration: 32,
                 palette: DriftPalette(
                     primary:      Color(red: 0.15, green: 0.80, blue: 0.85),
                     secondary:    Color(red: 0.60, green: 0.35, blue: 1.00),
@@ -51,7 +51,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 28,
+                cycleDuration: 18,
                 palette: DriftPalette(
                     primary:      Color(red: 0.85, green: 0.40, blue: 1.00),
                     secondary:    Color(red: 0.35, green: 0.75, blue: 1.00),
@@ -65,7 +65,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 36,
+                cycleDuration: 22,
                 palette: DriftPalette(
                     primary:      Color(red: 0.10, green: 0.90, blue: 0.60),
                     secondary:    Color(red: 0.25, green: 0.45, blue: 1.00),
@@ -79,7 +79,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 32,
+                cycleDuration: 18,
                 palette: DriftPalette(
                     primary:      Color(red: 0.20, green: 0.25, blue: 0.90),
                     secondary:    Color(red: 0.10, green: 0.50, blue: 1.00),
@@ -93,7 +93,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 45,
+                cycleDuration: 24,
                 palette: DriftPalette(
                     primary:      Color(red: 0.95, green: 0.95, blue: 1.00),
                     secondary:    Color(red: 0.55, green: 0.65, blue: 1.00),
@@ -107,7 +107,7 @@ enum DriftMode: String, CaseIterable, Identifiable {
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 38,
+                cycleDuration: 22,
                 palette: DriftPalette(
                     primary:      Color(red: 0.90, green: 0.90, blue: 1.00),
                     secondary:    Color(red: 0.60, green: 0.60, blue: 0.95),

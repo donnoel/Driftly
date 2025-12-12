@@ -33,17 +33,17 @@ struct StarlitMistView: View {
             // Starfield
             starField(phase: t)
                 .blendMode(.screen)
-                .opacity(0.9)
+                .opacity(0.95)
 
             // Mist / fog
             mistLayer(phase: t)
                 .blendMode(.screen)
-                .opacity(0.7)
+                .opacity(0.8)
 
             // Gentle sweeping light band
             sweepLayer(phase: t)
                 .blendMode(.screen)
-                .opacity(0.4)
+                .opacity(0.55)
         }
         .compositingGroup()
     }
@@ -63,7 +63,7 @@ struct StarlitMistView: View {
             let size = proxy.size
 
             Canvas { context, canvasSize in
-                let starCount = 80
+                let starCount = 140
                 let phase = t * .pi * 2
 
                 for index in 0..<starCount {
@@ -77,7 +77,7 @@ struct StarlitMistView: View {
 
                     // Tiny twinkle using phase offset
                     let twinkle = 0.5 + 0.5 * sin(phase * 0.8 + Double(fi) * 0.35)
-                    let radius = 0.6 + 0.9 * twinkle
+                    let radius = 1.0 + 1.1 * twinkle
 
                     let baseOpacity: CGFloat = 0.25 + 0.6 * CGFloat(twinkle)
 
@@ -103,7 +103,7 @@ struct StarlitMistView: View {
 
     @ViewBuilder
     private func mistLayer(phase t: Double) -> some View {
-        let shift = 0.05 * sin(t * .pi * 2)
+        let shift = 0.18 * sin(t * .pi * 2)
 
         ZStack {
             RadialGradient(
@@ -148,22 +148,22 @@ struct StarlitMistView: View {
             let size = proxy.size
             let base = max(size.width, size.height)
 
-            let sweepX = 0.5 + 0.3 * CGFloat(sin(t * .pi * 2))
-            let sweepAngle = Angle.degrees(Double(8 * sin(t * .pi * 2)))
+            let sweepX = 0.5 + 0.45 * CGFloat(sin(t * .pi * 2))
+            let sweepAngle = Angle.degrees(Double(18 * sin(t * .pi * 2)))
 
             RoundedRectangle(cornerRadius: base * 0.5, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.0),
-                            Color.white.opacity(0.20),
+                            Color.white.opacity(0.28),
                             Color.white.opacity(0.0)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .frame(width: size.width * 0.85, height: base * 0.45)
+                .frame(width: size.width * 0.95, height: base * 0.55)
                 .position(
                     x: size.width * sweepX,
                     y: size.height * 0.40

@@ -61,32 +61,33 @@ struct AuroraVeilView: View {
             let wave1 = CGFloat(sin(t * .pi * 2))
             let wave2 = CGFloat(cos(t * .pi * 2))
             let wave3 = CGFloat(sin(t * .pi * 4))
+            let wave4 = CGFloat(sin(t * .pi * 3 + .pi / 4))
 
             ZStack {
                 auroraBand(
                     in: size,
                     base: base,
-                    centerXFactor: 0.25 + 0.02 * wave1,
-                    tilt: -10,
-                    heightFactor: 1.2,
+                    centerXFactor: 0.25 + 0.10 * wave1,
+                    tilt: -14,
+                    heightFactor: 1.35,
                     color: config.palette.primary
                 )
 
                 auroraBand(
                     in: size,
                     base: base,
-                    centerXFactor: 0.50 + 0.03 * wave2,
+                    centerXFactor: 0.50 + 0.12 * wave2,
                     tilt: 0,
-                    heightFactor: 1.35,
+                    heightFactor: 1.55,
                     color: config.palette.secondary
                 )
 
                 auroraBand(
                     in: size,
                     base: base,
-                    centerXFactor: 0.75 + 0.02 * wave3,
-                    tilt: 12,
-                    heightFactor: 1.15,
+                    centerXFactor: 0.75 + 0.10 * wave3 + 0.04 * wave4,
+                    tilt: 18,
+                    heightFactor: 1.30,
                     color: config.palette.tertiary
                 )
             }
@@ -101,7 +102,7 @@ struct AuroraVeilView: View {
         heightFactor: CGFloat,
         color: Color
     ) -> some View {
-        let bandWidth = size.width * 0.32
+        let bandWidth = size.width * 0.38
         let bandHeight = base * heightFactor
 
         return RoundedRectangle(cornerRadius: bandWidth / 2, style: .continuous)
@@ -129,7 +130,8 @@ struct AuroraVeilView: View {
 
     @ViewBuilder
     private func auroraMist(phase t: Double) -> some View {
-        let yShift = 0.1 * sin(t * .pi * 2)
+        let yShift = 0.18 * sin(t * .pi * 2)
+        let yShift2 = 0.12 * cos(t * .pi * 3)
 
         ZStack {
             RadialGradient(
@@ -161,8 +163,19 @@ struct AuroraVeilView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .opacity(0.45)
+            .opacity(0.55)
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.0),
+                    Color.white.opacity(0.12),
+                    Color.white.opacity(0.0)
+                ],
+                startPoint: UnitPoint(x: 0.2, y: 0.2 + yShift2),
+                endPoint: UnitPoint(x: 0.8, y: 0.5 - yShift2)
+            )
+            .blur(radius: 2.0)
         }
-        .blur(radius: 2.0)
+        .blur(radius: 2.6)
     }
 }

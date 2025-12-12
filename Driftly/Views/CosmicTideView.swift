@@ -54,15 +54,16 @@ struct CosmicTideView: View {
             let size = proxy.size
             let base = max(size.width, size.height)
 
-            let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.10
-            let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.06
+            let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.22
+            let verticalShift2 = CGFloat(sin(t * .pi * 4 + .pi / 3)) * base * 0.08
+            let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.12
 
             ZStack {
                 // Top band – primary
                 tideBand(
                     size: size,
                     base: base,
-                    offsetY: base * 0.20 + verticalShift,
+                    offsetY: base * 0.20 + verticalShift + verticalShift2,
                     color: config.palette.primary
                 )
 
@@ -70,7 +71,7 @@ struct CosmicTideView: View {
                 tideBand(
                     size: size,
                     base: base,
-                    offsetY: base * 0.50 - verticalShift * 0.7,
+                    offsetY: base * 0.48 - verticalShift * 0.5 + verticalShift2 * 0.4,
                     color: config.palette.secondary
                 )
 
@@ -78,7 +79,7 @@ struct CosmicTideView: View {
                 tideBand(
                     size: size,
                     base: base,
-                    offsetY: base * 0.80 + verticalShift * 0.5,
+                    offsetY: base * 0.82 + verticalShift * 0.4 - verticalShift2 * 0.6,
                     color: config.palette.tertiary
                 )
             }
@@ -112,19 +113,37 @@ struct CosmicTideView: View {
     private func shimmerLayer(phase t: Double) -> some View {
         LinearGradient(
             colors: [
-                Color.white.opacity(0.0),
-                Color.white.opacity(0.20),
-                Color.white.opacity(0.0)
+                Color.white.opacity(0.05),
+                Color.white.opacity(0.25),
+                Color.white.opacity(0.05)
             ],
             startPoint: UnitPoint(
-                x: 0,
-                y: 0.25 + 0.15 * sin(t * .pi * 2)
+                x: 0 + 0.1 * sin(t * .pi * 2),
+                y: 0.2 + 0.22 * sin(t * .pi * 2)
             ),
             endPoint: UnitPoint(
-                x: 1,
-                y: 0.45 + 0.15 * cos(t * .pi * 2)
+                x: 1 - 0.1 * cos(t * .pi * 2),
+                y: 0.5 + 0.22 * cos(t * .pi * 2)
             )
         )
-        .blur(radius: 1.8)
+        .blur(radius: 2.6)
+        .overlay(
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.0),
+                    Color.white.opacity(0.14),
+                    Color.white.opacity(0.0)
+                ],
+                startPoint: UnitPoint(
+                    x: 0.1,
+                    y: 0.1 + 0.15 * sin(t * .pi * 3)
+                ),
+                endPoint: UnitPoint(
+                    x: 0.9,
+                    y: 0.4 + 0.15 * cos(t * .pi * 3)
+                )
+            )
+            .blur(radius: 1.2)
+        )
     }
 }

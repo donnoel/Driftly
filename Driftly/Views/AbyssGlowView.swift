@@ -58,32 +58,32 @@ struct AbyssGlowView: View {
             let size = proxy.size
             let base = max(size.width, size.height)
 
-            let sway1 = CGFloat(sin(t * .pi * 2)) * 0.03
-            let sway2 = CGFloat(cos(t * .pi * 2)) * 0.03
-            let sway3 = CGFloat(sin(t * .pi * 4)) * 0.04
+            let sway1 = CGFloat(sin(t * .pi * 2)) * 0.12
+            let sway2 = CGFloat(cos(t * .pi * 2)) * 0.12
+            let sway3 = CGFloat(sin(t * .pi * 4)) * 0.16
 
             ZStack {
                 glowColumn(
                     in: size,
                     base: base,
                     centerXFactor: 0.25 + sway1,
-                    heightFactor: 1.2,
+                    heightFactor: 1.5,
                     color: config.palette.secondary.opacity(0.85)
                 )
 
                 glowColumn(
                     in: size,
                     base: base,
-                    centerXFactor: 0.50 + sway2,
-                    heightFactor: 1.4,
+                    centerXFactor: 0.50 + sway2 * 0.9,
+                    heightFactor: 1.7,
                     color: config.palette.primary.opacity(0.95)
                 )
 
                 glowColumn(
                     in: size,
                     base: base,
-                    centerXFactor: 0.78 + sway3,
-                    heightFactor: 1.1,
+                    centerXFactor: 0.78 + sway3 * 0.8,
+                    heightFactor: 1.4,
                     color: config.palette.tertiary.opacity(0.8)
                 )
             }
@@ -97,7 +97,7 @@ struct AbyssGlowView: View {
         heightFactor: CGFloat,
         color: Color
     ) -> some View {
-        let columnWidth = size.width * 0.22
+        let columnWidth = size.width * 0.26
         let columnHeight = base * heightFactor
 
         return RoundedRectangle(cornerRadius: columnWidth / 2, style: .continuous)
@@ -128,8 +128,9 @@ struct AbyssGlowView: View {
             let size = proxy.size
             let base = max(size.width, size.height)
 
-            let pulse = 0.85 + 0.15 * sin(t * .pi * 2)
-            let offset = CGFloat(sin(t * .pi * 2)) * base * 0.03
+            let pulse = 0.75 + 0.25 * sin(t * .pi * 2)
+            let offset = CGFloat(sin(t * .pi * 2)) * base * 0.10
+            let offset2 = CGFloat(cos(t * .pi * 3)) * base * 0.06
 
             ZStack {
                 // Central vent
@@ -161,7 +162,7 @@ struct AbyssGlowView: View {
                 .frame(width: base * 1.0, height: base * 0.8)
                 .position(
                     x: size.width * 0.2,
-                    y: size.height * 0.96 - offset
+                    y: size.height * 0.96 - offset + offset2
                 )
 
                 // Right bloom
@@ -177,7 +178,7 @@ struct AbyssGlowView: View {
                 .frame(width: base * 1.0, height: base * 0.8)
                 .position(
                     x: size.width * 0.8,
-                    y: size.height * 0.99
+                    y: size.height * 0.99 + offset2 * 0.6
                 )
             }
             .blur(radius: base * 0.05)
