@@ -14,6 +14,8 @@ private enum DriftlyDefaultsKey {
 final class DriftlyEngine: ObservableObject {
     // MARK: - Published state
 
+    private let defaults: UserDefaults
+
     @Published var currentMode: DriftMode {
         didSet { persistCurrentMode() }
     }
@@ -56,8 +58,8 @@ final class DriftlyEngine: ObservableObject {
 
     // MARK: - Init
 
-    init() {
-        let defaults = UserDefaults.standard
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
 
         // currentMode
         if let raw = defaults.string(forKey: DriftlyDefaultsKey.currentMode),
@@ -133,7 +135,7 @@ final class DriftlyEngine: ObservableObject {
     // MARK: - Persistence
 
     private func persistCurrentMode() {
-        UserDefaults.standard.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
+        defaults.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
     }
 
     func shouldAutoDrift(
@@ -151,26 +153,26 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func persistAnimationSpeed() {
-        UserDefaults.standard.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
+        defaults.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
     }
 
     private func persistPreventAutoLock() {
-        UserDefaults.standard.set(preventAutoLock, forKey: DriftlyDefaultsKey.preventAutoLock)
+        defaults.set(preventAutoLock, forKey: DriftlyDefaultsKey.preventAutoLock)
     }
 
     private func persistChromeVisibility() {
-        UserDefaults.standard.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
+        defaults.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
     }
 
     private func persistBrightness() {
-        UserDefaults.standard.set(brightness, forKey: DriftlyDefaultsKey.brightness)
+        defaults.set(brightness, forKey: DriftlyDefaultsKey.brightness)
     }
 
     private func persistAutoDriftEnabled() {
-        UserDefaults.standard.set(autoDriftEnabled, forKey: DriftlyDefaultsKey.autoDriftEnabled)
+        defaults.set(autoDriftEnabled, forKey: DriftlyDefaultsKey.autoDriftEnabled)
     }
 
     private func persistAutoDriftInterval() {
-        UserDefaults.standard.set(autoDriftIntervalMinutes, forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
+        defaults.set(autoDriftIntervalMinutes, forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
     }
 }

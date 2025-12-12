@@ -5,7 +5,12 @@ import Testing
 struct AutoDriftTests {
 
     @Test func respectsIntervalAndSleepState() async throws {
-        let engine = DriftlyEngine()
+        let suiteName = "AutoDriftTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 5
 

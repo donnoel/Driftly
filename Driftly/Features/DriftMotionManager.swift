@@ -3,6 +3,7 @@ import CoreMotion
 import SwiftUI
 import Combine
 
+@MainActor
 final class DriftMotionManager: ObservableObject, MotionControlling {
     #if os(iOS)
     private let motionManager = CMMotionManager()
@@ -35,17 +36,19 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
 
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical,
                                                to: queue) { [weak self] motion, _ in
-            guard let self, let motion, self.isUpdating else { return }
+            guard let motion else { return }
 
-            let roll = motion.attitude.roll    // left/right tilt
-            let pitch = motion.attitude.pitch  // forward/back tilt
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isUpdating else { return }
 
-            // Clamp to a gentle range so things don’t swing wildly
-            let maxAngle: Double = 0.35 // ~20 degrees
-            let clampedRoll  = max(-maxAngle, min(maxAngle, roll))
-            let clampedPitch = max(-maxAngle, min(maxAngle, pitch))
+                let roll = motion.attitude.roll    // left/right tilt
+                let pitch = motion.attitude.pitch  // forward/back tilt
 
-            DispatchQueue.main.async {
+                // Clamp to a gentle range so things don’t swing wildly
+                let maxAngle: Double = 0.35 // ~20 degrees
+                let clampedRoll  = max(-maxAngle, min(maxAngle, roll))
+                let clampedPitch = max(-maxAngle, min(maxAngle, pitch))
+
                 self.xTilt = clampedRoll
                 self.yTilt = clampedPitch
             }
@@ -54,8 +57,8 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
 
     func stopUpdates() {
         guard isUpdating else { return }
-        motionManager.stopDeviceMotionUpdates()
         isUpdating = false
+        motionManager.stopDeviceMotionUpdates()
     }
     #endif
 

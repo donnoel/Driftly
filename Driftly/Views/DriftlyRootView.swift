@@ -14,15 +14,16 @@ struct DriftlyRootView: View {
     @State private var sleepTimerHasExpired = false
     @State private var sleepTimerAllowsLock = false
     @State private var lastAutoDriftChange: Date = Date()
-    
+
     var body: some View {
         ZStack {
-            activeModeView
-                .offset(motionManager.parallaxOffset)
-                .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
-                .opacity(sleepTimerHasExpired ? 0.0 : 1.0)
-                .ignoresSafeArea()
-            
+            if !sleepTimerHasExpired {
+                activeModeView
+                    .offset(motionManager.parallaxOffset)
+                    .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
+                    .ignoresSafeArea()
+            }
+
             // Minimal chrome (hidden when asleep)
             if engine.isChromeVisible && !sleepTimerHasExpired {
                 VStack {
@@ -106,6 +107,7 @@ struct DriftlyRootView: View {
                 }
                 sleepTimerAllowsLock = false
                 updateIdleTimer()
+                startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
             }
             Button("15 minutes") {
@@ -114,6 +116,7 @@ struct DriftlyRootView: View {
                     sleepTimerHasExpired = false
                 }
                 sleepTimerAllowsLock = false
+                startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
             }
             Button("30 minutes") {
@@ -122,6 +125,7 @@ struct DriftlyRootView: View {
                     sleepTimerHasExpired = false
                 }
                 sleepTimerAllowsLock = false
+                startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
             }
             Button("60 minutes") {
@@ -130,6 +134,7 @@ struct DriftlyRootView: View {
                     sleepTimerHasExpired = false
                 }
                 sleepTimerAllowsLock = false
+                startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
             }
             Button("Cancel", role: .cancel) {}
@@ -272,15 +277,20 @@ struct DriftlyRootView: View {
         UIApplication.shared.isIdleTimerDisabled = shouldPreventLock
 #endif
     }
-
+    
     private func handleMotion(for phase: ScenePhase) {
 #if os(iOS)
+        guard !sleepTimerHasExpired else {
+            motionManager.stopUpdates()
+            return
+        }
         MotionPhaseHandler.updateMotion(for: phase, motionController: motionManager)
 #endif
     }
 
     private func startMotionIfNeeded() {
 #if os(iOS)
+        guard !sleepTimerHasExpired, scenePhase == .active else { return }
         motionManager.startIfNeeded()
 #endif
     }
@@ -288,6 +298,8 @@ struct DriftlyRootView: View {
     // MARK: - Sleep timer tick & auto drift
     
     private func handleSleepTimerTick(now: Date) {
+        guard engine.sleepTimerEndDate != nil || engine.autoDriftEnabled else { return }
+
         // Sleep timer logic
         if let end = engine.sleepTimerEndDate {
             if now >= end && !sleepTimerHasExpired {
@@ -297,6 +309,7 @@ struct DriftlyRootView: View {
                 // Once timer fires, allow device to auto-lock again without changing the persisted setting
                 sleepTimerAllowsLock = true
                 updateIdleTimer()
+                stopMotionForSleep()
             }
         } else {
             // If timer was cleared, reset fade state
@@ -304,6 +317,7 @@ struct DriftlyRootView: View {
                 withAnimation(.easeInOut(duration: 0.8)) {
                     sleepTimerHasExpired = false
                 }
+                startMotionIfNeeded()
             }
             sleepTimerAllowsLock = false
             updateIdleTimer()
@@ -329,5 +343,11 @@ struct DriftlyRootView: View {
 
     private func resetAutoDriftClock() {
         lastAutoDriftChange = Date()
+    }
+
+    private func stopMotionForSleep() {
+#if os(iOS)
+        motionManager.stopUpdates()
+#endif
     }
 }
