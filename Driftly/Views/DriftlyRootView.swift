@@ -222,22 +222,30 @@ struct DriftlyRootView: View {
         // Custom sleep timer picker
         .sheet(isPresented: $isCustomSleepTimerPresented) {
             NavigationStack {
-                VStack(spacing: 24) {
+                VStack(spacing: 16) {
                     Text("Custom Sleep Timer")
-                        .font(.title3.bold())
+                        .font(.headline)
 
-                    Stepper(value: $customSleepMinutes, in: 5...240, step: 5) {
-                        Text("\(customSleepMinutes) minutes")
-                            .font(.headline)
+                    // Dial-style picker with haptic feedback
+                    Picker("", selection: $customSleepMinutes) {
+                        ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
+                            Text("\(minutes) min").tag(minutes)
+                        }
                     }
-                    .padding()
+                    .pickerStyle(.wheel)
+                    .frame(width: 200, height: 160)
+                    .onChange(of: customSleepMinutes) { _, _ in
+                        DriftHaptics.settingsAdjusted()
+                    }
 
                     Spacer()
                 }
-                .padding()
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Set") {
+                .frame(width: 360, height: 360)
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Set") {
                             engine.setSleepTimer(minutes: customSleepMinutes)
                             withAnimation(.easeInOut(duration: 0.6)) {
                                 sleepState.sleepTimerHasExpired = false
@@ -256,7 +264,9 @@ struct DriftlyRootView: View {
                     }
                 }
             }
-            .presentationDetents([.medium])
+            .presentationDetents([.fraction(0.55)])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(22)
         }
         .onDisappear {
             tickConnection?.cancel()

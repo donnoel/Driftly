@@ -9,17 +9,21 @@ struct DriftModePickerView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     ForEach(engine.allModes) { mode in
+                        let isFavorite = engine.favoriteModes.contains(mode)
                         ModeRow(
                             mode: mode,
-                            isSelected: mode == engine.currentMode
-                        ) {
-                            withAnimation(.easeInOut(duration: 0.45)) {
-                                engine.currentMode = mode
+                            isSelected: mode == engine.currentMode,
+                            favoriteAction: {
+                                engine.toggleFavorite(mode)
+                            },
+                            isFavorite: isFavorite,
+                            onTap: {
+                                withAnimation(.easeInOut(duration: 0.45)) {
+                                    engine.currentMode = mode
+                                }
+                                dismiss()
                             }
-                            dismiss()
-                        } favoriteAction: {
-                            engine.toggleFavorite(mode)
-                        } isFavorite: engine.favoriteModes.contains(mode)
+                        )
                     }
                 }
                 .padding(.horizontal, 20)
@@ -45,9 +49,9 @@ struct DriftModePickerView: View {
 private struct ModeRow: View {
     let mode: DriftMode
     let isSelected: Bool
-    let onTap: () -> Void
     let favoriteAction: () -> Void
     let isFavorite: Bool
+    let onTap: () -> Void
 
     private var config: DriftModeConfig {
         mode.config
