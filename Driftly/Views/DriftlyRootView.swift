@@ -17,6 +17,7 @@ struct DriftlyRootView: View {
     @State private var customSleepMinutes: Int = 20
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
+    @FocusState private var fallbackFocus: Bool
 
     private enum FocusTarget: Hashable {
         case modePicker, sleepTimer, settings
@@ -53,6 +54,12 @@ struct DriftlyRootView: View {
                 Spacer()
                 brightnessEdgeView(isLeading: false)
             }
+#elseif os(tvOS)
+            // Keep a tiny focusable target so Play/Pause commands are delivered even when chrome is hidden.
+            Color.clear
+                .frame(width: 1, height: 1)
+                .focusable(true)
+                .focused($fallbackFocus)
 #endif
         }
         // Screen darkening overlay based on brightness
@@ -575,6 +582,7 @@ struct DriftlyRootView: View {
                 engine.isChromeVisible = willShow
             }
             focusedButton = willShow ? .modePicker : nil
+            fallbackFocus = !willShow
         }
     }
 #endif
