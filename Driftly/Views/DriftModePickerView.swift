@@ -153,6 +153,24 @@ private struct ModeRow: View {
             return "Warped spatial light grid"
         case .quietSignal:
             return "Minimal waveform and noise field"
+        case .chromaticSpine:
+            return "A living spine of chromatic light"
+        case .ribbonOrbit:
+            return "A single ribbon looping in calm orbit"
+        case .inkTopography:
+            return "Topographic contours of drifting ink"
+        case .prismShards:
+            return "Slowly drifting translucent light shards"
+        case .lissajousBloom:
+            return "A blooming Lissajous body glyph"
+        case .meridianArcs:
+            return "Magnetic arcs circling an unseen body"
+        case .spectralLoom:
+            return "Woven threads of spectral light"
+        case .voxelMirage:
+            return "Dreamlike voxels shimmering in heat"
+        case .haloInterference:
+            return "Overlapping halos forming interference"
         }
     }
 }

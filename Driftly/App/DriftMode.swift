@@ -34,6 +34,16 @@ enum DriftMode: String, CaseIterable, Identifiable {
     case gravityRings
     case driftGrid
     case quietSignal
+    // Batch 4 (new)
+    case chromaticSpine
+    case ribbonOrbit
+    case inkTopography
+    case prismShards
+    case lissajousBloom
+    case meridianArcs
+    case spectralLoom
+    case voxelMirage
+    case haloInterference
 
     var id: String { rawValue }
 
@@ -60,6 +70,15 @@ enum DriftMode: String, CaseIterable, Identifiable {
         case .gravityRings:   return "Gravity Rings"
         case .driftGrid:      return "Drift Grid"
         case .quietSignal:    return "Quiet Signal"
+        case .chromaticSpine:    return "Chromatic Spine"
+        case .ribbonOrbit:       return "Ribbon Orbit"
+        case .inkTopography:     return "Ink Topography"
+        case .prismShards:       return "Prism Shards"
+        case .lissajousBloom:    return "Lissajous Bloom"
+        case .meridianArcs:      return "Meridian Arcs"
+        case .spectralLoom:      return "Spectral Loom"
+        case .voxelMirage:       return "Voxel Mirage"
+        case .haloInterference:  return "Halo Interference"
         }
     }
 
@@ -356,6 +375,132 @@ enum DriftMode: String, CaseIterable, Identifiable {
                     secondary:    Color(red: 0.65, green: 0.70, blue: 0.95),
                     tertiary:     Color(red: 0.95, green: 0.95, blue: 1.00),
                     backgroundTop:    Color(red: 0.02, green: 0.02, blue: 0.06),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
+                )
+            )
+
+        case .chromaticSpine:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 34,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.35, green: 0.95, blue: 0.88),
+                    secondary:    Color(red: 0.82, green: 0.40, blue: 1.00),
+                    tertiary:     Color(red: 0.55, green: 0.75, blue: 1.00),
+                    backgroundTop:    Color(red: 0.02, green: 0.03, blue: 0.08),
+                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.04)
+                )
+            )
+
+        case .ribbonOrbit:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 30,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.75, green: 0.45, blue: 1.00),
+                    secondary:    Color(red: 0.25, green: 0.85, blue: 0.98),
+                    tertiary:     Color(red: 1.00, green: 0.55, blue: 0.85),
+                    backgroundTop:    Color(red: 0.02, green: 0.02, blue: 0.07),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
+                )
+            )
+
+        case .inkTopography:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 40,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.85, green: 0.90, blue: 1.00),
+                    secondary:    Color(red: 0.65, green: 0.70, blue: 0.95),
+                    tertiary:     Color(red: 0.95, green: 0.55, blue: 0.60),
+                    backgroundTop:    Color(red: 0.02, green: 0.03, blue: 0.08),
+                    backgroundBottom: Color(red: 0.01, green: 0.01, blue: 0.05)
+                )
+            )
+
+        case .prismShards:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 26,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.55, green: 0.85, blue: 0.95),
+                    secondary:    Color(red: 0.75, green: 0.45, blue: 1.00),
+                    tertiary:     Color(red: 1.00, green: 0.55, blue: 0.60),
+                    backgroundTop:    Color(red: 0.03, green: 0.01, blue: 0.08),
+                    backgroundBottom: Color(red: 0.01, green: 0.01, blue: 0.04)
+                )
+            )
+
+        case .lissajousBloom:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 32,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.35, green: 0.80, blue: 1.00),
+                    secondary:    Color(red: 0.85, green: 0.40, blue: 1.00),
+                    tertiary:     Color(red: 0.35, green: 0.95, blue: 0.88),
+                    backgroundTop:    Color(red: 0.02, green: 0.02, blue: 0.06),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
+                )
+            )
+
+        case .meridianArcs:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 36,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.55, green: 0.75, blue: 1.00),
+                    secondary:    Color(red: 0.45, green: 0.95, blue: 0.90),
+                    tertiary:     Color(red: 0.95, green: 0.95, blue: 1.00),
+                    backgroundTop:    Color(red: 0.01, green: 0.02, blue: 0.06),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
+                )
+            )
+
+        case .spectralLoom:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 28,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.40, green: 0.98, blue: 0.55),
+                    secondary:    Color(red: 0.25, green: 0.85, blue: 0.98),
+                    tertiary:     Color(red: 0.75, green: 0.45, blue: 0.98),
+                    backgroundTop:    Color(red: 0.00, green: 0.04, blue: 0.08),
+                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.04)
+                )
+            )
+
+        case .voxelMirage:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 24,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.85, green: 0.95, blue: 1.00),
+                    secondary:    Color(red: 0.55, green: 0.65, blue: 1.00),
+                    tertiary:     Color(red: 0.25, green: 0.95, blue: 0.85),
+                    backgroundTop:    Color(red: 0.02, green: 0.04, blue: 0.10),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.05)
+                )
+            )
+
+        case .haloInterference:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 42,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.35, green: 0.85, blue: 1.00),
+                    secondary:    Color(red: 1.00, green: 0.55, blue: 0.85),
+                    tertiary:     Color(red: 0.75, green: 0.80, blue: 1.00),
+                    backgroundTop:    Color(red: 0.02, green: 0.01, blue: 0.08),
                     backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
                 )
             )

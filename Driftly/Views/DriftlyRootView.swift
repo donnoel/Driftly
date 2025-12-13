@@ -323,6 +323,25 @@ struct DriftlyRootView: View {
             DriftGridView(config: engine.currentMode.config)
         case .quietSignal:
             QuietSignalView(config: engine.currentMode.config)
+        // Batch 4 cases
+        case .chromaticSpine:
+            ChromaticSpineView(config: engine.currentMode.config)
+        case .ribbonOrbit:
+            RibbonOrbitView(config: engine.currentMode.config)
+        case .inkTopography:
+            InkTopographyView(config: engine.currentMode.config)
+        case .prismShards:
+            PrismShardsView(config: engine.currentMode.config)
+        case .lissajousBloom:
+            LissajousBloomView(config: engine.currentMode.config)
+        case .meridianArcs:
+            MeridianArcsView(config: engine.currentMode.config)
+        case .spectralLoom:
+            SpectralLoomView(config: engine.currentMode.config)
+        case .voxelMirage:
+            VoxelMirageView(config: engine.currentMode.config)
+        case .haloInterference:
+            HaloInterferenceView(config: engine.currentMode.config)
         }
     }
     
