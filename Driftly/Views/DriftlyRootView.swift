@@ -301,6 +301,28 @@ struct DriftlyRootView: View {
             NeonKelpView(config: engine.currentMode.config)
         case .emberDrift:
             EmberDriftView(config: engine.currentMode.config)
+        // Batch 2 cases
+        case .pulseAurora:
+            PulseAuroraView(config: engine.currentMode.config)
+        case .vitalWave:
+            VitalWaveView(config: engine.currentMode.config)
+        case .echoBloom:
+            EchoBloomView(config: engine.currentMode.config)
+        case .cosmicHeart:
+            CosmicHeartView(config: engine.currentMode.config)
+        case .signalDrift:
+            SignalDriftView(config: engine.currentMode.config)
+        // Batch 3 cases
+        case .horizonPulse:
+            HorizonPulseView(config: engine.currentMode.config)
+        case .photonRain:
+            PhotonRainView(config: engine.currentMode.config)
+        case .gravityRings:
+            GravityRingsView(config: engine.currentMode.config)
+        case .driftGrid:
+            DriftGridView(config: engine.currentMode.config)
+        case .quietSignal:
+            QuietSignalView(config: engine.currentMode.config)
         }
     }
     

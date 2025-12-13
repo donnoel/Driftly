@@ -133,6 +133,26 @@ private struct ModeRow: View {
             return "Lush neon greens drifting in blue"
         case .emberDrift:
             return "Smoldering embers in slow motion"
+        case .pulseAurora:
+            return "Gentle aurora with a living pulse"
+        case .vitalWave:
+            return "Slow biological wave motion"
+        case .echoBloom:
+            return "Blooming light with rhythmic echoes"
+        case .cosmicHeart:
+            return "A calm, cosmic heartbeat"
+        case .signalDrift:
+            return "Soft signal waves drifting through space"
+        case .horizonPulse:
+            return "Slow cinematic horizon bands"
+        case .photonRain:
+            return "Endless falling light streaks"
+        case .gravityRings:
+            return "Breathing concentric energy rings"
+        case .driftGrid:
+            return "Warped spatial light grid"
+        case .quietSignal:
+            return "Minimal waveform and noise field"
         }
     }
 }
