@@ -115,25 +115,25 @@ struct DriftlyRootView: View {
             startMotionIfNeeded()
             updateTicking()
         }
-        .onChange(of: scenePhase) { phase in
+        .onChange(of: scenePhase) { _, newPhase in
             updateIdleTimer()
-            handleMotion(for: phase)
+            handleMotion(for: newPhase)
         }
-        .onChange(of: engine.preventAutoLock) { _ in
+        .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
-        .onChange(of: engine.autoDriftEnabled) { enabled in
-            if enabled {
+        .onChange(of: engine.autoDriftEnabled) { _, newValue in
+            if newValue {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
             updateTicking()
         }
-        .onChange(of: engine.autoDriftIntervalMinutes) { _ in
+        .onChange(of: engine.autoDriftIntervalMinutes) { _, _ in
             if engine.autoDriftEnabled {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
         }
-        .onChange(of: engine.currentMode) { _ in
+        .onChange(of: engine.currentMode) { _, _ in
             if engine.autoDriftEnabled {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
@@ -255,23 +255,23 @@ struct DriftlyRootView: View {
             
             // Right: tiny buttons
             HStack(spacing: 12) {
-                CircleButton(systemName: "sparkles", accessibilityIdentifier: "modePickerButton") {
+                CircleButton(systemName: "sparkles", action: {
                     isModePickerPresented = true
-                }
+                }, accessibilityIdentifier: "modePickerButton")
 #if os(tvOS)
                 .focused($focusedButton, equals: .modePicker)
 #endif
                 
-                CircleButton(systemName: "moon.zzz", accessibilityIdentifier: "sleepTimerButton") {
+                CircleButton(systemName: "moon.zzz", action: {
                     isSleepTimerDialogPresented = true
-                }
+                }, accessibilityIdentifier: "sleepTimerButton")
 #if os(tvOS)
                 .focused($focusedButton, equals: .sleepTimer)
 #endif
                 
-                CircleButton(systemName: "gearshape", accessibilityIdentifier: "settingsButton") {
+                CircleButton(systemName: "gearshape", action: {
                     isSettingsPresented = true
-                }
+                }, accessibilityIdentifier: "settingsButton")
 #if os(tvOS)
                 .focused($focusedButton, equals: .settings)
 #endif

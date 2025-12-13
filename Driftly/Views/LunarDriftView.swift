@@ -10,7 +10,6 @@ struct LunarDriftView: View {
         TimelineView(.animation) { context in
             content(phase: currentPhase(for: context.date))
         }
-        .onChange(of: animationsPaused) { _ in }
     }
 
     @ViewBuilder
