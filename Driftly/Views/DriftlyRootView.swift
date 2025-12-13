@@ -391,7 +391,7 @@ struct DriftlyRootView: View {
                 startMotionIfNeeded()
             case .autoDrift:
                 withAnimation(.easeInOut(duration: 0.9)) {
-                    engine.goToNextMode()
+                    engine.currentMode = engine.nextAutoDriftMode(after: engine.currentMode)
                 }
                 DriftHaptics.autoDriftTick()
             }

@@ -9,6 +9,7 @@ private enum DriftlyDefaultsKey {
     static let brightness            = "driftly.brightness"
     static let autoDriftEnabled      = "driftly.autoDriftEnabled"
     static let autoDriftIntervalMins = "driftly.autoDriftIntervalMins"
+    static let autoDriftShuffle      = "driftly.autoDriftShuffle"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -49,6 +50,11 @@ final class DriftlyEngine: ObservableObject {
     /// Auto-drift: whether Driftly should automatically change modes
     @Published var autoDriftEnabled: Bool {
         didSet { persistAutoDriftEnabled() }
+    }
+
+    /// Whether auto-drift should use a shuffled order.
+    @Published var autoDriftShuffleEnabled: Bool {
+        didSet { persistAutoDriftShuffle() }
     }
 
     /// Auto-drift interval in minutes
@@ -109,6 +115,13 @@ final class DriftlyEngine: ObservableObject {
             autoDriftEnabled = false
         }
 
+        // autoDriftShuffleEnabled (default: false)
+        if defaults.object(forKey: DriftlyDefaultsKey.autoDriftShuffle) != nil {
+            autoDriftShuffleEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftShuffle)
+        } else {
+            autoDriftShuffleEnabled = false
+        }
+
         // autoDriftIntervalMinutes (default: 15)
         let storedInterval = defaults.integer(forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
         if storedInterval == 0 {
@@ -159,6 +172,19 @@ final class DriftlyEngine: ObservableObject {
         return elapsed >= intervalSeconds
     }
 
+    func nextAutoDriftMode(after current: DriftMode) -> DriftMode {
+        let modes = allModes
+        guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
+
+        if autoDriftShuffleEnabled {
+            let remaining = Array(modes[(idx+1)...]) + modes[0...idx]
+            return remaining.randomElement() ?? modes.first ?? .nebulaLake
+        } else {
+            let nextIndex = modes.index(after: idx)
+            return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        }
+    }
+
     private func persistAnimationSpeed() {
         defaults.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
     }
@@ -177,6 +203,10 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistAutoDriftEnabled() {
         defaults.set(autoDriftEnabled, forKey: DriftlyDefaultsKey.autoDriftEnabled)
+    }
+
+    private func persistAutoDriftShuffle() {
+        defaults.set(autoDriftShuffleEnabled, forKey: DriftlyDefaultsKey.autoDriftShuffle)
     }
 
     private func persistAutoDriftInterval() {

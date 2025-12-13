@@ -47,9 +47,7 @@ struct DriftlySettingsView: View {
                 Section("Auto Drift") {
                     Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
 
-                    Toggle("Shuffle Order", isOn: .constant(true))
-                        .disabled(true)
-                        .foregroundStyle(.secondary)
+                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
 
                     Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                         ForEach(autoDriftOptions, id: \.self) { minutes in
