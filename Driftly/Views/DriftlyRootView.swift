@@ -77,6 +77,11 @@ struct DriftlyRootView: View {
 #endif
 #if os(iOS)
         .onTapGesture {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("UITestingNoChromeToggle") {
+                return
+            }
+            #endif
             withAnimation(.easeInOut(duration: 0.35)) {
                 engine.isChromeVisible.toggle()
             }
@@ -110,6 +115,17 @@ struct DriftlyRootView: View {
         }
 #endif
         .onAppear {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("UITestingForceChromeVisible") {
+                engine.isChromeVisible = true
+            }
+            if ProcessInfo.processInfo.arguments.contains("UITestingOpenModePicker") {
+                isModePickerPresented = true
+            }
+            if ProcessInfo.processInfo.arguments.contains("UITestingOpenSleepTimer") {
+                isSleepTimerDialogPresented = true
+            }
+            #endif
             updateIdleTimer()
             SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             startMotionIfNeeded()
@@ -163,6 +179,7 @@ struct DriftlyRootView: View {
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
             }
+            .accessibilityIdentifier("Off")
             Button("15 minutes") {
                 engine.setSleepTimer(minutes: 15)
                 withAnimation(.easeInOut(duration: 0.6)) {
@@ -173,6 +190,7 @@ struct DriftlyRootView: View {
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
             }
+            .accessibilityIdentifier("15 minutes")
             Button("30 minutes") {
                 engine.setSleepTimer(minutes: 30)
                 withAnimation(.easeInOut(duration: 0.6)) {
@@ -183,6 +201,7 @@ struct DriftlyRootView: View {
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
             }
+            .accessibilityIdentifier("30 minutes")
             Button("60 minutes") {
                 engine.setSleepTimer(minutes: 60)
                 withAnimation(.easeInOut(duration: 0.6)) {
@@ -193,6 +212,7 @@ struct DriftlyRootView: View {
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
             }
+            .accessibilityIdentifier("60 minutes")
             Button("Cancel", role: .cancel) {}
         }
         // Settings sheet (gear)

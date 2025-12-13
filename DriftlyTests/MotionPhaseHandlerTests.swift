@@ -2,6 +2,7 @@ import SwiftUI
 import Testing
 @testable import Driftly
 
+@MainActor
 struct MotionPhaseHandlerTests {
 
     final class MotionSpy: MotionControlling {

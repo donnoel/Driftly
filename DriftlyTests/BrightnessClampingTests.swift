@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Driftly
 
+@MainActor
 struct BrightnessClampingTests {
 
     @Test func clampsHighAndLowValues() async throws {
@@ -17,5 +18,8 @@ struct BrightnessClampingTests {
 
         engine.brightness = 0.01
         #expect(engine.brightness == 0.2)
+
+        engine.brightness = 0.75
+        #expect(engine.brightness == 0.75)
     }
 }

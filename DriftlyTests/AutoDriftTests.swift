@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Driftly
 
+@MainActor
 struct AutoDriftTests {
 
     @Test func respectsIntervalAndSleepState() async throws {
@@ -37,6 +38,23 @@ struct AutoDriftTests {
             let next = engine.nextAutoDriftMode(after: mode)
             #expect(next != mode)
             #expect(DriftMode.allCases.contains(next))
+        }
+    }
+
+    @Test func sequentialOrderWhenShuffleOff() async throws {
+        let suiteName = "AutoDriftOrder-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
+        engine.autoDriftShuffleEnabled = false
+
+        for (index, mode) in DriftMode.allCases.enumerated() {
+            engine.currentMode = mode
+            let expected = DriftMode.allCases[(index + 1) % DriftMode.allCases.count]
+            let next = engine.nextAutoDriftMode(after: mode)
+            #expect(next == expected)
         }
     }
 }

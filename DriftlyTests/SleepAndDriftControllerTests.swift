@@ -3,6 +3,7 @@ import SwiftUI
 import Testing
 @testable import Driftly
 
+@MainActor
 struct SleepAndDriftControllerTests {
 
     @Test func expiresAndAllowsLockWhenTimerFires() async throws {
