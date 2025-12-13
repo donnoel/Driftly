@@ -291,6 +291,16 @@ struct DriftlyRootView: View {
             StarlitMistView(config: engine.currentMode.config)
         case .lunarDrift:
             LunarDriftView(config: engine.currentMode.config)
+        case .solarBloom:
+            SolarBloomView(config: engine.currentMode.config)
+        case .plasmaReef:
+            PlasmaReefView(config: engine.currentMode.config)
+        case .velvetEclipse:
+            VelvetEclipseView(config: engine.currentMode.config)
+        case .neonKelp:
+            NeonKelpView(config: engine.currentMode.config)
+        case .emberDrift:
+            EmberDriftView(config: engine.currentMode.config)
         }
     }
     

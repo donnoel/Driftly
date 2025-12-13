@@ -123,6 +123,16 @@ private struct ModeRow: View {
             return "Soft starfield and mist"
         case .lunarDrift:
             return "Moonlight and gentle haze"
+        case .solarBloom:
+            return "Warm solar petals and soft glow"
+        case .plasmaReef:
+            return "Neon reef currents and plasma fog"
+        case .velvetEclipse:
+            return "Deep velvet shadows with electric edges"
+        case .neonKelp:
+            return "Lush neon greens drifting in blue"
+        case .emberDrift:
+            return "Smoldering embers in slow motion"
         }
     }
 }
