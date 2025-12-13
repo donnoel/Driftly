@@ -29,6 +29,9 @@ struct DriftlyRootView: View {
                 activeModeView
                     .offset(motionManager.parallaxOffset)
                     .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
+                    .id(engine.currentMode) // ensures clean crossfade per mode
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.9), value: engine.currentMode)
                     .ignoresSafeArea()
             }
 
