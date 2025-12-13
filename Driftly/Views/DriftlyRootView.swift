@@ -235,7 +235,9 @@ struct DriftlyRootView: View {
                             Text("\(minutes) min").tag(minutes)
                         }
                     }
+                    #if !os(tvOS)
                     .pickerStyle(.wheel)
+                    #endif
                     .frame(width: 200, height: 160)
                     .onChange(of: customSleepMinutes) { _, _ in
                         DriftHaptics.settingsAdjusted()

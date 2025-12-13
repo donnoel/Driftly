@@ -25,9 +25,11 @@ struct DriftModePickerView: View {
                                 dismiss()
                             }
                         )
+                        #if !os(tvOS)
                         .listRowSeparator(.hidden)
                         .listRowInsets(.init(top: 8, leading: 20, bottom: 8, trailing: 20))
                         .listRowBackground(Color.black)
+                        #endif
                     }
                     .onMove { indices, newOffset in
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -37,7 +39,9 @@ struct DriftModePickerView: View {
                 }
             }
             .listStyle(.plain)
+            #if !os(tvOS)
             .scrollContentBackground(.hidden)
+            #endif
             .background(Color.black.ignoresSafeArea())
             .navigationTitle("Select Mode")
             #if !os(tvOS)
@@ -45,10 +49,12 @@ struct DriftModePickerView: View {
             #endif
             .environment(\.editMode, $editMode)
             .toolbar {
+                #if !os(tvOS)
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
                         .accessibilityIdentifier("modePickerEditButton")
                 }
+                #endif
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
                         dismiss()
