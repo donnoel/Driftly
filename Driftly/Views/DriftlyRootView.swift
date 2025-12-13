@@ -370,7 +370,7 @@ struct DriftlyRootView: View {
     // MARK: - Sleep timer tick & auto drift
     
     private func handleSleepTimerTick(now: Date) {
-        guard SleepAndDriftController.shouldTick(engine: engine) else { return }
+        guard SleepAndDriftController.shouldTick(engine: engine, state: sleepState) else { return }
 
         let actions = SleepAndDriftController.handleTick(now: now, engine: engine, state: &sleepState)
 
@@ -396,10 +396,12 @@ struct DriftlyRootView: View {
                 DriftHaptics.autoDriftTick()
             }
         }
+
+        updateTicking()
     }
 
     private func updateTicking() {
-        let shouldTick = SleepAndDriftController.shouldTick(engine: engine)
+        let shouldTick = SleepAndDriftController.shouldTick(engine: engine, state: sleepState)
         if shouldTick {
             if tickConnection == nil {
                 tickTimer = Timer.publish(every: 1, on: .main, in: .common)

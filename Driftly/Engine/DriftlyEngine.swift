@@ -177,8 +177,9 @@ final class DriftlyEngine: ObservableObject {
         guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
 
         if autoDriftShuffleEnabled {
-            let remaining = Array(modes[(idx+1)...]) + modes[0...idx]
-            return remaining.randomElement() ?? modes.first ?? .nebulaLake
+            let remaining = Array(modes[(idx+1)...]) + Array(modes[..<idx])
+            guard !remaining.isEmpty else { return current }
+            return remaining.randomElement() ?? current
         } else {
             let nextIndex = modes.index(after: idx)
             return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake

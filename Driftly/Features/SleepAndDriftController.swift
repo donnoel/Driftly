@@ -14,8 +14,8 @@ struct SleepAndDriftController {
         case autoDrift
     }
 
-    static func shouldTick(engine: DriftlyEngine) -> Bool {
-        engine.autoDriftEnabled || engine.sleepTimerEndDate != nil
+    static func shouldTick(engine: DriftlyEngine, state: State) -> Bool {
+        engine.autoDriftEnabled || (engine.sleepTimerEndDate != nil && !state.sleepTimerHasExpired)
     }
 
     static func resetAutoDriftClock(state: inout State) {
