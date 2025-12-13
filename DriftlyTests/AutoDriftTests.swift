@@ -57,4 +57,26 @@ struct AutoDriftTests {
             #expect(next == expected)
         }
     }
+
+    @Test func favoritesOnlyRespectsSubset() async throws {
+        let suiteName = "AutoDriftFavorites-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
+        engine.favoriteModes = [.auroraVeil, .cosmicTide]
+        engine.autoDriftFavoritesOnly = true
+        engine.autoDriftShuffleEnabled = false
+
+        engine.currentMode = .auroraVeil
+        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .cosmicTide)
+
+        engine.currentMode = .cosmicTide
+        #expect(engine.nextAutoDriftMode(after: .cosmicTide) == .auroraVeil)
+
+        // If current mode not favorited, include it once then cycle favorites
+        engine.currentMode = .nebulaLake
+        #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .auroraVeil)
+    }
 }

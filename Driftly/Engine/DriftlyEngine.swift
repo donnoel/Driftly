@@ -10,6 +10,8 @@ private enum DriftlyDefaultsKey {
     static let autoDriftEnabled      = "driftly.autoDriftEnabled"
     static let autoDriftIntervalMins = "driftly.autoDriftIntervalMins"
     static let autoDriftShuffle      = "driftly.autoDriftShuffle"
+    static let favoriteModes         = "driftly.favoriteModes"
+    static let autoDriftFavoritesOnly = "driftly.autoDriftFavoritesOnly"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -60,6 +62,16 @@ final class DriftlyEngine: ObservableObject {
     /// Auto-drift interval in minutes
     @Published var autoDriftIntervalMinutes: Int {
         didSet { persistAutoDriftInterval() }
+    }
+
+    /// Favorited modes (set of raw values)
+    @Published var favoriteModes: Set<DriftMode> {
+        didSet { persistFavorites() }
+    }
+
+    /// Whether auto-drift should be limited to favorites when available
+    @Published var autoDriftFavoritesOnly: Bool {
+        didSet { persistAutoDriftFavoritesOnly() }
     }
 
     /// When set, Driftly will fade out once this time is reached (not persisted across launches)
@@ -129,6 +141,20 @@ final class DriftlyEngine: ObservableObject {
         } else {
             autoDriftIntervalMinutes = max(3, storedInterval)
         }
+
+        // favorites (default: empty)
+        if let stored = defaults.array(forKey: DriftlyDefaultsKey.favoriteModes) as? [String] {
+            favoriteModes = Set(stored.compactMap(DriftMode.init(rawValue:)))
+        } else {
+            favoriteModes = []
+        }
+
+        // favorites only (default: false)
+        if defaults.object(forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly) != nil {
+            autoDriftFavoritesOnly = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly)
+        } else {
+            autoDriftFavoritesOnly = false
+        }
     }
 
     // MARK: - Public API
@@ -173,7 +199,7 @@ final class DriftlyEngine: ObservableObject {
     }
 
     func nextAutoDriftMode(after current: DriftMode) -> DriftMode {
-        let modes = allModes
+        let modes = autoDriftCandidates(startingAt: current)
         guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
 
         if autoDriftShuffleEnabled {
@@ -184,6 +210,25 @@ final class DriftlyEngine: ObservableObject {
             let nextIndex = modes.index(after: idx)
             return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
         }
+    }
+
+    func toggleFavorite(_ mode: DriftMode) {
+        if favoriteModes.contains(mode) {
+            favoriteModes.remove(mode)
+        } else {
+            favoriteModes.insert(mode)
+        }
+    }
+
+    private func autoDriftCandidates(startingAt current: DriftMode) -> [DriftMode] {
+        if autoDriftFavoritesOnly, !favoriteModes.isEmpty {
+            let favoritesList = DriftMode.allCases.filter { favoriteModes.contains($0) }
+            if !favoriteModes.contains(current) {
+                return [current] + favoritesList
+            }
+            return favoritesList
+        }
+        return allModes
     }
 
     private func persistAnimationSpeed() {
@@ -212,6 +257,15 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistAutoDriftInterval() {
         defaults.set(autoDriftIntervalMinutes, forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
+    }
+
+    private func persistFavorites() {
+        let rawValues = favoriteModes.map(\.rawValue)
+        defaults.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+    }
+
+    private func persistAutoDriftFavoritesOnly() {
+        defaults.set(autoDriftFavoritesOnly, forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly)
     }
 
     static func clampBrightness(_ value: Double) -> Double {

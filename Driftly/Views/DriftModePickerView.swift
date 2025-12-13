@@ -17,7 +17,9 @@ struct DriftModePickerView: View {
                                 engine.currentMode = mode
                             }
                             dismiss()
-                        }
+                        } favoriteAction: {
+                            engine.toggleFavorite(mode)
+                        } isFavorite: engine.favoriteModes.contains(mode)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -44,6 +46,8 @@ private struct ModeRow: View {
     let mode: DriftMode
     let isSelected: Bool
     let onTap: () -> Void
+    let favoriteAction: () -> Void
+    let isFavorite: Bool
 
     private var config: DriftModeConfig {
         mode.config
@@ -66,6 +70,14 @@ private struct ModeRow: View {
                 }
 
                 Spacer()
+
+                Button(action: favoriteAction) {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(isFavorite ? .yellow : .white.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("favorite-\(mode.rawValue)")
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")

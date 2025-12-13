@@ -28,8 +28,6 @@ final class DriftlyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments.append(contentsOf: [
             "UITestingReset",
-            "UITestingNoChromeToggle",
-            "UITestingForceChromeVisible",
             "UITestingOpenModePicker"
         ])
         app.launch()
@@ -44,7 +42,7 @@ final class DriftlyUITests: XCTestCase {
     @MainActor
     func testSettingsSheetOpens() throws {
         let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: ["UITestingReset", "UITestingNoChromeToggle", "UITestingForceChromeVisible"])
+        app.launchArguments.append(contentsOf: ["UITestingReset"])
         app.launch()
 
         app.buttons["settingsButton"].tap()
@@ -57,8 +55,6 @@ final class DriftlyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments.append(contentsOf: [
             "UITestingReset",
-            "UITestingNoChromeToggle",
-            "UITestingForceChromeVisible",
             "UITestingOpenSleepTimer"
         ])
         app.launch()
@@ -75,8 +71,6 @@ final class DriftlyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments.append(contentsOf: [
             "UITestingReset",
-            "UITestingNoChromeToggle",
-            "UITestingForceChromeVisible",
             "UITestingOpenModePicker"
         ])
         app.launch()
@@ -92,7 +86,7 @@ final class DriftlyUITests: XCTestCase {
     @MainActor
     func testSettingsSpeedLabelChanges() throws {
         let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: ["UITestingReset", "UITestingNoChromeToggle", "UITestingForceChromeVisible"])
+        app.launchArguments.append(contentsOf: ["UITestingReset"])
         app.launch()
 
         app.buttons["settingsButton"].tap()

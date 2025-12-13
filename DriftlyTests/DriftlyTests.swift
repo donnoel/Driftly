@@ -5,9 +5,11 @@
 //  Created by Don Noel on 12/11/25.
 //
 
+import Foundation
 import Testing
 @testable import Driftly
 
+@MainActor
 struct DriftlyTests {
 
     @Test func persistenceRoundTrip() async throws {
@@ -19,7 +21,7 @@ struct DriftlyTests {
         // First run: set values
         do {
             let engine = DriftlyEngine(defaults: defaults)
-            engine.currentMode = .auroraVeil
+            engine.currentMode = DriftMode.auroraVeil
             engine.animationSpeed = 1.3
             engine.preventAutoLock = true
             engine.isChromeVisible = false
@@ -27,12 +29,14 @@ struct DriftlyTests {
             engine.autoDriftEnabled = true
             engine.autoDriftShuffleEnabled = true
             engine.autoDriftIntervalMinutes = 10
+            engine.favoriteModes = [DriftMode.auroraVeil, DriftMode.cosmicTide]
+            engine.autoDriftFavoritesOnly = true
         }
 
         // Second run: ensure values persisted
         do {
             let engine = DriftlyEngine(defaults: defaults)
-            #expect(engine.currentMode == .auroraVeil)
+            #expect(engine.currentMode == DriftMode.auroraVeil)
             #expect(engine.animationSpeed == 1.3)
             #expect(engine.preventAutoLock == true)
             #expect(engine.isChromeVisible == false)
@@ -40,6 +44,8 @@ struct DriftlyTests {
             #expect(engine.autoDriftEnabled == true)
             #expect(engine.autoDriftShuffleEnabled == true)
             #expect(engine.autoDriftIntervalMinutes == 10)
+            #expect(engine.favoriteModes == [DriftMode.auroraVeil, DriftMode.cosmicTide])
+            #expect(engine.autoDriftFavoritesOnly == true)
         }
     }
 

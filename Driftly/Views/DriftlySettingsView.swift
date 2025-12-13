@@ -49,6 +49,10 @@ struct DriftlySettingsView: View {
 
                     Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
 
+                    Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
+                        .disabled(engine.favoriteModes.isEmpty)
+                        .foregroundStyle(engine.favoriteModes.isEmpty ? .secondary : .primary)
+
                     Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                         ForEach(autoDriftOptions, id: \.self) { minutes in
                             Text("\(minutes) minutes")

@@ -13,6 +13,8 @@ struct DriftlyRootView: View {
     @State private var isModePickerPresented = false
     @State private var isSettingsPresented = false
     @State private var isSleepTimerDialogPresented = false
+    @State private var isCustomSleepTimerPresented = false
+    @State private var customSleepMinutes: Int = 20
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
 
@@ -115,25 +117,18 @@ struct DriftlyRootView: View {
         }
 #endif
         .onAppear {
-            #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("UITestingForceChromeVisible") {
-                engine.isChromeVisible = true
+            DispatchQueue.main.async {
+                applyUITestOverridesIfNeeded()
+                updateIdleTimer()
+                SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
+                startMotionIfNeeded()
+                updateTicking()
             }
-            if ProcessInfo.processInfo.arguments.contains("UITestingOpenModePicker") {
-                isModePickerPresented = true
-            }
-            if ProcessInfo.processInfo.arguments.contains("UITestingOpenSleepTimer") {
-                isSleepTimerDialogPresented = true
-            }
-            #endif
-            updateIdleTimer()
-            SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
-            startMotionIfNeeded()
-            updateTicking()
         }
         .onChange(of: scenePhase) { _, newPhase in
             updateIdleTimer()
             handleMotion(for: newPhase)
+            updateTicking()
         }
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
@@ -213,12 +208,55 @@ struct DriftlyRootView: View {
                 updateTicking()
             }
             .accessibilityIdentifier("60 minutes")
+            Button("Custom…") {
+                customSleepMinutes = 20
+                isCustomSleepTimerPresented = true
+            }
             Button("Cancel", role: .cancel) {}
         }
         // Settings sheet (gear)
         .sheet(isPresented: $isSettingsPresented) {
             DriftlySettingsView()
                 .environmentObject(engine)
+        }
+        // Custom sleep timer picker
+        .sheet(isPresented: $isCustomSleepTimerPresented) {
+            NavigationStack {
+                VStack(spacing: 24) {
+                    Text("Custom Sleep Timer")
+                        .font(.title3.bold())
+
+                    Stepper(value: $customSleepMinutes, in: 5...240, step: 5) {
+                        Text("\(customSleepMinutes) minutes")
+                            .font(.headline)
+                    }
+                    .padding()
+
+                    Spacer()
+                }
+                .padding()
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Set") {
+                            engine.setSleepTimer(minutes: customSleepMinutes)
+                            withAnimation(.easeInOut(duration: 0.6)) {
+                                sleepState.sleepTimerHasExpired = false
+                            }
+                            sleepState.sleepTimerAllowsLock = false
+                            startMotionIfNeeded()
+                            DriftHaptics.sleepTimerSet()
+                            updateTicking()
+                            isCustomSleepTimerPresented = false
+                        }
+                    }
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            isCustomSleepTimerPresented = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
         .onDisappear {
             tickConnection?.cancel()
@@ -422,6 +460,8 @@ struct DriftlyRootView: View {
 
     private func updateTicking() {
         let shouldTick = SleepAndDriftController.shouldTick(engine: engine, state: sleepState)
+            && scenePhase == .active
+            && !sleepState.sleepTimerHasExpired
         if shouldTick {
             if tickConnection == nil {
                 tickTimer = Timer.publish(every: 1, on: .main, in: .common)
@@ -471,4 +511,27 @@ struct DriftlyRootView: View {
         }
     }
 #endif
+
+    private func applyUITestOverridesIfNeeded() {
+#if DEBUG
+        guard ProcessInfo.processInfo.arguments.contains(where: { arg in
+            arg == "UITestingForceChromeVisible" ||
+            arg == "UITestingOpenModePicker" ||
+            arg == "UITestingOpenSleepTimer"
+        }) else { return }
+
+        // Defer state changes to the next run loop to avoid "modifying state during view update" warnings.
+        DispatchQueue.main.async {
+            if ProcessInfo.processInfo.arguments.contains("UITestingForceChromeVisible") {
+                engine.isChromeVisible = true
+            }
+            if ProcessInfo.processInfo.arguments.contains("UITestingOpenModePicker") {
+                isModePickerPresented = true
+            }
+            if ProcessInfo.processInfo.arguments.contains("UITestingOpenSleepTimer") {
+                isSleepTimerDialogPresented = true
+            }
+        }
+#endif
+    }
 }
