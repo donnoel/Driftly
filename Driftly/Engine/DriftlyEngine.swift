@@ -222,7 +222,10 @@ final class DriftlyEngine: ObservableObject {
 
     private func autoDriftCandidates(startingAt current: DriftMode) -> [DriftMode] {
         if autoDriftFavoritesOnly, !favoriteModes.isEmpty {
-            let favoritesList = DriftMode.allCases.filter { favoriteModes.contains($0) }
+            // Keep favorites in a stable, user-friendly order (alphabetical by display name)
+            let favoritesList = favoriteModes.sorted {
+                $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+            }
             if !favoriteModes.contains(current) {
                 return [current] + favoritesList
             }
