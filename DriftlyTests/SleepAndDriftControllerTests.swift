@@ -26,6 +26,7 @@ struct SleepAndDriftControllerTests {
         #expect(actions.contains(.expire))
         #expect(state.sleepTimerHasExpired == true)
         #expect(state.sleepTimerAllowsLock == true)
+        #expect(engine.sleepTimerEndDate == nil)
     }
 
     @Test func clearsExpirationWhenTimerRemoved() async throws {
@@ -75,5 +76,31 @@ struct SleepAndDriftControllerTests {
         )
         #expect(actions.contains(.autoDrift))
         #expect(state.lastAutoDriftChange == now)
+    }
+
+    @Test func tickStopsAfterSleepExpiration() async throws {
+        let suiteName = "TickStop-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
+        engine.setSleepTimer(minutes: 1)
+
+        var state = SleepAndDriftController.State(
+            sleepTimerHasExpired: false,
+            sleepTimerAllowsLock: false,
+            lastAutoDriftChange: .distantPast
+        )
+
+        // First tick: expire
+        _ = SleepAndDriftController.handleTick(
+            now: Date().addingTimeInterval(60),
+            engine: engine,
+            state: &state
+        )
+
+        #expect(state.sleepTimerHasExpired == true)
+        #expect(SleepAndDriftController.shouldTick(engine: engine, state: state) == false)
     }
 }

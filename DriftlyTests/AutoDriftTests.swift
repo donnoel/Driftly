@@ -22,4 +22,21 @@ struct AutoDriftTests {
         #expect(engine.shouldAutoDrift(now: elapsed, lastChange: start, sleepTimerHasExpired: false) == true)
         #expect(engine.shouldAutoDrift(now: elapsed, lastChange: start, sleepTimerHasExpired: true) == false)
     }
+
+    @Test func shuffleNeverReturnsCurrentMode() async throws {
+        let suiteName = "AutoDriftShuffle-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
+        engine.autoDriftShuffleEnabled = true
+
+        for mode in DriftMode.allCases {
+            engine.currentMode = mode
+            let next = engine.nextAutoDriftMode(after: mode)
+            #expect(next != mode)
+            #expect(DriftMode.allCases.contains(next))
+        }
+    }
 }

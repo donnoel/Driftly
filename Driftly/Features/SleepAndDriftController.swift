@@ -30,6 +30,7 @@ struct SleepAndDriftController {
             if now >= end && !state.sleepTimerHasExpired {
                 state.sleepTimerHasExpired = true
                 state.sleepTimerAllowsLock = true
+                engine.setSleepTimer(minutes: nil) // clear once reached to avoid pointless ticking/persistence
                 actions.append(.expire)
             }
         } else if state.sleepTimerHasExpired {
