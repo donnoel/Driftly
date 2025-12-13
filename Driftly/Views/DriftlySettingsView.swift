@@ -47,6 +47,10 @@ struct DriftlySettingsView: View {
                 Section("Auto Drift") {
                     Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
 
+                    Toggle("Shuffle Order", isOn: .constant(true))
+                        .disabled(true)
+                        .foregroundStyle(.secondary)
+
                     Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                         ForEach(autoDriftOptions, id: \.self) { minutes in
                             Text("\(minutes) minutes")
@@ -58,7 +62,7 @@ struct DriftlySettingsView: View {
                 }
 
                 Section("Screen") {
-                    Toggle("Stay Awake (Prevent Auto-Lock)", isOn: $engine.preventAutoLock)
+                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
                 }
 
                 Section("About") {

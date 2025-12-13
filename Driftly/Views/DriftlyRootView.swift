@@ -84,11 +84,12 @@ struct DriftlyRootView: View {
         }
 #elseif os(tvOS)
         .onPlayPauseCommand {
-            withAnimation(.easeInOut(duration: 0.35)) {
-                engine.isChromeVisible.toggle()
-            }
-            if engine.isChromeVisible {
-                focusedButton = .modePicker
+            toggleChromeTvOS(forceToggle: true)
+        }
+        .onTapGesture {
+            // Only toggle when nothing is focused (chrome hidden)
+            if focusedButton == nil {
+                toggleChromeTvOS(forceToggle: true)
             }
         }
         .onMoveCommand { direction in
@@ -417,14 +418,35 @@ struct DriftlyRootView: View {
     }
 
     private func adjustBrightness(by delta: Double) {
-        let proposed = engine.brightness + Double(delta)
-        let clamped = max(0.2, min(1.0, proposed))
+        let performChange = {
+            let proposed = engine.brightness + Double(delta)
+            let clamped = max(0.2, min(1.0, proposed))
 
-        if (proposed < 0.2 && engine.brightness > 0.2) ||
-            (proposed > 1.0 && engine.brightness < 1.0) {
-            DriftHaptics.brightnessLimitHit()
+    #if os(iOS)
+            if (proposed < 0.2 && engine.brightness > 0.2) ||
+                (proposed > 1.0 && engine.brightness < 1.0) {
+                DriftHaptics.brightnessLimitHit()
+            }
+    #endif
+
+            engine.brightness = clamped
         }
 
-        engine.brightness = clamped
+#if os(tvOS)
+        DispatchQueue.main.async(execute: performChange)
+#else
+        performChange()
+#endif
     }
+
+#if os(tvOS)
+    private func toggleChromeTvOS(forceToggle: Bool) {
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                engine.isChromeVisible.toggle()
+            }
+            focusedButton = engine.isChromeVisible ? .modePicker : nil
+        }
+    }
+#endif
 }
