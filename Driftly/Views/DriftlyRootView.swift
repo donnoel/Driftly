@@ -570,10 +570,11 @@ struct DriftlyRootView: View {
 #if os(tvOS)
     private func toggleChromeTvOS(forceToggle: Bool) {
         DispatchQueue.main.async {
+            let willShow = !engine.isChromeVisible
             withAnimation(.easeInOut(duration: 0.35)) {
-                engine.isChromeVisible.toggle()
+                engine.isChromeVisible = willShow
             }
-            focusedButton = engine.isChromeVisible ? .modePicker : nil
+            focusedButton = willShow ? .modePicker : nil
         }
     }
 #endif
