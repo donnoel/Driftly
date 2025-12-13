@@ -3,12 +3,13 @@ import SwiftUI
 struct DriftModePickerView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(engine.allModes) { mode in
+            List {
+                Section {
+                    ForEach(engine.modePickerModes) { mode in
                         let isFavorite = engine.favoriteModes.contains(mode)
                         ModeRow(
                             mode: mode,
@@ -24,17 +25,30 @@ struct DriftModePickerView: View {
                                 dismiss()
                             }
                         )
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(.init(top: 8, leading: 20, bottom: 8, trailing: 20))
+                        .listRowBackground(Color.black)
+                    }
+                    .onMove { indices, newOffset in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            engine.reorderModes(fromOffsets: indices, toOffset: newOffset)
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 24)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(Color.black.ignoresSafeArea())
             .navigationTitle("Select Mode")
             #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .environment(\.editMode, $editMode)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    EditButton()
+                        .accessibilityIdentifier("modePickerEditButton")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
                         dismiss()

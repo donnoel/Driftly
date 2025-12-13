@@ -12,6 +12,7 @@ private enum DriftlyDefaultsKey {
     static let autoDriftShuffle      = "driftly.autoDriftShuffle"
     static let favoriteModes         = "driftly.favoriteModes"
     static let autoDriftFavoritesOnly = "driftly.autoDriftFavoritesOnly"
+    static let modeDisplayOrder      = "driftly.modeDisplayOrder"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -79,6 +80,15 @@ final class DriftlyEngine: ObservableObject {
 
     var allModes: [DriftMode] {
         DriftMode.allCases
+    }
+
+    /// User-selected ordering for the mode picker UI (does not affect core mode list)
+    @Published var modeDisplayOrder: [DriftMode] {
+        didSet { persistModeDisplayOrder() }
+    }
+
+    var modePickerModes: [DriftMode] {
+        modeDisplayOrder
     }
 
     // MARK: - Init
@@ -155,6 +165,16 @@ final class DriftlyEngine: ObservableObject {
         } else {
             autoDriftFavoritesOnly = false
         }
+
+        // mode display order (default: all modes in their defined order)
+        if let stored = defaults.array(forKey: DriftlyDefaultsKey.modeDisplayOrder) as? [String] {
+            let storedModes = stored.compactMap(DriftMode.init(rawValue:))
+            // Keep any new modes that shipped after the stored list
+            let missing = DriftMode.allCases.filter { !storedModes.contains($0) }
+            modeDisplayOrder = storedModes + missing
+        } else {
+            modeDisplayOrder = DriftMode.allCases
+        }
     }
 
     // MARK: - Public API
@@ -220,6 +240,10 @@ final class DriftlyEngine: ObservableObject {
         }
     }
 
+    func reorderModes(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        modeDisplayOrder.move(fromOffsets: offsets, toOffset: destination)
+    }
+
     private func autoDriftCandidates(startingAt current: DriftMode) -> [DriftMode] {
         if autoDriftFavoritesOnly, !favoriteModes.isEmpty {
             // Keep favorites in a stable, user-friendly order (alphabetical by display name)
@@ -269,6 +293,11 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistAutoDriftFavoritesOnly() {
         defaults.set(autoDriftFavoritesOnly, forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly)
+    }
+
+    private func persistModeDisplayOrder() {
+        let rawValues = modeDisplayOrder.map(\.rawValue)
+        defaults.set(rawValues, forKey: DriftlyDefaultsKey.modeDisplayOrder)
     }
 
     static func clampBrightness(_ value: Double) -> Double {
