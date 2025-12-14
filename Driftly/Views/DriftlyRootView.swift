@@ -94,6 +94,22 @@ struct DriftlyRootView: View {
                     .padding(.horizontal, 16)
             }
         }
+        .overlay {
+            if sleepState.sleepTimerHasExpired {
+                VStack(spacing: 10) {
+                    Text("Sleep timer ended")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("Tap to wake Driftly")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .transition(.opacity)
+            }
+        }
         // Global animation speed for all lamp views
         .environment(\.driftAnimationSpeed, engine.animationSpeed)
         .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
@@ -104,6 +120,10 @@ struct DriftlyRootView: View {
 #endif
 #if os(iOS)
         .onTapGesture {
+            if sleepState.sleepTimerHasExpired {
+                wakeFromSleepTimer()
+                return
+            }
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("UITestingNoChromeToggle") {
                 return
@@ -119,6 +139,10 @@ struct DriftlyRootView: View {
             toggleChromeTvOS(forceToggle: true)
         }
         .onTapGesture {
+            if sleepState.sleepTimerHasExpired {
+                wakeFromSleepTimer()
+                return
+            }
             // Only toggle when nothing is focused (chrome hidden)
             if focusedButton == nil {
                 toggleChromeTvOS(forceToggle: true)
@@ -634,5 +658,16 @@ struct DriftlyRootView: View {
             }
         }
 #endif
+    }
+
+    private func wakeFromSleepTimer() {
+        withAnimation(.easeInOut(duration: 0.8)) {
+            sleepState.sleepTimerHasExpired = false
+        }
+        sleepState.sleepTimerAllowsLock = false
+        SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
+        updateIdleTimer()
+        startMotionIfNeeded()
+        updateTicking()
     }
 }
