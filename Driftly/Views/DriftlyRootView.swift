@@ -24,11 +24,20 @@ struct DriftlyRootView: View {
     }
 #endif
 
-    init() {
+    init(testOverrides: (modePicker: Bool, sleepDialog: Bool)? = nil) {
         let args = ProcessInfo.processInfo.arguments
-        _isModePickerPresented = State(initialValue: args.contains("UITestingOpenModePicker"))
-        _isSleepTimerDialogPresented = State(initialValue: args.contains("UITestingOpenSleepTimer"))
+        let defaultModePicker = args.contains("UITestingOpenModePicker")
+        let defaultSleepDialog = args.contains("UITestingOpenSleepTimer")
+
+        _isModePickerPresented = State(initialValue: testOverrides?.modePicker ?? defaultModePicker)
+        _isSleepTimerDialogPresented = State(initialValue: testOverrides?.sleepDialog ?? defaultSleepDialog)
     }
+
+#if DEBUG
+    // Test-only helpers
+    var test_isModePickerPresented: Bool { isModePickerPresented }
+    var test_isSleepTimerDialogPresented: Bool { isSleepTimerDialogPresented }
+#endif
     
     var body: some View {
         ZStack {

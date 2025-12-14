@@ -41,14 +41,11 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
     func updateSampling(brightness: Double, isChromeVisible: Bool) {
         guard motionManager.isDeviceMotionAvailable else { return }
 
-        // Slow down sampling when visuals are dim/hidden or system is in Low Power Mode.
-        var interval: TimeInterval = 1.0 / 30.0
-        if brightness < 0.35 || !isChromeVisible {
-            interval = max(interval, 1.0 / 18.0)
-        }
-        if ProcessInfo.processInfo.isLowPowerModeEnabled {
-            interval = max(interval, 1.0 / 15.0)
-        }
+        let interval = Self.samplingInterval(
+            brightness: brightness,
+            isChromeVisible: isChromeVisible,
+            isLowPowerModeEnabled: ProcessInfo.processInfo.isLowPowerModeEnabled
+        )
 
         if interval != lastInterval {
             lastInterval = interval
@@ -108,6 +105,22 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         let y = CGFloat(-yTilt / maxAngle) * maxOffset // invert so tilt "into" screen moves content up
 
         return CGSize(width: x, height: y)
+    }
+
+    // Extracted for testability
+    nonisolated static func samplingInterval(
+        brightness: Double,
+        isChromeVisible: Bool,
+        isLowPowerModeEnabled: Bool
+    ) -> TimeInterval {
+        var interval: TimeInterval = 1.0 / 30.0
+        if brightness < 0.35 || !isChromeVisible {
+            interval = max(interval, 1.0 / 18.0)
+        }
+        if isLowPowerModeEnabled {
+            interval = max(interval, 1.0 / 15.0)
+        }
+        return interval
     }
 }
 
