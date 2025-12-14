@@ -270,6 +270,8 @@ struct DriftlyRootView: View {
                 isCustomSleepTimerPresented = true
             }
             Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(sleepTimerStatusText)
         }
         // Settings sheet (gear)
         .sheet(isPresented: $isSettingsPresented) {
@@ -442,7 +444,7 @@ struct DriftlyRootView: View {
                 
                 CircleButton(systemName: "moon.zzz", action: {
                     isSleepTimerDialogPresented = true
-                }, accessibilityIdentifier: "sleepTimerButton")
+                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive)
 #if os(tvOS)
                 .focused($focusedButton, equals: .sleepTimer)
 #endif
@@ -472,20 +474,22 @@ struct DriftlyRootView: View {
         let systemName: String
         let action: () -> Void
         var accessibilityIdentifier: String? = nil
+        var isActive: Bool = false
         
         var body: some View {
             Button(action: action) {
+                let tint = isActive ? Color.yellow.opacity(0.95) : Color.white.opacity(0.95)
                 Image(systemName: systemName)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .foregroundStyle(tint)
                     .frame(width: 36, height: 36)
                     .background(
                         Circle()
-                            .fill(.black.opacity(0.45))
+                            .fill(isActive ? Color.white.opacity(0.14) : Color.black.opacity(0.45))
                             .blur(radius: 0.5)
                             .overlay(
                                 Circle()
-                                    .stroke(.white.opacity(0.14))
+                                    .stroke(tint.opacity(0.6))
                             )
                     )
             }
@@ -669,5 +673,16 @@ struct DriftlyRootView: View {
         updateIdleTimer()
         startMotionIfNeeded()
         updateTicking()
+    }
+
+    private var sleepTimerActive: Bool {
+        engine.sleepTimerEndDate != nil && !sleepState.sleepTimerHasExpired
+    }
+
+    private var sleepTimerStatusText: String {
+        guard let end = engine.sleepTimerEndDate else { return "Timer off" }
+        let remaining = Int(max(0, end.timeIntervalSince(Date()) / 60))
+        if remaining <= 0 { return "Timer ended" }
+        return "Time remaining: \(remaining) min"
     }
 }
