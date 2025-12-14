@@ -21,7 +21,6 @@ struct DriftlyRootView: View {
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
-    @StateObject private var remoteCommandManager = TVRemoteCommandManager()
 
     private enum FocusTarget: Hashable {
         case modePicker, sleepTimer, settings
@@ -205,13 +204,6 @@ struct DriftlyRootView: View {
                     focusedButton = .modePicker
                     fallbackFocus = false
                 }
-                UIApplication.shared.beginReceivingRemoteControlEvents()
-                remoteCommandManager.start { [weak manager = remoteCommandManager] in
-                    DispatchQueue.main.async { [weak manager] in
-                        guard manager != nil else { return }
-                        handlePlayPauseCommand()
-                    }
-                }
 #endif
             }
         }
@@ -386,9 +378,7 @@ struct DriftlyRootView: View {
             tickConnection?.cancel()
             tickConnection = nil
 #if os(tvOS)
-            UIApplication.shared.endReceivingRemoteControlEvents()
             UIApplication.shared.isIdleTimerDisabled = false
-            remoteCommandManager.stop()
 #endif
         }
     }
