@@ -193,12 +193,13 @@ struct DriftlyRootView: View {
                 updateMotionSampling()
                 startMotionIfNeeded()
                 updateTicking()
-                #if os(tvOS)
+#if os(tvOS)
                 if engine.isChromeVisible {
                     focusedButton = .modePicker
                     fallbackFocus = false
                 }
-                #endif
+                UIApplication.shared.beginReceivingRemoteControlEvents()
+#endif
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -371,6 +372,10 @@ struct DriftlyRootView: View {
         .onDisappear {
             tickConnection?.cancel()
             tickConnection = nil
+            #if os(tvOS)
+            UIApplication.shared.endReceivingRemoteControlEvents()
+            UIApplication.shared.isIdleTimerDisabled = false
+            #endif
         }
     }
     
@@ -578,6 +583,10 @@ struct DriftlyRootView: View {
             sleepTimerAllowsLock: sleepState.sleepTimerAllowsLock,
             scenePhase: scenePhase
         )
+        UIApplication.shared.isIdleTimerDisabled = prevent
+#elseif os(tvOS)
+        // Keep Driftly in the foreground on tvOS by preventing the screen saver while active/awake.
+        let prevent = !sleepState.sleepTimerAllowsLock && !sleepState.sleepTimerHasExpired && scenePhase == .active
         UIApplication.shared.isIdleTimerDisabled = prevent
 #endif
     }
