@@ -10,7 +10,7 @@ struct RibbonOrbitView: View {
 
             GeometryReader { proxy in
                 let size = proxy.size
-                let c = CGPoint(x: size.width * 0.5, y: size.height * 0.52)
+                let c = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
 
                 Canvas { context, _ in
                     context.fill(
@@ -24,8 +24,11 @@ struct RibbonOrbitView: View {
 
                     // Ribbon as thick stroked path with gradient-like layering
                     var path = Path()
-                    let a = min(size.width, size.height) * 0.34
-                    let b = min(size.width, size.height) * 0.22
+                    // Bigger orbit + gentle breathing pulse
+                    let base = min(size.width, size.height)
+                    let pulse = 0.92 + 0.12 * (0.5 + 0.5 * sin(t * 0.55))
+                    let a = base * 0.46 * pulse
+                    let b = base * 0.33 * pulse
 
                     for i in 0..<240 {
                         let u = Double(i) / 239.0 * Double.pi * 2
@@ -35,9 +38,10 @@ struct RibbonOrbitView: View {
                         else { path.addLine(to: CGPoint(x: x, y: y)) }
                     }
 
-                    context.stroke(path, with: .color(config.palette.tertiary.opacity(0.16)), lineWidth: 26)
-                    context.stroke(path, with: .color(config.palette.primary.opacity(0.18)), lineWidth: 14)
-                    context.stroke(path, with: .color(Color.white.opacity(0.08)), lineWidth: 2.2)
+                    let wPulse = 0.85 + 0.35 * (0.5 + 0.5 * cos(t * 0.62))
+                    context.stroke(path, with: .color(config.palette.tertiary.opacity(0.16)), lineWidth: 30 * wPulse)
+                    context.stroke(path, with: .color(config.palette.primary.opacity(0.18)), lineWidth: 16 * wPulse)
+                    context.stroke(path, with: .color(Color.white.opacity(0.08)), lineWidth: 2.4 * wPulse)
                 }
                 .blur(radius: 1.4)
             }
