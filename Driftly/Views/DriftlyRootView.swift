@@ -193,6 +193,12 @@ struct DriftlyRootView: View {
                 updateMotionSampling()
                 startMotionIfNeeded()
                 updateTicking()
+                #if os(tvOS)
+                if engine.isChromeVisible {
+                    focusedButton = .modePicker
+                    fallbackFocus = false
+                }
+                #endif
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -204,6 +210,19 @@ struct DriftlyRootView: View {
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
+        #if os(tvOS)
+        .onChange(of: engine.isChromeVisible) { _, isVisible in
+            DispatchQueue.main.async {
+                if isVisible {
+                    focusedButton = .modePicker
+                    fallbackFocus = false
+                } else {
+                    focusedButton = nil
+                    fallbackFocus = true
+                }
+            }
+        }
+        #endif
         .onChange(of: engine.autoDriftEnabled) { _, newValue in
             if newValue {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
@@ -454,24 +473,24 @@ struct DriftlyRootView: View {
             Spacer()
             
             // Right: tiny buttons
-            HStack(spacing: 12) {
+            HStack(spacing: isTvOSDevice ? 24 : 12) {
                 CircleButton(systemName: "sparkles", action: {
                     isModePickerPresented = true
-                }, accessibilityIdentifier: "modePickerButton")
+                }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice)
 #if os(tvOS)
                 .focused($focusedButton, equals: .modePicker)
 #endif
                 
                 CircleButton(systemName: "moon.zzz", action: {
                     isSleepTimerDialogPresented = true
-                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive)
+                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice)
 #if os(tvOS)
                 .focused($focusedButton, equals: .sleepTimer)
 #endif
                 
                 CircleButton(systemName: "gearshape", action: {
                     isSettingsPresented = true
-                }, accessibilityIdentifier: "settingsButton")
+                }, accessibilityIdentifier: "settingsButton", isTvOS: isTvOSDevice)
 #if os(tvOS)
                 .focused($focusedButton, equals: .settings)
 #endif
@@ -495,14 +514,17 @@ struct DriftlyRootView: View {
         let action: () -> Void
         var accessibilityIdentifier: String? = nil
         var isActive: Bool = false
+        var isTvOS: Bool = false
         
         var body: some View {
             Button(action: action) {
                 let tint = isActive ? Color.yellow.opacity(0.95) : Color.white.opacity(0.95)
+                let size: CGFloat = isTvOS ? 40 : 36
+                let fontSize: CGFloat = isTvOS ? 16 : 15
                 Image(systemName: systemName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: fontSize, weight: .semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 36, height: 36)
+                    .frame(width: size, height: size)
                     .background(
                         Circle()
                             .fill(isActive ? Color.white.opacity(0.14) : Color.black.opacity(0.45))
@@ -516,6 +538,14 @@ struct DriftlyRootView: View {
             .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
             .buttonStyle(.plain)
         }
+    }
+    
+    private var isTvOSDevice: Bool {
+#if os(tvOS)
+        true
+#else
+        false
+#endif
     }
     
     // MARK: - Brightness edges
