@@ -15,6 +15,9 @@ struct DriftlyRootView: View {
     @State private var isSleepTimerDialogPresented: Bool
     @State private var isCustomSleepTimerPresented = false
     @State private var customSleepMinutes: Int = 20
+    @State private var brightnessHUDVisible = false
+    @State private var brightnessHUDValue: Double = 1.0
+    @State private var brightnessHUDHideWorkItem: DispatchWorkItem?
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
@@ -83,6 +86,23 @@ struct DriftlyRootView: View {
                 .opacity(1 - engine.brightness)
                 .allowsHitTesting(false)
         )
+        .overlay(alignment: .topTrailing) {
+            if brightnessHUDVisible {
+                HStack(spacing: 8) {
+                    Image(systemName: "sun.max.fill")
+                        .foregroundStyle(.yellow.opacity(0.95))
+                    Text(brightnessLabel)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.black.opacity(0.6), in: Capsule())
+                .padding(.top, 18)
+                .padding(.trailing, 16)
+                .transition(.opacity)
+            }
+        }
         .overlay(alignment: .top) {
             if motionManager.motionUnavailable {
                 Text("Motion unavailable")
@@ -513,7 +533,7 @@ struct DriftlyRootView: View {
                     .onChanged { value in
                         // Drag up (negative height) → increase brightness
                         // Drag down (positive height) → decrease brightness
-                        adjustBrightness(by: -value.translation.height / 300.0)
+                        adjustBrightness(by: -value.translation.height / 1800.0)
                     }
             )
 #endif
@@ -618,14 +638,15 @@ struct DriftlyRootView: View {
             let proposed = engine.brightness + Double(delta)
             let clamped = max(0.2, min(1.0, proposed))
 
-    #if os(iOS)
+#if os(iOS)
             if (proposed < 0.2 && engine.brightness > 0.2) ||
                 (proposed > 1.0 && engine.brightness < 1.0) {
                 DriftHaptics.brightnessLimitHit()
             }
-    #endif
+#endif
 
             engine.brightness = clamped
+            showBrightnessHUD(for: clamped)
         }
 
 #if os(tvOS)
@@ -684,5 +705,26 @@ struct DriftlyRootView: View {
         let remaining = Int(max(0, end.timeIntervalSince(Date()) / 60))
         if remaining <= 0 { return "Timer ended" }
         return "Time remaining: \(remaining) min"
+    }
+
+    private func showBrightnessHUD(for value: Double) {
+        brightnessHUDValue = value
+        withAnimation(.easeInOut(duration: 0.15)) {
+            brightnessHUDVisible = true
+        }
+
+        brightnessHUDHideWorkItem?.cancel()
+        let work = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                brightnessHUDVisible = false
+            }
+        }
+        brightnessHUDHideWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
+    }
+
+    private var brightnessLabel: String {
+        let percent = Int((brightnessHUDValue * 100).rounded())
+        return "\(percent)%"
     }
 }
