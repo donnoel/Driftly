@@ -3,10 +3,13 @@ import SwiftUI
 struct MeridianArcsView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
         TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed)
+            let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            let effectiveSpeed = max(0.25, speed) * (isLowPower ? 0.75 : 1.0)
+            let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed
 
             GeometryReader { proxy in
                 let size = proxy.size
@@ -22,8 +25,13 @@ struct MeridianArcsView: View {
                         )
                     )
 
-                    for i in 0..<14 {
-                        let p = Double(i) / 13.0
+                    guard !animationsPaused else { return }
+
+                    let arcCount = isLowPower ? 10 : 14
+                    let steps = isLowPower ? 120 : 180
+
+                    for i in 0..<arcCount {
+                        let p = Double(i) / Double(max(1, arcCount - 1))
                         let radiusX = min(size.width, size.height) * (0.22 + 0.38 * p)
                         let radiusY = radiusX * (0.55 + 0.10 * sin(t*0.05 + p*3))
 
@@ -31,7 +39,6 @@ struct MeridianArcsView: View {
                         let start = Double.pi * (0.15 + 0.08 * sin(t*0.03 + p*4))
                         let end = Double.pi * (1.85 + 0.08 * cos(t*0.03 + p*3))
 
-                        let steps = 180
                         for s in 0...steps {
                             let u = DriftNoise.lerp(start, end, Double(s) / Double(steps))
                             let x = center.x + CGFloat(radiusX * cos(u))

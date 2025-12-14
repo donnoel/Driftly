@@ -3,10 +3,13 @@ import SwiftUI
 struct VoxelMirageView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
         TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed)
+            let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            let effectiveSpeed = max(0.25, speed) * (isLowPower ? 0.75 : 1.0)
+            let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed
 
             GeometryReader { proxy in
                 let size = proxy.size
@@ -21,16 +24,24 @@ struct VoxelMirageView: View {
                         )
                     )
 
-                    let cols = 18
-                    let rows = 30
+                    guard !animationsPaused else { return }
+
+                    let cols = isLowPower ? 14 : 18
+                    let rows = isLowPower ? 22 : 30
                     let cellW = size.width / CGFloat(cols)
                     let cellH = size.height / CGFloat(rows)
+                    let octaves = isLowPower ? 3 : 4
 
                     for y in 0..<rows {
                         for x in 0..<cols {
                             let nx = Double(x) / Double(cols)
                             let ny = Double(y) / Double(rows)
-                            let n = DriftNoise.fbm(x: nx * 2.0 + t * 0.02, y: ny * 2.5 + t * 0.02, seed: 77, octaves: 4)
+                            let n = DriftNoise.fbm(
+                                x: nx * 2.0 + t * 0.02,
+                                y: ny * 2.5 + t * 0.02,
+                                seed: 77,
+                                octaves: octaves
+                            )
 
                             if n < 0.46 { continue }
 

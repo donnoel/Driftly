@@ -131,6 +131,7 @@ struct DriftlyRootView: View {
                 applyUITestOverridesIfNeeded()
                 updateIdleTimer()
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
+                updateMotionSampling()
                 startMotionIfNeeded()
                 updateTicking()
             }
@@ -138,6 +139,7 @@ struct DriftlyRootView: View {
         .onChange(of: scenePhase) { _, newPhase in
             updateIdleTimer()
             handleMotion(for: newPhase)
+            updateMotionSampling()
             updateTicking()
         }
         .onChange(of: engine.preventAutoLock) { _, _ in
@@ -158,6 +160,12 @@ struct DriftlyRootView: View {
             if engine.autoDriftEnabled {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
+        }
+        .onChange(of: engine.brightness) { _, _ in
+            updateMotionSampling()
+        }
+        .onChange(of: engine.isChromeVisible) { _, _ in
+            updateMotionSampling()
         }
         .onReceive(tickTimer) { now in
             handleSleepTimerTick(now: now)
@@ -494,7 +502,17 @@ struct DriftlyRootView: View {
     private func startMotionIfNeeded() {
 #if os(iOS)
         guard !sleepState.sleepTimerHasExpired, scenePhase == .active else { return }
+        updateMotionSampling()
         motionManager.startIfNeeded()
+#endif
+    }
+
+    private func updateMotionSampling() {
+#if os(iOS)
+        motionManager.updateSampling(
+            brightness: engine.brightness,
+            isChromeVisible: engine.isChromeVisible
+        )
 #endif
     }
     

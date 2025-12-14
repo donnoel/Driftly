@@ -13,6 +13,7 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
     private var isUpdating = false
     private var filteredRoll: Double = 0
     private var filteredPitch: Double = 0
+    private var lastInterval: TimeInterval = 1.0 / 30.0
 #endif
 
     @Published var xTilt: Double = 0
@@ -26,7 +27,7 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
             return
         }
 
-        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0 // ~30fps
+        motionManager.deviceMotionUpdateInterval = lastInterval
         #endif
     }
 
@@ -37,6 +38,24 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
     }
 
 #if os(iOS)
+    func updateSampling(brightness: Double, isChromeVisible: Bool) {
+        guard motionManager.isDeviceMotionAvailable else { return }
+
+        // Slow down sampling when visuals are dim/hidden or system is in Low Power Mode.
+        var interval: TimeInterval = 1.0 / 30.0
+        if brightness < 0.35 || !isChromeVisible {
+            interval = max(interval, 1.0 / 18.0)
+        }
+        if ProcessInfo.processInfo.isLowPowerModeEnabled {
+            interval = max(interval, 1.0 / 15.0)
+        }
+
+        if interval != lastInterval {
+            lastInterval = interval
+            motionManager.deviceMotionUpdateInterval = interval
+        }
+    }
+
     func startIfNeeded() {
         guard !isUpdating else { return }
         guard motionManager.isDeviceMotionAvailable else {
