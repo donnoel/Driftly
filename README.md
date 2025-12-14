@@ -190,7 +190,7 @@ Also included:
 
 ## ❤️ Credits
 
-Built with care by **Don Noel** (and an unreasonable amount of curiosity).
+Built with care by **Don Noel** and **Bella**, my AI collaborator ✨
 
 ---
 
