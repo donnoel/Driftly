@@ -87,6 +87,9 @@ final class DriftlyEngine: ObservableObject {
         didSet { persistModeDisplayOrder() }
     }
 
+    // Non-persisted shuffle queue to ensure we traverse each candidate once before repeating.
+    private var shuffleQueue: [DriftMode] = []
+
     var modePickerModes: [DriftMode] {
         modeDisplayOrder
     }
@@ -219,17 +222,16 @@ final class DriftlyEngine: ObservableObject {
     }
 
     func nextAutoDriftMode(after current: DriftMode) -> DriftMode {
+        if autoDriftShuffleEnabled {
+            let pool = shuffleCandidatePool(current: current)
+            return nextShuffledMode(from: pool, current: current)
+        }
+
         let modes = autoDriftCandidates(startingAt: current)
         guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
 
-        if autoDriftShuffleEnabled {
-            let remaining = Array(modes[(idx+1)...]) + Array(modes[..<idx])
-            guard !remaining.isEmpty else { return current }
-            return remaining.randomElement() ?? current
-        } else {
-            let nextIndex = modes.index(after: idx)
-            return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
-        }
+        let nextIndex = modes.index(after: idx)
+        return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
     }
 
     func toggleFavorite(_ mode: DriftMode) {
@@ -256,6 +258,29 @@ final class DriftlyEngine: ObservableObject {
             return favoritesList
         }
         return allModes
+    }
+
+    private func shuffleCandidatePool(current: DriftMode) -> [DriftMode] {
+        if autoDriftFavoritesOnly, !favoriteModes.isEmpty {
+            return favoriteModes.sorted {
+                $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+            }
+        }
+        return allModes
+    }
+
+    private func nextShuffledMode(from candidates: [DriftMode], current: DriftMode) -> DriftMode {
+        guard !candidates.isEmpty else { return current }
+
+        let candidateSet = Set(candidates)
+        // Prune any stale entries and never keep the current mode in the queue.
+        shuffleQueue = shuffleQueue.filter { candidateSet.contains($0) && $0 != current }
+
+        if shuffleQueue.isEmpty {
+            shuffleQueue = candidates.filter { $0 != current }.shuffled()
+        }
+
+        return shuffleQueue.isEmpty ? current : shuffleQueue.removeFirst()
     }
 
     private func persistAnimationSpeed() {
