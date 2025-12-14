@@ -9,7 +9,7 @@ struct PhotonRainView: View {
         TimelineView(.animation) { timeline in
             let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
             let effectiveSpeed = speed * (isLowPower ? 0.75 : 1.0)
-            let dropCount = isLowPower ? 56 : 80
+            let dropCount = isLowPower ? 90 : 140
 
             if animationsPaused {
                 Color.clear
@@ -19,21 +19,88 @@ struct PhotonRainView: View {
                 let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed
 
                 Canvas { context, size in
-                    for i in 0..<dropCount {
-                        let x = CGFloat(i) / CGFloat(dropCount) * size.width
-                        let y = (CGFloat(t * 30 + Double(i * 40))
-                                 .truncatingRemainder(dividingBy: size.height))
-
-                        let rect = CGRect(x: x, y: y, width: 1.2, height: 28)
-                        context.fill(
-                            Path(rect),
-                            with: .color(config.palette.primary.opacity(0.35))
-                        )
-                    }
+                    var ctx = context
+                    render(in: &ctx, size: size, t: t, dropCount: dropCount)
                 }
                 .background(config.palette.backgroundBottom)
                 .ignoresSafeArea()
             }
         }
+    }
+
+    private func render(in context: inout GraphicsContext, size: CGSize, t: Double, dropCount: Int) {
+        let w = max(size.width, 1)
+        let h = max(size.height, 1)
+
+        for i in 0..<dropCount {
+            let denom = Double(max(dropCount - 1, 1))
+            let p = Double(i) / denom
+
+            // Stable per-drop pseudo-randomness from index
+            let a = hash01(i, 17)
+            let b = hash01(i, 41)
+            let c = hash01(i, 83)
+
+            // Base x lane + drift so streaks cross and "clash"
+            let baseX = CGFloat(p) * w
+            let laneDriftD = (a - 0.5) * 110.0
+            let laneDrift = CGFloat(laneDriftD) * CGFloat(sin(t * (0.14 + 0.04 * b) + Double(i) * 0.21))
+
+            // Fall speed varies per drop
+            let fall = 22.0 + 22.0 * b // 22..44
+            let yRaw = (t * fall + Double(i) * 37.0).truncatingRemainder(dividingBy: Double(h + 220.0))
+            let y0 = CGFloat(yRaw) - 120.0
+
+            // Streak geometry
+            let length = CGFloat(34.0 + 70.0 * c)
+            let lineWidth = CGFloat(0.9 + 1.9 * (0.4 + 0.6 * a))
+
+            // Wave characteristics
+            let amp = CGFloat(6.0 + 14.0 * a)
+            let freq = 0.10 + 0.22 * c
+            let phase = Double(i) * 0.37 + 6.0 * a
+
+            // Build a wavy path using a few sample points
+            var path = Path()
+            let steps = 7
+            let xBase = baseX + laneDrift
+
+            for s in 0...steps {
+                let u = Double(s) / Double(steps)
+                let yy = y0 + length * CGFloat(u)
+
+                // Two superposed waves to feel organic
+                let w1 = sin((t * 1.3) * freq + u * 9.0 + phase)
+                let w2 = cos((t * 0.9) * (freq * 1.4) + u * 14.0 + phase * 0.7)
+                let wiggle = CGFloat(0.65 * w1 + 0.35 * w2)
+
+                let xx = xBase + amp * wiggle
+
+                if s == 0 {
+                    path.move(to: CGPoint(x: xx, y: yy))
+                } else {
+                    path.addLine(to: CGPoint(x: xx, y: yy))
+                }
+            }
+
+            // Brightness: occasional stronger streaks ("clashes")
+            let clash = 0.5 + 0.5 * sin(t * (0.55 + 0.25 * a) + Double(i) * 0.19)
+            let hot = (a > 0.82) ? (0.18 + 0.22 * clash) : (0.06 + 0.10 * clash)
+
+            let o1 = 0.10 + hot
+            let o2 = 0.22 + hot
+            let o3 = 0.06 + 0.10 * hot
+
+            // Layered strokes for depth
+            context.stroke(path, with: .color(config.palette.primary.opacity(o1)), lineWidth: lineWidth * 3.2)
+            context.stroke(path, with: .color(config.palette.primary.opacity(o2)), lineWidth: lineWidth * 1.4)
+            context.stroke(path, with: .color(Color.white.opacity(o3)), lineWidth: max(0.8, lineWidth * 0.85))
+        }
+    }
+    // Deterministic hash -> 0..1 (stable per index)
+    private func hash01(_ x: Int, _ seed: Int) -> Double {
+        var n = x &* 374761393 &+ seed &* 668265263
+        n = (n ^ (n >> 13)) &* 1274126177
+        return Double(n & 0x7fffffff) / 2147483647.0
     }
 }
