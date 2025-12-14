@@ -10,9 +10,9 @@ struct DriftlyRootView: View {
     @State private var sleepState = SleepAndDriftController.State()
     @State private var tickTimer = Timer.publish(every: 1, on: .main, in: .common)
     @State private var tickConnection: Cancellable?
-    @State private var isModePickerPresented = false
+    @State private var isModePickerPresented: Bool
     @State private var isSettingsPresented = false
-    @State private var isSleepTimerDialogPresented = false
+    @State private var isSleepTimerDialogPresented: Bool
     @State private var isCustomSleepTimerPresented = false
     @State private var customSleepMinutes: Int = 20
 #if os(tvOS)
@@ -23,6 +23,12 @@ struct DriftlyRootView: View {
         case modePicker, sleepTimer, settings
     }
 #endif
+
+    init() {
+        let args = ProcessInfo.processInfo.arguments
+        _isModePickerPresented = State(initialValue: args.contains("UITestingOpenModePicker"))
+        _isSleepTimerDialogPresented = State(initialValue: args.contains("UITestingOpenSleepTimer"))
+    }
     
     var body: some View {
         ZStack {
@@ -613,16 +619,9 @@ struct DriftlyRootView: View {
             arg == "UITestingOpenSleepTimer"
         }) else { return }
 
-        // Defer state changes to the next run loop to avoid "modifying state during view update" warnings.
         DispatchQueue.main.async {
             if ProcessInfo.processInfo.arguments.contains("UITestingForceChromeVisible") {
                 engine.isChromeVisible = true
-            }
-            if ProcessInfo.processInfo.arguments.contains("UITestingOpenModePicker") {
-                isModePickerPresented = true
-            }
-            if ProcessInfo.processInfo.arguments.contains("UITestingOpenSleepTimer") {
-                isSleepTimerDialogPresented = true
             }
         }
 #endif
