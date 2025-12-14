@@ -21,6 +21,7 @@ struct DriftlyRootView: View {
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
+    @StateObject private var remoteCommandManager = TVRemoteCommandManager()
 
     private enum FocusTarget: Hashable {
         case modePicker, sleepTimer, settings
@@ -155,9 +156,7 @@ struct DriftlyRootView: View {
             DriftHaptics.chromeToggled()
         }
 #elseif os(tvOS)
-        .onPlayPauseCommand {
-            toggleChromeTvOS(forceToggle: true)
-        }
+        // Leave Play/Pause for media; use tap and long-press on the touch surface for UI.
         .onTapGesture {
             if sleepState.sleepTimerHasExpired {
                 wakeFromSleepTimer()
@@ -168,6 +167,14 @@ struct DriftlyRootView: View {
                 toggleChromeTvOS(forceToggle: true)
             }
         }
+#if os(tvOS)
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.35)
+                .onEnded { _ in
+                    handlePlayPauseCommand()
+                }
+        )
+#endif
         .onMoveCommand { direction in
             switch direction {
             case .up:
@@ -199,6 +206,12 @@ struct DriftlyRootView: View {
                     fallbackFocus = false
                 }
                 UIApplication.shared.beginReceivingRemoteControlEvents()
+                remoteCommandManager.start { [weak manager = remoteCommandManager] in
+                    DispatchQueue.main.async { [weak manager] in
+                        guard manager != nil else { return }
+                        handlePlayPauseCommand()
+                    }
+                }
 #endif
             }
         }
@@ -372,10 +385,11 @@ struct DriftlyRootView: View {
         .onDisappear {
             tickConnection?.cancel()
             tickConnection = nil
-            #if os(tvOS)
+#if os(tvOS)
             UIApplication.shared.endReceivingRemoteControlEvents()
             UIApplication.shared.isIdleTimerDisabled = false
-            #endif
+            remoteCommandManager.stop()
+#endif
         }
     }
     
@@ -704,6 +718,16 @@ struct DriftlyRootView: View {
             }
             focusedButton = willShow ? .modePicker : nil
             fallbackFocus = !willShow
+        }
+    }
+#endif
+
+#if os(tvOS)
+    private func handlePlayPauseCommand() {
+        if sleepState.sleepTimerHasExpired {
+            wakeFromSleepTimer()
+        } else {
+            toggleChromeTvOS(forceToggle: true)
         }
     }
 #endif
