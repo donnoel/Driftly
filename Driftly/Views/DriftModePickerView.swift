@@ -160,9 +160,9 @@ private struct ModeRow: View {
         case .echoBloom:
             return "Blooming light with rhythmic echoes"
         case .cosmicHeart:
-            return "A calm, cosmic heartbeat"
-        case .signalDrift:
             return "Soft signal waves drifting through space"
+        case .signalDrift:
+            return "A calm, cosmic heartbeat"
         case .horizonPulse:
             return "Slow cinematic horizon bands"
         case .photonRain:
