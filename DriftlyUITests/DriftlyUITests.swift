@@ -118,27 +118,47 @@ final class DriftlyUITests: XCTestCase {
 
     @MainActor
     func testSnapshotPhotonRainAndVoxelMirage() throws {
-        let app = launchApp(arguments: ["UITestingReset", "UITestingForceChromeVisible", "UITestingOpenModePicker"])
+        // Photon Rain
+        let photonApp = launchApp(arguments: [
+            "UITestingReset",
+            "UITestingForceChromeVisible",
+            "UITestingSetMode=photonRain"
+        ])
+        ensureChromeVisible(in: photonApp)
+        snapshotView(photonApp, name: "PhotonRain")
+        photonApp.terminate()
 
-        // Snapshot Photon Rain
-        selectMode(app, identifier: "modeRow-photonRain", expectedLabel: "Photon Rain")
-        snapshotView(app, name: "PhotonRain")
-
-        // Snapshot Voxel Mirage
-        selectMode(app, identifier: "modeRow-voxelMirage", expectedLabel: "Voxel Mirage")
-        snapshotView(app, name: "VoxelMirage")
+        // Voxel Mirage
+        let voxelApp = launchApp(arguments: [
+            "UITestingReset",
+            "UITestingForceChromeVisible",
+            "UITestingSetMode=voxelMirage"
+        ])
+        ensureChromeVisible(in: voxelApp)
+        snapshotView(voxelApp, name: "VoxelMirage")
+        voxelApp.terminate()
     }
 
     @MainActor
     func testSnapshotInkTopography() throws {
-        let app = launchApp(arguments: ["UITestingReset", "UITestingForceChromeVisible", "UITestingOpenModePicker"])
-        selectMode(app, identifier: "modeRow-inkTopography", expectedLabel: "Ink Topography")
+        let app = launchApp(arguments: [
+            "UITestingReset",
+            "UITestingForceChromeVisible",
+            "UITestingSetMode=inkTopography"
+        ])
+        ensureChromeVisible(in: app)
         snapshotView(app, name: "InkTopography")
+        app.terminate()
     }
 
     // Helpers
 
     private func ensureModePickerOpen(_ app: XCUIApplication) {
+        // If the mode is already forced via launch argument, no need to open the picker.
+        if app.launchArguments.contains(where: { $0.hasPrefix("UITestingSetMode=") }) {
+            return
+        }
+
         ensureChromeVisible(in: app)
 
         let navBar = app.navigationBars["Select Mode"]

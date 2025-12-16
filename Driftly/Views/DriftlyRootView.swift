@@ -724,15 +724,29 @@ struct DriftlyRootView: View {
 
     private func applyUITestOverridesIfNeeded() {
 #if DEBUG
-        guard ProcessInfo.processInfo.arguments.contains(where: { arg in
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains(where: { arg in
             arg == "UITestingForceChromeVisible" ||
             arg == "UITestingOpenModePicker" ||
-            arg == "UITestingOpenSleepTimer"
+            arg == "UITestingOpenSleepTimer" ||
+            arg.hasPrefix("UITestingSetMode=")
         }) else { return }
 
         DispatchQueue.main.async {
-            if ProcessInfo.processInfo.arguments.contains("UITestingForceChromeVisible") {
+            if args.contains("UITestingForceChromeVisible") {
                 engine.isChromeVisible = true
+            }
+            if args.contains("UITestingOpenModePicker") {
+                isModePickerPresented = true
+            }
+            if args.contains("UITestingOpenSleepTimer") {
+                isSleepTimerDialogPresented = true
+            }
+            if let setModeArg = args.first(where: { $0.hasPrefix("UITestingSetMode=") }) {
+                let raw = String(setModeArg.split(separator: "=", maxSplits: 1).last ?? "")
+                if let mode = DriftMode(rawValue: raw) {
+                    engine.currentMode = mode
+                }
             }
         }
 #endif
