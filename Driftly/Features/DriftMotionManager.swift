@@ -9,7 +9,13 @@ import Combine
 final class DriftMotionManager: ObservableObject, MotionControlling {
 #if os(iOS)
     private let motionManager = CMMotionManager()
-    private let queue = OperationQueue()
+    private let queue: OperationQueue = {
+        let q = OperationQueue()
+        q.name = "com.driftly.motion"
+        q.maxConcurrentOperationCount = 1 // serial to reduce context switching
+        q.qualityOfService = .userInteractive
+        return q
+    }()
     private var isUpdating = false
     private var filteredRoll: Double = 0
     private var filteredPitch: Double = 0
