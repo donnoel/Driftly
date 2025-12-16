@@ -7,8 +7,12 @@ struct AuroraVeilView: View {
     @State private var phaseController = PhaseController()
 
     var body: some View {
-        TimelineView(.animation) { context in
-            content(phase: currentPhase(for: context.date))
+        if animationsPaused {
+            content(phase: currentPhase(for: Date()))
+        } else {
+            TimelineView(.animation) { context in
+                content(phase: currentPhase(for: context.date))
+            }
         }
     }
 
