@@ -6,48 +6,56 @@ struct DriftLiquidLampView: View {
     let blur: CGFloat
     let energy: Double
     let speed: Double
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed) * 0.18
-
-            GeometryReader { proxy in
-                let size = proxy.size
-
-                ZStack {
-                    LinearGradient(
-                        colors: [palette.backgroundTop, palette.backgroundBottom],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea()
-
-                    // Liquid blobs
-                    ForEach(0..<blobCount, id: \.self) { i in
-                        blob(i: i, t: t, in: size)
-                            .blendMode(.screen)
-                            .blur(radius: blur)
-                            .opacity(0.95)
-                    }
-
-                    // Soft “milk” wash to unify
-                    Rectangle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.white.opacity(0.08),
-                                    Color.white.opacity(0.00)
-                                ],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 520
-                            )
-                        )
-                        .blendMode(.overlay)
-                        .ignoresSafeArea()
-                }
-                .compositingGroup()
+        if animationsPaused {
+            scene(t: 0)
+        } else {
+            TimelineView(.animation) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed) * 0.18
+                scene(t: t)
             }
+        }
+    }
+
+    private func scene(t: Double) -> some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+
+            ZStack {
+                LinearGradient(
+                    colors: [palette.backgroundTop, palette.backgroundBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                // Liquid blobs
+                ForEach(0..<blobCount, id: \.self) { i in
+                    blob(i: i, t: t, in: size)
+                        .blendMode(.screen)
+                        .blur(radius: blur)
+                        .opacity(0.95)
+                }
+
+                // Soft “milk” wash to unify
+                Rectangle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.08),
+                                Color.white.opacity(0.00)
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 520
+                        )
+                    )
+                    .blendMode(.overlay)
+                    .ignoresSafeArea()
+            }
+            .compositingGroup()
         }
     }
 

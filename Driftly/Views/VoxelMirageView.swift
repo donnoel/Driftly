@@ -48,11 +48,12 @@ struct VoxelMirageView: View {
                             )
                         )
 
-                        let cols = isLowPower ? 14 : 18
-                        let rows = isLowPower ? 22 : 30
-                        let cellW = size.width / CGFloat(cols)
-                        let cellH = size.height / CGFloat(rows)
-                        let octaves = isLowPower ? 3 : 4
+                    let cols = isLowPower ? 14 : 18
+                    let rows = isLowPower ? 22 : 30
+                    let cellW = size.width / CGFloat(cols)
+                    let cellH = size.height / CGFloat(rows)
+                    let maxDimension = max(size.width, size.height)
+                    let octaves = (isLowPower || maxDimension > 1200) ? 3 : 4
 
                         for y in 0..<rows {
                             for x in 0..<cols {

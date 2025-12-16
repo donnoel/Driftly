@@ -21,4 +21,21 @@ struct PhaseControllerTests {
         let resumed = controller.phase(for: start.addingTimeInterval(12), speed: 1.0, cycleDuration: cycle, paused: false)
         #expect(abs(resumed - pausedPhase) < 0.001)
     }
+
+    @Test func speedChangesRebaseStartWithoutJumps() async throws {
+        var controller = PhaseController()
+        let start = Date()
+        let cycle: TimeInterval = 10
+
+        // Run at normal speed for a bit
+        _ = controller.phase(for: start.addingTimeInterval(2), speed: 1.0, cycleDuration: cycle, paused: false)
+
+        // Pause; capture phase
+        let paused = controller.phase(for: start.addingTimeInterval(3), speed: 1.0, cycleDuration: cycle, paused: true)
+
+        // Resume at a different speed; should continue from the paused phase without a jump
+        let resumed = controller.phase(for: start.addingTimeInterval(5), speed: 0.5, cycleDuration: cycle, paused: false)
+
+        #expect(abs(resumed - paused) < 0.001)
+    }
 }

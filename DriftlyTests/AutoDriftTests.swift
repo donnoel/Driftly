@@ -79,4 +79,22 @@ struct AutoDriftTests {
         engine.currentMode = .nebulaLake
         #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .auroraVeil)
     }
+
+    @Test func enforcesMinimumAutoDriftInterval() async throws {
+        let suiteName = "AutoDriftMin-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults)
+        engine.autoDriftEnabled = true
+        engine.autoDriftIntervalMinutes = 1 // below minimum clamp
+
+        let start = Date()
+        let tooSoon = start.addingTimeInterval(2 * 60)
+        let afterMin = start.addingTimeInterval(3 * 60 + 1)
+
+        #expect(engine.shouldAutoDrift(now: tooSoon, lastChange: start, sleepTimerHasExpired: false) == false)
+        #expect(engine.shouldAutoDrift(now: afterMin, lastChange: start, sleepTimerHasExpired: false) == true)
+    }
 }
