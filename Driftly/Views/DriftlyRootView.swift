@@ -295,6 +295,7 @@ struct DriftlyRootView: View {
                 .environmentObject(engine)
         }
         // Sleep timer picker (moon)
+#if os(iOS)
         .confirmationDialog(
             "Sleep Timer",
             isPresented: $isSleepTimerDialogPresented,
@@ -353,11 +354,27 @@ struct DriftlyRootView: View {
         } message: {
             Text(sleepTimerStatusText)
         }
+#elseif os(tvOS)
+        .fullScreenCover(isPresented: $isSleepTimerDialogPresented) {
+            SleepTimerScreenTV(
+                statusText: sleepTimerStatusText,
+                isActive: sleepTimerActive,
+                onSetMinutes: { minutes in
+                    setSleepTimerTvOS(minutes: minutes)
+                    isSleepTimerDialogPresented = false
+                },
+                onCancel: {
+                    isSleepTimerDialogPresented = false
+                }
+            )
+        }
+#endif
         // Settings sheet (gear)
         .sheet(isPresented: $isSettingsPresented) {
             DriftlySettingsView()
                 .environmentObject(engine)
         }
+#if os(iOS)
         // Custom sleep timer picker
         .sheet(isPresented: $isCustomSleepTimerPresented) {
             NavigationStack {
@@ -409,6 +426,7 @@ struct DriftlyRootView: View {
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
         }
+#endif
         .onDisappear {
             tickConnection?.cancel()
             tickConnection = nil
@@ -843,3 +861,145 @@ struct DriftlyRootView: View {
         return "\(percent)%"
     }
 }
+
+// MARK: - tvOS Sleep Timer (Apple-style screens)
+#if os(tvOS)
+extension DriftlyRootView {
+    private func setSleepTimerTvOS(minutes: Int?) {
+        engine.setSleepTimer(minutes: minutes)
+        withAnimation(.easeInOut(duration: 0.6)) {
+            sleepState.sleepTimerHasExpired = false
+        }
+        sleepState.sleepTimerAllowsLock = false
+        updateIdleTimer()
+        DriftHaptics.sleepTimerSet()
+        updateTicking()
+    }
+
+    private struct SleepTimerScreenTV: View {
+        let statusText: String
+        let isActive: Bool
+        let onSetMinutes: (Int?) -> Void
+        let onCancel: () -> Void
+
+        private let commonDurations: [Int] = [15, 30, 60]
+        private let moreDurations: [Int] = [5, 10, 20, 45, 90, 120, 180, 240]
+
+        var body: some View {
+            ZStack {
+                // Force a stable, high-contrast backdrop regardless of the underlying mode.
+                Color.black.ignoresSafeArea()
+
+                NavigationStack {
+                    List {
+                        Section {
+                            Text(statusText)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .padding(.vertical, 6)
+                        }
+
+                        Section {
+                            Button {
+                                onSetMinutes(nil)
+                            } label: {
+                                Text("Off")
+                                    .font(.headline)
+                                    .padding(.vertical, 6)
+                                    .foregroundStyle(.primary)
+                            }
+
+                            ForEach(commonDurations, id: \.self) { minutes in
+                                Button {
+                                    onSetMinutes(minutes)
+                                } label: {
+                                    Text("\(minutes) minutes")
+                                        .font(.headline)
+                                        .padding(.vertical, 6)
+                                        .foregroundStyle(.primary)
+                                }
+                            }
+                        } header: {
+                            Text("Common")
+                        }
+
+                        Section {
+                            NavigationLink {
+                                MoreDurationsView(
+                                    durations: moreDurations,
+                                    onSetMinutes: onSetMinutes
+                                )
+                            } label: {
+                                HStack {
+                                    Text("More durations")
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Text("5–240 min")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .font(.headline)
+                                .padding(.vertical, 6)
+                            }
+                        } header: {
+                            Text("More")
+                        }
+                    }
+                    .listStyle(.plain)
+                    // Prevent system list backgrounds from switching to light/gray.
+                    .modifier(HideListBackground())
+                    .navigationTitle("Sleep Timer")
+                    .tint(.white)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Image(systemName: isActive ? "moon.zzz.fill" : "moon.zzz")
+                                .foregroundStyle(isActive ? .yellow.opacity(0.92) : .secondary)
+                        }
+                    }
+                }
+            }
+            // tvOS is effectively always dark in system apps; enforce it for legibility.
+            .onExitCommand {
+                onCancel()
+            }
+            .preferredColorScheme(.dark)
+        }
+
+        private struct MoreDurationsView: View {
+            let durations: [Int]
+            let onSetMinutes: (Int?) -> Void
+
+            var body: some View {
+                List {
+                    Section {
+                        ForEach(durations, id: \.self) { minutes in
+                            Button {
+                                onSetMinutes(minutes)
+                            } label: {
+                                Text("\(minutes) minutes")
+                                    .font(.headline)
+                                    .padding(.vertical, 6)
+                            }
+                        }
+                    }
+                }
+                .listStyle(.plain)
+                .modifier(HideListBackground())
+                .tint(.white)
+                .navigationTitle("More Durations")
+            }
+        }
+
+        private struct HideListBackground: ViewModifier {
+            func body(content: Content) -> some View {
+                content
+                    .background(Color.black)
+                    .onAppear {
+                        // Keep List backgrounds consistently dark on tvOS.
+                        UITableView.appearance().backgroundColor = .black
+                        UITableViewCell.appearance().backgroundColor = .black
+                    }
+            }
+        }
+    }
+}
+#endif
