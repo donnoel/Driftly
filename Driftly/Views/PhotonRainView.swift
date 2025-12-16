@@ -7,16 +7,13 @@ struct PhotonRainView: View {
     @State private var drops: [DropMeta] = Self.makeDrops(maxCount: 140)
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
-            let effectiveSpeed = speed * (isLowPower ? 0.75 : 1.0)
-            let dropCount = isLowPower ? 90 : 140
-
-            if animationsPaused {
-                Color.clear
-                    .background(config.palette.backgroundBottom)
-                    .ignoresSafeArea()
-            } else {
+        if animationsPaused {
+            staticBackground
+        } else {
+            TimelineView(.animation) { timeline in
+                let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+                let effectiveSpeed = speed * (isLowPower ? 0.75 : 1.0)
+                let dropCount = isLowPower ? 90 : 140
                 let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed
 
                 Canvas { context, size in
@@ -141,6 +138,12 @@ struct PhotonRainView: View {
         var n = x &* 374761393 &+ seed &* 668265263
         n = (n ^ (n >> 13)) &* 1274126177
         return Double(n & 0x7fffffff) / 2147483647.0
+    }
+
+    private var staticBackground: some View {
+        Color.clear
+            .background(config.palette.backgroundBottom)
+            .ignoresSafeArea()
     }
 }
 
