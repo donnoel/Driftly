@@ -564,7 +564,7 @@ struct DriftlyRootView: View {
             Spacer()
             
             // Right: tiny buttons
-            HStack(spacing: isTvOSDevice ? 24 : 12) {
+            HStack(spacing: isTvOSDevice ? 40 : 12) {
                 CircleButton(systemName: "sparkles", action: {
                     isModePickerPresented = true
                 }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice)
