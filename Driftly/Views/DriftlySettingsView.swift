@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
@@ -70,59 +73,80 @@ private var iosSettings: some View {
 }
 #endif
 
-    // MARK: - tvOS settings (standard list style)
+    // MARK: - tvOS settings (Apple-style screen)
 
     private var tvSettings: some View {
-        NavigationStack {
-            List {
-                Section("Animation") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Animation Speed")
-                            .font(.body.weight(.semibold))
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                        Picker("", selection: $engine.animationSpeed) {
-                            Text("Gentle").tag(0.6)
-                            Text("Normal").tag(1.0)
-                            Text("Lively").tag(1.4)
+            NavigationStack {
+                List {
+                    Section("Animation") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Animation Speed")
+                                .font(.body.weight(.semibold))
+
+                            Picker("", selection: $engine.animationSpeed) {
+                                Text("Gentle").tag(0.6)
+                                Text("Normal").tag(1.0)
+                                Text("Lively").tag(1.4)
+                            }
+                            .pickerStyle(.segmented)
+
+                            Text(speedLabel)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
-                        .pickerStyle(.segmented)
+                        .padding(.vertical, 8)
+                    }
 
-                        Text(speedLabel)
+                    Section("Auto Drift") {
+                        Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                        Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+                        Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
+                            .disabled(engine.favoriteModes.isEmpty)
+
+                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                            ForEach(autoDriftOptions, id: \.self) { minutes in
+                                Text("\(minutes) minutes").tag(minutes)
+                            }
+                        }
+                    }
+
+                    Section("Screen") {
+                        Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                        Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
-                }
 
-                Section("Auto Drift") {
-                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                    Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
-                        .disabled(engine.favoriteModes.isEmpty)
-
-                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                        ForEach(autoDriftOptions, id: \.self) { minutes in
-                            Text("\(minutes) minutes").tag(minutes)
+                    Section("About") {
+                        HStack {
+                            Text("Version")
+                            Spacer()
+                            Text(versionString)
+                                .foregroundStyle(.secondary)
                         }
+                        .font(.headline)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                        .focusable(true)
                     }
                 }
-
-                Section("Screen") {
-                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                    Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("About") {
-                    LabeledContent("Version", value: versionString)
+                .listStyle(.plain)
+                .environment(\.defaultMinListRowHeight, 72)
+                .navigationTitle("Settings")
+                .tint(.white)
+                .onAppear {
+                    // Keep List backgrounds consistently dark on tvOS for legibility.
+                    UITableView.appearance().backgroundColor = .black
+                    UITableViewCell.appearance().backgroundColor = .black
                 }
             }
-            .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                }
-            }
+        }
+        // Match the Sleep Timer screen: dismiss via the tvOS Menu button.
+        .onExitCommand {
+            dismiss()
         }
         .preferredColorScheme(.dark)
     }

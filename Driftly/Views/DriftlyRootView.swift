@@ -210,6 +210,17 @@ struct DriftlyRootView: View {
         )
 #endif
         .onMoveCommand { direction in
+            // Do not intercept directional navigation while a sheet/screen is presented.
+            // This keeps tvOS Lists (Settings, Sleep Timer) scrollable and focus-friendly.
+            guard !isSettingsPresented, !isSleepTimerDialogPresented, !isModePickerPresented else {
+                return
+            }
+
+            // Only use up/down for brightness when chrome is hidden; otherwise let focus/navigation work normally.
+            guard focusedButton == nil else {
+                return
+            }
+
             switch direction {
             case .up:
                 adjustBrightness(by: 0.04)
@@ -370,10 +381,17 @@ struct DriftlyRootView: View {
         }
 #endif
         // Settings sheet (gear)
+#if os(tvOS)
+        .fullScreenCover(isPresented: $isSettingsPresented) {
+            DriftlySettingsView()
+                .environmentObject(engine)
+        }
+#else
         .sheet(isPresented: $isSettingsPresented) {
             DriftlySettingsView()
                 .environmentObject(engine)
         }
+#endif
 #if os(iOS)
         // Custom sleep timer picker
         .sheet(isPresented: $isCustomSleepTimerPresented) {
