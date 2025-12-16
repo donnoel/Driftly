@@ -73,83 +73,85 @@ private var iosSettings: some View {
 }
 #endif
 
-    // MARK: - tvOS settings (Apple-style screen)
+#if os(tvOS)
+// MARK: - tvOS settings (Apple-style screen)
 
-    private var tvSettings: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+private var tvSettings: some View {
+    ZStack {
+        Color.black.ignoresSafeArea()
 
-            NavigationStack {
-                List {
-                    Section("Animation") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Animation Speed")
-                                .font(.body.weight(.semibold))
+        NavigationStack {
+            List {
+                Section("Animation") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Animation Speed")
+                            .font(.body.weight(.semibold))
 
-                            Picker("", selection: $engine.animationSpeed) {
-                                Text("Gentle").tag(0.6)
-                                Text("Normal").tag(1.0)
-                                Text("Lively").tag(1.4)
-                            }
-                            .pickerStyle(.segmented)
-
-                            Text(speedLabel)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                        Picker("", selection: $engine.animationSpeed) {
+                            Text("Gentle").tag(0.6)
+                            Text("Normal").tag(1.0)
+                            Text("Lively").tag(1.4)
                         }
-                        .padding(.vertical, 8)
-                    }
+                        .pickerStyle(.segmented)
 
-                    Section("Auto Drift") {
-                        Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                        Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                        Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
-                            .disabled(engine.favoriteModes.isEmpty)
-
-                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                            ForEach(autoDriftOptions, id: \.self) { minutes in
-                                Text("\(minutes) minutes").tag(minutes)
-                            }
-                        }
-                    }
-
-                    Section("Screen") {
-                        Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                        Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
+                        Text(speedLabel)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
+                    .padding(.vertical, 8)
+                }
 
-                    Section("About") {
-                        HStack {
-                            Text("Version")
-                            Spacer()
-                            Text(versionString)
-                                .foregroundStyle(.secondary)
+                Section("Auto Drift") {
+                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+                    Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
+                        .disabled(engine.favoriteModes.isEmpty)
+
+                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                        ForEach(autoDriftOptions, id: \.self) { minutes in
+                            Text("\(minutes) minutes").tag(minutes)
                         }
-                        .font(.headline)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                        .focusable(true)
                     }
                 }
-                .listStyle(.plain)
-                .environment(\.defaultMinListRowHeight, 72)
-                .navigationTitle("Settings")
-                .tint(.white)
-                .onAppear {
-                    // Keep List backgrounds consistently dark on tvOS for legibility.
-                    UITableView.appearance().backgroundColor = .black
-                    UITableViewCell.appearance().backgroundColor = .black
+
+                Section("Screen") {
+                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                    Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("About") {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text(versionString)
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.headline)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                    .focusable(true)
                 }
             }
+            .listStyle(.plain)
+            .environment(\.defaultMinListRowHeight, 72)
+            .navigationTitle("Settings")
+            .tint(.white)
+            .onAppear {
+                // Keep List backgrounds consistently dark on tvOS for legibility.
+                UITableView.appearance().backgroundColor = .black
+                UITableViewCell.appearance().backgroundColor = .black
+            }
         }
-        // Match the Sleep Timer screen: dismiss via the tvOS Menu button.
-        .onExitCommand {
-            dismiss()
-        }
-        .preferredColorScheme(.dark)
     }
+    // Match the Sleep Timer screen: dismiss via the tvOS Menu button.
+    .onExitCommand {
+        dismiss()
+    }
+    .preferredColorScheme(.dark)
+}
+#endif
 
     private var speedLabel: String {
         switch engine.animationSpeed {

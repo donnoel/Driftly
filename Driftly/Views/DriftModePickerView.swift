@@ -74,6 +74,7 @@ struct DriftModePickerView: View {
     }
 #endif
 
+#if os(tvOS)
     // MARK: - tvOS (Apple-style screen)
 
     private var tvWindow: some View {
@@ -192,6 +193,7 @@ struct DriftModePickerView: View {
         }
         .accessibilityIdentifier("mode-\(mode.rawValue)")
     }
+#endif
 }
 
 // MARK: - Existing row view (as in your codebase)
