@@ -13,8 +13,8 @@
   },
   "properties": {
     "canvasSize": {
-      "width": 400,
-      "height": 240
+      "width": 1280,
+      "height": 768
     }
   }
 }

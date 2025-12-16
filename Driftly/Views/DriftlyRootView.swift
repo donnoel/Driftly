@@ -44,6 +44,9 @@ struct DriftlyRootView: View {
     
     var body: some View {
         ZStack {
+            // Base background so sleep state never shows white
+            Color.black.ignoresSafeArea()
+
             if !sleepState.sleepTimerHasExpired {
                 activeModeView
                     .offset(motionManager.parallaxOffset)
@@ -74,20 +77,23 @@ struct DriftlyRootView: View {
             }
 #elseif os(tvOS)
             // Keep a tiny focusable target so Play/Pause commands are delivered even when chrome is hidden.
-            Color.clear
-                .frame(width: 1, height: 1)
-                .focusable(true)
-                .focused($fallbackFocus)
+            if !sleepState.sleepTimerHasExpired {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .focusable(true)
+                    .focused($fallbackFocus)
+            }
 #endif
         }
         // Screen darkening overlay based on brightness
         .overlay(
             Color.black
-                .opacity(1 - engine.brightness)
+                .opacity(sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
+                .ignoresSafeArea()
                 .allowsHitTesting(false)
         )
         .overlay(alignment: .topTrailing) {
-            if brightnessHUDVisible {
+            if brightnessHUDVisible && !sleepState.sleepTimerHasExpired {
                 HStack(spacing: 8) {
                     Image(systemName: "sun.max.fill")
                         .foregroundStyle(.yellow.opacity(0.95))
@@ -104,7 +110,7 @@ struct DriftlyRootView: View {
             }
         }
         .overlay(alignment: .top) {
-            if motionManager.motionUnavailable {
+            if motionManager.motionUnavailable && !sleepState.sleepTimerHasExpired {
                 Text("Motion unavailable")
                     .font(.caption2.bold())
                     .padding(.horizontal, 10)
@@ -116,17 +122,46 @@ struct DriftlyRootView: View {
         }
         .overlay {
             if sleepState.sleepTimerHasExpired {
-                VStack(spacing: 10) {
+                VStack(spacing: 14) {
                     Text("Sleep timer ended")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("Tap to wake Driftly")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.8))
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+#if os(tvOS)
+                    Text("Press Home to exit Driftly, or wake to continue.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+#else
+                    Text("Tap to wake Driftly, or press Home to exit.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+#endif
+
+                    Button {
+                        wakeFromSleepTimer()
+                    } label: {
+                        Text("Wake Driftly")
+                            .font(.headline.weight(.semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.accentColor)
+                    .controlSize(.large)
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 26)
+                .padding(.vertical, 24)
+                .frame(maxWidth: 520)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(.ultraThickMaterial)
+                        .shadow(color: .black.opacity(0.45), radius: 24, x: 0, y: 14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                        )
+                )
                 .transition(.opacity)
             }
         }
@@ -387,70 +422,74 @@ struct DriftlyRootView: View {
     
     @ViewBuilder
     private var activeModeView: some View {
-        switch engine.currentMode {
-        case .nebulaLake:
-            NebulaLakeView(config: engine.currentMode.config)
-        case .cosmicTide:
-            CosmicTideView(config: engine.currentMode.config)
-        case .auroraVeil:
-            AuroraVeilView(config: engine.currentMode.config)
-        case .abyssGlow:
-            AbyssGlowView(config: engine.currentMode.config)
-        case .starlitMist:
-            StarlitMistView(config: engine.currentMode.config)
-        case .lunarDrift:
-            LunarDriftView(config: engine.currentMode.config)
-        case .solarBloom:
-            SolarBloomView(config: engine.currentMode.config)
-        case .plasmaReef:
-            PlasmaReefView(config: engine.currentMode.config)
-        case .velvetEclipse:
-            VelvetEclipseView(config: engine.currentMode.config)
-        case .neonKelp:
-            NeonKelpView(config: engine.currentMode.config)
-        case .emberDrift:
-            EmberDriftView(config: engine.currentMode.config)
-        // Batch 2 cases
-        case .pulseAurora:
-            PulseAuroraView(config: engine.currentMode.config)
-        case .vitalWave:
-            VitalWaveView(config: engine.currentMode.config)
-        case .echoBloom:
-            EchoBloomView(config: engine.currentMode.config)
-        case .cosmicHeart:
-            CosmicHeartView(config: engine.currentMode.config)
-        case .signalDrift:
-            SignalDriftView(config: engine.currentMode.config)
-        // Batch 3 cases
-        case .horizonPulse:
-            HorizonPulseView(config: engine.currentMode.config)
-        case .photonRain:
-            PhotonRainView(config: engine.currentMode.config)
-        case .gravityRings:
-            GravityRingsView(config: engine.currentMode.config)
-        case .driftGrid:
-            DriftGridView(config: engine.currentMode.config)
-        case .quietSignal:
-            QuietSignalView(config: engine.currentMode.config)
-        // Batch 4 cases
-        case .chromaticSpine:
-            ChromaticSpineView(config: engine.currentMode.config)
-        case .ribbonOrbit:
-            RibbonOrbitView(config: engine.currentMode.config)
-        case .inkTopography:
-            InkTopographyView(config: engine.currentMode.config)
-        case .prismShards:
-            PrismShardsView(config: engine.currentMode.config)
-        case .lissajousBloom:
-            LissajousBloomView(config: engine.currentMode.config)
-        case .meridianArcs:
-            MeridianArcsView(config: engine.currentMode.config)
-        case .spectralLoom:
-            SpectralLoomView(config: engine.currentMode.config)
-        case .voxelMirage:
-            VoxelMirageView(config: engine.currentMode.config)
-        case .haloInterference:
-            HaloInterferenceView(config: engine.currentMode.config)
+        if sleepState.sleepTimerHasExpired {
+            Color.black.ignoresSafeArea()
+        } else {
+            switch engine.currentMode {
+            case .nebulaLake:
+                NebulaLakeView(config: engine.currentMode.config)
+            case .cosmicTide:
+                CosmicTideView(config: engine.currentMode.config)
+            case .auroraVeil:
+                AuroraVeilView(config: engine.currentMode.config)
+            case .abyssGlow:
+                AbyssGlowView(config: engine.currentMode.config)
+            case .starlitMist:
+                StarlitMistView(config: engine.currentMode.config)
+            case .lunarDrift:
+                LunarDriftView(config: engine.currentMode.config)
+            case .solarBloom:
+                SolarBloomView(config: engine.currentMode.config)
+            case .plasmaReef:
+                PlasmaReefView(config: engine.currentMode.config)
+            case .velvetEclipse:
+                VelvetEclipseView(config: engine.currentMode.config)
+            case .neonKelp:
+                NeonKelpView(config: engine.currentMode.config)
+            case .emberDrift:
+                EmberDriftView(config: engine.currentMode.config)
+            // Batch 2 cases
+            case .pulseAurora:
+                PulseAuroraView(config: engine.currentMode.config)
+            case .vitalWave:
+                VitalWaveView(config: engine.currentMode.config)
+            case .echoBloom:
+                EchoBloomView(config: engine.currentMode.config)
+            case .cosmicHeart:
+                CosmicHeartView(config: engine.currentMode.config)
+            case .signalDrift:
+                SignalDriftView(config: engine.currentMode.config)
+            // Batch 3 cases
+            case .horizonPulse:
+                HorizonPulseView(config: engine.currentMode.config)
+            case .photonRain:
+                PhotonRainView(config: engine.currentMode.config)
+            case .gravityRings:
+                GravityRingsView(config: engine.currentMode.config)
+            case .driftGrid:
+                DriftGridView(config: engine.currentMode.config)
+            case .quietSignal:
+                QuietSignalView(config: engine.currentMode.config)
+            // Batch 4 cases
+            case .chromaticSpine:
+                ChromaticSpineView(config: engine.currentMode.config)
+            case .ribbonOrbit:
+                RibbonOrbitView(config: engine.currentMode.config)
+            case .inkTopography:
+                InkTopographyView(config: engine.currentMode.config)
+            case .prismShards:
+                PrismShardsView(config: engine.currentMode.config)
+            case .lissajousBloom:
+                LissajousBloomView(config: engine.currentMode.config)
+            case .meridianArcs:
+                MeridianArcsView(config: engine.currentMode.config)
+            case .spectralLoom:
+                SpectralLoomView(config: engine.currentMode.config)
+            case .voxelMirage:
+                VoxelMirageView(config: engine.currentMode.config)
+            case .haloInterference:
+                HaloInterferenceView(config: engine.currentMode.config)
+            }
         }
     }
     
@@ -590,7 +629,7 @@ struct DriftlyRootView: View {
         UIApplication.shared.isIdleTimerDisabled = prevent
 #elseif os(tvOS)
         // Keep Driftly in the foreground on tvOS by preventing the screen saver while active.
-        let prevent = scenePhase == .active
+        let prevent = scenePhase == .active && !sleepState.sleepTimerAllowsLock
         UIApplication.shared.isIdleTimerDisabled = prevent
 #endif
     }
@@ -637,6 +676,11 @@ struct DriftlyRootView: View {
                 }
                 updateIdleTimer()
                 stopMotionForSleep()
+#if os(tvOS)
+                // Drop focus target while asleep to avoid stray focus highlights.
+                focusedButton = nil
+                fallbackFocus = false
+#endif
             case .wake:
                 withAnimation(.easeInOut(duration: 0.8)) {
                     sleepState.sleepTimerHasExpired = false
@@ -761,6 +805,10 @@ struct DriftlyRootView: View {
         updateIdleTimer()
         startMotionIfNeeded()
         updateTicking()
+#if os(tvOS)
+        // Restore fallback focus so remote commands still arrive when chrome is hidden.
+        fallbackFocus = !engine.isChromeVisible
+#endif
     }
 
     private var sleepTimerActive: Bool {

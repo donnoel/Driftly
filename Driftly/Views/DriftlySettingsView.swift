@@ -9,7 +9,7 @@ struct DriftlySettingsView: View {
 
     var body: some View {
         #if os(tvOS)
-        tvWindow
+        tvSettings
         #else
         iosSettings
         #endif
@@ -70,124 +70,61 @@ private var iosSettings: some View {
 }
 #endif
 
-    // MARK: - tvOS windowed panel (no Done button)
+    // MARK: - tvOS settings (standard list style)
 
-    private var tvWindow: some View {
-        ZStack {
-            Color.black.opacity(0.70).ignoresSafeArea()
+    private var tvSettings: some View {
+        NavigationStack {
+            List {
+                Section("Animation") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Animation Speed")
+                            .font(.body.weight(.semibold))
 
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Settings")
-                        .font(.system(size: 44, weight: .semibold))
-                        .foregroundStyle(.white)
+                        Picker("", selection: $engine.animationSpeed) {
+                            Text("Gentle").tag(0.6)
+                            Text("Normal").tag(1.0)
+                            Text("Lively").tag(1.4)
+                        }
+                        .pickerStyle(.segmented)
 
-                    Spacer()
-
-                    Text("Press Menu to close")
-                        .font(.system(size: 22))
-                        .foregroundStyle(.white.opacity(0.65))
+                        Text(speedLabel)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        tvCard(title: "Animation") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Animation Speed")
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.90))
+                Section("Auto Drift") {
+                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+                    Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
+                        .disabled(engine.favoriteModes.isEmpty)
 
-                                Picker("", selection: $engine.animationSpeed) {
-                                    Text("Gentle").tag(0.6)
-                                    Text("Normal").tag(1.0)
-                                    Text("Lively").tag(1.4)
-                                }
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 520)
-
-                                Text(speedLabel)
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(.white.opacity(0.70))
-                            }
-                        }
-
-                        tvCard(title: "Auto Drift") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                                Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-
-                                Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
-                                    .disabled(engine.favoriteModes.isEmpty)
-                                    .foregroundStyle(engine.favoriteModes.isEmpty ? .white.opacity(0.50) : .white)
-
-                                Text("Drift Every")
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.90))
-
-                                Picker("", selection: $engine.autoDriftIntervalMinutes) {
-                                    ForEach(autoDriftOptions, id: \.self) { minutes in
-                                        Text("\(minutes) minutes").tag(minutes)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
-                                .frame(maxWidth: 520)
-                            }
-                        }
-
-                        tvCard(title: "Screen") {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                                Text("Keeps Driftly awake while running.")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(.white.opacity(0.70))
-                            }
-                        }
-
-                        tvCard(title: "About") {
-                            HStack {
-                                Text("Version")
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.90))
-                                Spacer()
-                                Text(versionString)
-                                    .font(.system(size: 22))
-                                    .foregroundStyle(.white.opacity(0.70))
-                            }
+                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                        ForEach(autoDriftOptions, id: \.self) { minutes in
+                            Text("\(minutes) minutes").tag(minutes)
                         }
                     }
-                    .padding(.vertical, 6)
+                }
+
+                Section("Screen") {
+                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                    Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("About") {
+                    LabeledContent("Version", value: versionString)
                 }
             }
-            .padding(36)
-            .frame(maxWidth: 1040, maxHeight: 760)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.50), radius: 40, x: 0, y: 18)
-            .padding(.horizontal, 40)
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private func tvCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundStyle(.white)
-
-            content()
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
-        )
     }
 
     private var speedLabel: String {
