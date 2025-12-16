@@ -141,8 +141,6 @@ struct VoxelMirageView: View {
 
     private func fract(_ x: Double) -> Double { x - floor(x) }
 
-    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) * t }
-
     private func smoothstep(_ x: Double) -> Double {
         let t = max(0.0, min(1.0, x))
         return t * t * (3.0 - 2.0 * t)

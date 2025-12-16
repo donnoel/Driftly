@@ -36,8 +36,3 @@ struct PhaseController {
         date.timeIntervalSince(startDate) * max(speed, 0.0001)
     }
 }
-
-func wrap01(_ value: Double) -> Double {
-    let wrapped = value.truncatingRemainder(dividingBy: 1)
-    return wrapped < 0 ? wrapped + 1 : wrapped
-}
