@@ -18,7 +18,11 @@ struct PhotonRainView: View {
 
                 Canvas { context, size in
                     var ctx = context
-                    render(in: &ctx, size: size, t: t, dropCountBase: dropCount)
+                    if legacyRenderingEnabled {
+                        renderLegacy(in: &ctx, size: size, t: t, dropCountBase: dropCount)
+                    } else {
+                        render(in: &ctx, size: size, t: t, dropCountBase: dropCount)
+                    }
                 }
                 .background(config.palette.backgroundBottom)
                 .ignoresSafeArea()
@@ -144,6 +148,73 @@ struct PhotonRainView: View {
         Color.clear
             .background(config.palette.backgroundBottom)
             .ignoresSafeArea()
+    }
+
+    private var legacyRenderingEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("PhotonRainLegacy")
+    }
+
+    // Fallback path for visual comparison/testing; computes per-drop seeds each frame.
+    private func renderLegacy(in context: inout GraphicsContext, size: CGSize, t: Double, dropCountBase: Int) {
+        let w = max(size.width, 1)
+        let h = max(size.height, 1)
+        let dropCount = Self.adjustedDropCount(base: dropCountBase, size: size)
+        let denom = Double(max(dropCount - 1, 1))
+
+        for i in 0..<dropCount {
+            let p = Double(i) / denom
+
+            let a = Self.hash01(i, 17)
+            let b = Self.hash01(i, 41)
+            let c = Self.hash01(i, 83)
+
+            let baseX = CGFloat(p) * w
+            let laneDriftD = (a - 0.5) * 110.0
+            let laneDrift = CGFloat(laneDriftD) * CGFloat(sin(t * (0.14 + 0.04 * b) + Double(i) * 0.21))
+
+            let fall = 22.0 + 22.0 * b // 22..44
+            let yRaw = (t * fall + Double(i) * 37.0).truncatingRemainder(dividingBy: Double(h + 220.0))
+            let y0 = CGFloat(yRaw) - 120.0
+
+            let length = CGFloat(34.0 + 70.0 * c)
+            let lineWidth = CGFloat(0.9 + 1.9 * (0.4 + 0.6 * a))
+
+            let amp = CGFloat(6.0 + 14.0 * a)
+            let freq = 0.10 + 0.22 * c
+            let phase = Double(i) * 0.37 + 6.0 * a
+
+            var path = Path()
+            let steps = 7
+            let xBase = baseX + laneDrift
+
+            for s in 0...steps {
+                let u = Double(s) / Double(steps)
+                let yy = y0 + length * CGFloat(u)
+
+                let w1 = sin((t * 1.3) * freq + u * 9.0 + phase)
+                let w2 = cos((t * 0.9) * (freq * 1.4) + u * 14.0 + phase * 0.7)
+                let wiggle = CGFloat(0.65 * w1 + 0.35 * w2)
+
+                let xx = xBase + amp * wiggle
+
+                if s == 0 {
+                    path.move(to: CGPoint(x: xx, y: yy))
+                } else {
+                    path.addLine(to: CGPoint(x: xx, y: yy))
+                }
+            }
+
+            let clash = 0.5 + 0.5 * sin(t * (0.55 + 0.25 * a) + Double(i) * 0.19)
+            let hot = (a > 0.82) ? (0.18 + 0.22 * clash) : (0.06 + 0.10 * clash)
+
+            let o1 = 0.10 + hot
+            let o2 = 0.22 + hot
+            let o3 = 0.06 + 0.10 * hot
+
+            context.stroke(path, with: .color(config.palette.primary.opacity(o1)), lineWidth: lineWidth * 3.2)
+            context.stroke(path, with: .color(config.palette.primary.opacity(o2)), lineWidth: lineWidth * 1.4)
+            context.stroke(path, with: .color(Color.white.opacity(o3)), lineWidth: max(0.8, lineWidth * 0.85))
+        }
     }
 }
 
