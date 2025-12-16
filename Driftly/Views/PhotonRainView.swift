@@ -21,7 +21,7 @@ struct PhotonRainView: View {
 
                 Canvas { context, size in
                     var ctx = context
-                    render(in: &ctx, size: size, t: t, dropCount: dropCount)
+                    render(in: &ctx, size: size, t: t, dropCountBase: dropCount)
                 }
                 .background(config.palette.backgroundBottom)
                 .ignoresSafeArea()
@@ -29,9 +29,10 @@ struct PhotonRainView: View {
         }
     }
 
-    private func render(in context: inout GraphicsContext, size: CGSize, t: Double, dropCount: Int) {
+    private func render(in context: inout GraphicsContext, size: CGSize, t: Double, dropCountBase: Int) {
         let w = max(size.width, 1)
         let h = max(size.height, 1)
+        let dropCount = Self.adjustedDropCount(base: dropCountBase, size: size)
         let denom = Double(max(dropCount - 1, 1))
 
         let activeDrops = drops.prefix(dropCount)
@@ -122,6 +123,17 @@ struct PhotonRainView: View {
                 phase: phase
             )
         }
+    }
+
+    private static func adjustedDropCount(base: Int, size: CGSize) -> Int {
+        let area = max(size.width * size.height, 1)
+        // Reference roughly a modern phone screen area
+        let referenceArea: Double = 430 * 932
+        let factor = sqrt(area / referenceArea)
+        // Keep within a narrow band to avoid visual change
+        let clamped = min(1.15, max(0.85, factor))
+        let adjusted = Int(round(Double(base) * clamped))
+        return min(180, max(60, adjusted))
     }
 
     // Deterministic hash -> 0..1 (stable per index)
