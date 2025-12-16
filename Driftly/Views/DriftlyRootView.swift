@@ -301,10 +301,17 @@ struct DriftlyRootView: View {
             handleSleepTimerTick(now: now)
         }
         // Mode picker (sparkles)
+#if os(tvOS)
+        .fullScreenCover(isPresented: $isModePickerPresented) {
+            DriftModePickerView()
+                .environmentObject(engine)
+        }
+#else
         .sheet(isPresented: $isModePickerPresented) {
             DriftModePickerView()
                 .environmentObject(engine)
         }
+#endif
         // Sleep timer picker (moon)
 #if os(iOS)
         .confirmationDialog(

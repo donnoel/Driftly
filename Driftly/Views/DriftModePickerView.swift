@@ -1,16 +1,23 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct DriftModePickerView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @State private var editMode: EditMode = .inactive
+#if os(tvOS)
+    @State private var showFavoritesOnly: Bool = false
+    @FocusState private var focusedMode: DriftMode?
+#endif
 
     var body: some View {
-        #if os(tvOS)
+#if os(tvOS)
         tvWindow
-        #else
+#else
         iosPicker
-        #endif
+#endif
     }
 
     // MARK: - iOS (unchanged behavior)
@@ -67,125 +74,124 @@ struct DriftModePickerView: View {
     }
 #endif
 
-    // MARK: - tvOS windowed panel (no Done button)
+    // MARK: - tvOS (Apple-style screen)
 
     private var tvWindow: some View {
-        ZStack {
-            Color.black.opacity(0.70).ignoresSafeArea()
+        let favorites = engine.modePickerModes.filter { engine.favoriteModes.contains($0) }
+        let nonFavorites = engine.modePickerModes.filter { !engine.favoriteModes.contains($0) }
 
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Select Mode")
-                        .font(.system(size: 44, weight: .semibold))
-                        .foregroundStyle(.white)
+        return ZStack {
+            Color.black.ignoresSafeArea()
 
-                    Spacer()
+            NavigationStack {
+                List {
+                    // Filter row
+                    Section {
+                        Picker("Filter", selection: $showFavoritesOnly) {
+                            Text("All").tag(false)
+                            Text("Favorites").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.vertical, 6)
+                    }
 
-                    Text("Press Menu to close")
-                        .font(.system(size: 22))
-                        .foregroundStyle(.white.opacity(0.65))
-                }
+                    if showFavoritesOnly {
+                        Section {
+                            ForEach(favorites) { mode in
+                                tvModeRow(mode)
+                            }
+                        } header: {
+                            Text("Favorites")
+                        } footer: {
+                            Text("Tip: Press Play/Pause to add or remove a favorite.")
+                        }
+                    } else {
+                        if !favorites.isEmpty {
+                            Section {
+                                ForEach(favorites) { mode in
+                                    tvModeRow(mode)
+                                }
+                            } header: {
+                                Text("Favorites")
+                            } footer: {
+                                Text("Tip: Press Play/Pause to add or remove a favorite.")
+                            }
+                        }
 
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(engine.modePickerModes) { mode in
-                            tvRow(for: mode)
+                        Section {
+                            ForEach(nonFavorites) { mode in
+                                tvModeRow(mode)
+                            }
+                        } header: {
+                            Text("All Modes")
                         }
                     }
-                    .padding(.vertical, 6)
+                }
+                .listStyle(.plain)
+                .environment(\.defaultMinListRowHeight, 72)
+                .navigationTitle("Select Mode")
+                .tint(.white)
+                .onAppear {
+                    // Keep List backgrounds consistently dark on tvOS for legibility.
+                    UITableView.appearance().backgroundColor = .black
+                    UITableViewCell.appearance().backgroundColor = .black
                 }
             }
-            .padding(36)
-            .frame(maxWidth: 1040, maxHeight: 760)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.50), radius: 40, x: 0, y: 18)
-            .padding(.horizontal, 40)
         }
+        .onPlayPauseCommand {
+            // tvOS-native secondary action: toggle favorite on the currently focused row.
+            if let focusedMode {
+                engine.toggleFavorite(focusedMode)
+            }
+        }
+        .onExitCommand { dismiss() }
         .preferredColorScheme(.dark)
     }
 
-#if os(tvOS)
-private func tvRow(for mode: DriftMode) -> some View {
-    TvModeRow(
-        mode: mode,
-        isSelected: mode == engine.currentMode,
-        isFavorite: engine.favoriteModes.contains(mode),
-        onToggleFavorite: { engine.toggleFavorite(mode) },
-        onSelect: {
+    private func tvModeRow(_ mode: DriftMode) -> some View {
+        Button {
             withAnimation(.easeInOut(duration: 0.45)) {
                 engine.currentMode = mode
             }
             dismiss()
-        }
-    )
-}
-#else
-private func tvRow(for mode: DriftMode) -> some View {
-    EmptyView()
-}
-#endif
-
-#if os(tvOS)
-    private struct TvModeRow: View {
-        let mode: DriftMode
-        let isSelected: Bool
-        let isFavorite: Bool
-        let onToggleFavorite: () -> Void
-        let onSelect: () -> Void
-
-        var body: some View {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(mode.displayName)
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
+        } label: {
+            HStack(spacing: 14) {
+                Text(mode.displayName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
-                Button(action: onToggleFavorite) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(isFavorite ? Color.yellow : Color.white.opacity(0.75))
-                        .frame(width: 54, height: 54)
+                if engine.favoriteModes.contains(mode) {
+                    Image(systemName: "star.fill")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.yellow.opacity(0.92))
+                        .accessibilityLabel("Favorite")
                 }
-                .buttonStyle(.bordered)
-                .tint(Color.white.opacity(0.12))
-                .accessibilityLabel(isFavorite ? "Unfavorite" : "Favorite")
 
-                Button(action: onSelect) {
-                    HStack(spacing: 10) {
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 22, weight: .semibold))
-                        }
-                        Text(isSelected ? "Selected" : "Select")
-                            .font(.system(size: 22, weight: .semibold))
-                    }
-                    .frame(minWidth: 140, minHeight: 54)
+                if mode == engine.currentMode {
+                    Image(systemName: "checkmark")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .accessibilityLabel("Selected")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(isSelected ? Color.white.opacity(0.20) : Color.white.opacity(0.15))
-                .foregroundStyle(.white)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(isSelected ? Color.white.opacity(0.10) : Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(isSelected ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 1)
-            )
-            .accessibilityElement(children: .contain)
+            .padding(.vertical, 8)
         }
+        .focused($focusedMode, equals: mode)
+        // Keep favorites available without adding a second focusable control in the row.
+        .contextMenu {
+            Button {
+                engine.toggleFavorite(mode)
+            } label: {
+                Label(
+                    engine.favoriteModes.contains(mode) ? "Remove Favorite" : "Add Favorite",
+                    systemImage: engine.favoriteModes.contains(mode) ? "star.slash" : "star"
+                )
+            }
+        }
+        .accessibilityIdentifier("mode-\(mode.rawValue)")
     }
-#endif
 }
 
 // MARK: - Existing row view (as in your codebase)
