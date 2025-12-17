@@ -11,7 +11,7 @@ struct BrightnessClampingTests {
         defaults.removePersistentDomain(forName: suite)
         defer { defaults.removePersistentDomain(forName: suite) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
 
         engine.brightness = 5.0
         #expect(engine.brightness == 1.0)

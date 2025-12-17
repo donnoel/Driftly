@@ -12,7 +12,7 @@ struct SleepAndDriftControllerTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.setSleepTimer(minutes: 1)
 
         var state = SleepAndDriftController.State(
@@ -36,7 +36,7 @@ struct SleepAndDriftControllerTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.setSleepTimer(minutes: nil)
 
         var state = SleepAndDriftController.State(
@@ -58,7 +58,7 @@ struct SleepAndDriftControllerTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 3
 
@@ -85,7 +85,7 @@ struct SleepAndDriftControllerTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.setSleepTimer(minutes: 1)
 
         var state = SleepAndDriftController.State(

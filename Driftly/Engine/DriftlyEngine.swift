@@ -1,5 +1,14 @@
 import SwiftUI
 import Combine
+import Foundation
+
+protocol UbiquitousKeyValueStoring: AnyObject {
+    func array(forKey: String) -> [Any]?
+    func set(_ value: Any?, forKey: String)
+    func synchronize() -> Bool
+}
+
+extension NSUbiquitousKeyValueStore: UbiquitousKeyValueStoring {}
 
 private enum DriftlyDefaultsKey {
     static let currentMode           = "driftly.currentMode"
@@ -19,6 +28,9 @@ final class DriftlyEngine: ObservableObject {
     // MARK: - Published state
 
     private let defaults: UserDefaults
+    private let ubiquitousStore: UbiquitousKeyValueStoring?
+    private var ubiquitousObserver: NSObjectProtocol?
+    private var applyingCloudFavorites = false
 
     @Published var currentMode: DriftMode {
         didSet { persistCurrentMode() }
@@ -96,8 +108,13 @@ final class DriftlyEngine: ObservableObject {
 
     // MARK: - Init
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        ubiquitousStore: UbiquitousKeyValueStoring? = NSUbiquitousKeyValueStore.default
+    ) {
         self.defaults = defaults
+        self.ubiquitousStore = ubiquitousStore
+        self.ubiquitousStore?.synchronize()
 
         // currentMode
         if let raw = defaults.string(forKey: DriftlyDefaultsKey.currentMode),
@@ -156,11 +173,17 @@ final class DriftlyEngine: ObservableObject {
         }
 
         // favorites (default: empty)
+        let storedFavorites: Set<DriftMode>
         if let stored = defaults.array(forKey: DriftlyDefaultsKey.favoriteModes) as? [String] {
-            favoriteModes = Set(stored.compactMap(DriftMode.init(rawValue:)))
+            storedFavorites = Set(stored.compactMap(DriftMode.init(rawValue:)))
         } else {
-            favoriteModes = []
+            storedFavorites = []
         }
+        favoriteModes = Self.initialFavorites(
+            localFavorites: storedFavorites,
+            ubiquitousStore: ubiquitousStore,
+            defaults: defaults
+        )
 
         // favorites only (default: false)
         if defaults.object(forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly) != nil {
@@ -177,6 +200,14 @@ final class DriftlyEngine: ObservableObject {
             modeDisplayOrder = storedModes + missing
         } else {
             modeDisplayOrder = DriftMode.allCases
+        }
+
+        startObservingUbiquitousStore()
+    }
+
+    deinit {
+        if let ubiquitousObserver {
+            NotificationCenter.default.removeObserver(ubiquitousObserver)
         }
     }
 
@@ -314,6 +345,7 @@ final class DriftlyEngine: ObservableObject {
     private func persistFavorites() {
         let rawValues = favoriteModes.map(\.rawValue)
         defaults.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+        pushFavoritesToCloud(favoriteModes)
     }
 
     private func persistAutoDriftFavoritesOnly() {
@@ -323,6 +355,72 @@ final class DriftlyEngine: ObservableObject {
     private func persistModeDisplayOrder() {
         let rawValues = modeDisplayOrder.map(\.rawValue)
         defaults.set(rawValues, forKey: DriftlyDefaultsKey.modeDisplayOrder)
+    }
+
+    private static func initialFavorites(
+        localFavorites: Set<DriftMode>,
+        ubiquitousStore: UbiquitousKeyValueStoring?,
+        defaults: UserDefaults
+    ) -> Set<DriftMode> {
+        if let rawValues = ubiquitousStore?.array(forKey: DriftlyDefaultsKey.favoriteModes) as? [String] {
+            let cloudFavorites = Set(rawValues.compactMap(DriftMode.init(rawValue:)))
+            defaults.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+            return cloudFavorites
+        } else {
+            let rawValues = localFavorites.map(\.rawValue)
+            ubiquitousStore?.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+            ubiquitousStore?.synchronize()
+            return localFavorites
+        }
+    }
+
+    private func loadCloudFavorites() -> Set<DriftMode>? {
+        guard let rawValues = ubiquitousStore?.array(forKey: DriftlyDefaultsKey.favoriteModes) as? [String] else {
+            return nil
+        }
+        let favorites = Set(rawValues.compactMap(DriftMode.init(rawValue:)))
+        return favorites
+    }
+
+    private func pushFavoritesToCloud(_ favorites: Set<DriftMode>) {
+        guard let ubiquitousStore, !applyingCloudFavorites else { return }
+        let rawValues = favorites.map(\.rawValue)
+        ubiquitousStore.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+        ubiquitousStore.synchronize()
+    }
+
+    private func startObservingUbiquitousStore() {
+        guard let ubiquitousStore else { return }
+
+        ubiquitousObserver = NotificationCenter.default.addObserver(
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: ubiquitousStore,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleUbiquitousStoreChange(notification)
+        }
+    }
+
+    private func handleUbiquitousStoreChange(_ notification: Notification) {
+        guard
+            let reasonRaw = notification.userInfo?[NSUbiquitousKeyValueStoreChangeReasonKey] as? Int,
+            reasonRaw == NSUbiquitousKeyValueStoreServerChange ||
+            reasonRaw == NSUbiquitousKeyValueStoreInitialSyncChange
+        else { return }
+
+        guard
+            let changedKeys = notification.userInfo?[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String],
+            changedKeys.contains(DriftlyDefaultsKey.favoriteModes)
+        else {
+            return
+        }
+
+        let cloudFavorites = loadCloudFavorites() ?? []
+        guard cloudFavorites != favoriteModes else { return }
+
+        applyingCloudFavorites = true
+        favoriteModes = cloudFavorites
+        applyingCloudFavorites = false
     }
 
     static func clampBrightness(_ value: Double) -> Double {

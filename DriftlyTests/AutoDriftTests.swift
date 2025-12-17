@@ -11,7 +11,7 @@ struct AutoDriftTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 5
 
@@ -30,7 +30,7 @@ struct AutoDriftTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftShuffleEnabled = true
 
         for mode in DriftMode.allCases {
@@ -47,7 +47,7 @@ struct AutoDriftTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftShuffleEnabled = false
 
         for (index, mode) in DriftMode.allCases.enumerated() {
@@ -64,7 +64,7 @@ struct AutoDriftTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.favoriteModes = [.auroraVeil, .cosmicTide]
         engine.autoDriftFavoritesOnly = true
         engine.autoDriftShuffleEnabled = false
@@ -86,7 +86,7 @@ struct AutoDriftTests {
         defaults.removePersistentDomain(forName: suiteName)
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let engine = DriftlyEngine(defaults: defaults)
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 1 // below minimum clamp
 
