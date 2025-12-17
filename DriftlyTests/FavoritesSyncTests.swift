@@ -73,6 +73,22 @@ struct FavoritesSyncTests {
         #expect(engine.favoriteModes.isEmpty)
         #expect((defaults.array(forKey: favoriteKey) as? [String])?.isEmpty == true)
     }
+
+    @Test func secondEngineReadsCloudFavorites() async throws {
+        let suiteName = "SecondEngineCloud-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let mockStore = MockUbiquitousKeyValueStore()
+
+        let engineA = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
+        engineA.favoriteModes = [.prismShards, .signalDrift]
+
+        let engineB = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
+
+        #expect(engineB.favoriteModes == [.prismShards, .signalDrift])
+    }
 }
 
 final class MockUbiquitousKeyValueStore: UbiquitousKeyValueStoring {

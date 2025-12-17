@@ -476,7 +476,7 @@ struct DriftlyRootView: View {
         }
     }
 
-    private static let modeViewBuilders: [DriftMode: (DriftModeConfig) -> AnyView] = [
+    static let modeViewBuilders: [DriftMode: (DriftModeConfig) -> AnyView] = [
         .nebulaLake: { AnyView(NebulaLakeView(config: $0)) },
         .cosmicTide: { AnyView(CosmicTideView(config: $0)) },
         .auroraVeil: { AnyView(AuroraVeilView(config: $0)) },
@@ -644,9 +644,11 @@ struct DriftlyRootView: View {
         )
         UIApplication.shared.isIdleTimerDisabled = prevent
 #elseif os(tvOS)
-        // Allow users to opt in to preventing the screen saver on tvOS.
-        let prevent = engine.preventAutoLock && scenePhase == .active && !sleepState.sleepTimerAllowsLock
-        UIApplication.shared.isIdleTimerDisabled = prevent
+        UIApplication.shared.isIdleTimerDisabled = shouldPreventLockTvOS(
+            preventAutoLock: engine.preventAutoLock,
+            sleepTimerAllowsLock: sleepState.sleepTimerAllowsLock,
+            scenePhase: scenePhase
+        )
 #endif
     }
 

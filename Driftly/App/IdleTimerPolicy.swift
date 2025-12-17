@@ -8,3 +8,11 @@ func shouldPreventLock(
 ) -> Bool {
     preventAutoLock && !sleepTimerAllowsLock && scenePhase != .background
 }
+
+func shouldPreventLockTvOS(
+    preventAutoLock: Bool,
+    sleepTimerAllowsLock: Bool,
+    scenePhase: ScenePhase
+) -> Bool {
+    preventAutoLock && !sleepTimerAllowsLock && scenePhase == .active
+}
