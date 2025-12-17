@@ -114,7 +114,7 @@ final class MockUbiquitousKeyValueStore: UbiquitousKeyValueStoring {
             object: self,
             userInfo: [
                 NSUbiquitousKeyValueStoreChangedKeysKey: keys,
-                NSUbiquitousKeyValueStoreChangeReasonKey: NSUbiquitousKeyValueStoreChangeReason.serverChange.rawValue
+                NSUbiquitousKeyValueStoreChangeReasonKey: NSUbiquitousKeyValueStoreServerChange
             ]
         )
     }

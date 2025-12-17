@@ -66,6 +66,12 @@ struct DriftModePickerView: View {
                         .accessibilityIdentifier("modePickerEditButton")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: AppShare.appStoreURL) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("modePickerShareButton")
+                }
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
