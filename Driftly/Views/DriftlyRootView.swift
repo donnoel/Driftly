@@ -18,6 +18,9 @@ struct DriftlyRootView: View {
     @State private var brightnessHUDVisible = false
     @State private var brightnessHUDValue: Double = 1.0
     @State private var brightnessHUDHideWorkItem: DispatchWorkItem?
+    @State private var clockTimer = Timer.publish(every: 1, on: .main, in: .common)
+    @State private var clockConnection: Cancellable?
+    @State private var clockNow = Date()
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
@@ -165,6 +168,17 @@ struct DriftlyRootView: View {
                 .transition(.opacity)
             }
         }
+        .overlay(alignment: .topLeading) {
+            if engine.clockEnabled && !sleepState.sleepTimerHasExpired {
+                let style = Self.clockStyle(for: engine.currentMode)
+                ClockOverlay(
+                    time: clockNow,
+                    style: style
+                )
+                .padding(.top, 18)
+                .padding(.leading, 16)
+            }
+        }
         // Global animation speed for all lamp views
         .environment(\.driftAnimationSpeed, engine.animationSpeed)
         .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
@@ -241,6 +255,7 @@ struct DriftlyRootView: View {
             DispatchQueue.main.async {
                 applyUITestOverridesIfNeeded()
                 updateIdleTimer()
+                updateClockTicking()
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
                 updateMotionSampling()
                 startMotionIfNeeded()
@@ -255,6 +270,7 @@ struct DriftlyRootView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             updateIdleTimer()
+            updateClockTicking()
             handleMotion(for: newPhase)
             updateMotionSampling()
             updateTicking()
@@ -297,8 +313,14 @@ struct DriftlyRootView: View {
         .onChange(of: engine.isChromeVisible) { _, _ in
             updateMotionSampling()
         }
+        .onChange(of: engine.clockEnabled) { _, _ in
+            updateClockTicking()
+        }
         .onReceive(tickTimer) { now in
             handleSleepTimerTick(now: now)
+        }
+        .onReceive(clockTimer) { now in
+            clockNow = now
         }
         // Mode picker (sparkles)
 #if os(tvOS)
@@ -329,6 +351,7 @@ struct DriftlyRootView: View {
                 startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
+                updateClockTicking()
             }
             .accessibilityIdentifier("Off")
             Button("15 minutes") {
@@ -340,6 +363,7 @@ struct DriftlyRootView: View {
                 startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
+                updateClockTicking()
             }
             .accessibilityIdentifier("15 minutes")
             Button("30 minutes") {
@@ -351,6 +375,7 @@ struct DriftlyRootView: View {
                 startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
+                updateClockTicking()
             }
             .accessibilityIdentifier("30 minutes")
             Button("60 minutes") {
@@ -362,6 +387,7 @@ struct DriftlyRootView: View {
                 startMotionIfNeeded()
                 DriftHaptics.sleepTimerSet()
                 updateTicking()
+                updateClockTicking()
             }
             .accessibilityIdentifier("60 minutes")
             Button("Custom…") {
@@ -458,6 +484,8 @@ struct DriftlyRootView: View {
 #if os(tvOS)
             UIApplication.shared.isIdleTimerDisabled = false
 #endif
+            clockConnection?.cancel()
+            clockConnection = nil
         }
     }
     
@@ -715,6 +743,7 @@ struct DriftlyRootView: View {
         }
 
         updateTicking()
+        updateClockTicking()
     }
 
     private func updateTicking() {
@@ -729,6 +758,19 @@ struct DriftlyRootView: View {
         } else {
             tickConnection?.cancel()
             tickConnection = nil
+        }
+    }
+
+    private func updateClockTicking() {
+        let shouldTickClock = engine.clockEnabled && scenePhase == .active && !sleepState.sleepTimerHasExpired
+        if shouldTickClock {
+            if clockConnection == nil {
+                clockTimer = Timer.publish(every: 1, on: .main, in: .common)
+                clockConnection = clockTimer.connect()
+            }
+        } else {
+            clockConnection?.cancel()
+            clockConnection = nil
         }
     }
 
@@ -821,6 +863,7 @@ struct DriftlyRootView: View {
         sleepState.sleepTimerAllowsLock = false
         SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
         updateIdleTimer()
+        updateClockTicking()
         startMotionIfNeeded()
         updateTicking()
 #if os(tvOS)
@@ -860,6 +903,64 @@ struct DriftlyRootView: View {
         let percent = Int((brightnessHUDValue * 100).rounded())
         return "\(percent)%"
     }
+
+    private static func clockStyle(for mode: DriftMode) -> ClockStyle {
+        let styles: [ClockStyle] = [
+            ClockStyle(
+                font: .system(size: 32, weight: .heavy, design: .rounded).monospacedDigit(),
+                color: mode.config.palette.primary,
+                tracking: 1.2
+            ),
+            ClockStyle(
+                font: .system(size: 30, weight: .semibold, design: .serif).monospacedDigit(),
+                color: mode.config.palette.secondary,
+                tracking: 1.6
+            ),
+            ClockStyle(
+                font: .system(size: 28, weight: .bold, design: .monospaced),
+                color: mode.config.palette.tertiary,
+                tracking: 0.8
+            ),
+            ClockStyle(
+                font: .system(size: 30, weight: .black, design: .rounded).monospacedDigit(),
+                color: mode.config.palette.primary.opacity(0.9),
+                tracking: 1.0
+            )
+        ]
+
+        let idx = abs(mode.rawValue.hashValue) % styles.count
+        return styles[idx]
+    }
+
+    private struct ClockStyle {
+        let font: Font
+        let color: Color
+        let tracking: CGFloat
+    }
+
+    private struct ClockOverlay: View {
+        let time: Date
+        let style: ClockStyle
+
+        private static let formatter: DateFormatter = {
+            let df = DateFormatter()
+            df.locale = .current
+            df.dateFormat = "h:mm a"
+            return df
+        }()
+
+        var body: some View {
+            Text(Self.formatter.string(from: time).uppercased())
+                .font(style.font)
+                .foregroundStyle(style.color)
+                .tracking(style.tracking)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
+                .accessibilityLabel("Current time \(Self.formatter.string(from: time))")
+        }
+    }
 }
 
 // MARK: - tvOS Sleep Timer (Apple-style screens)
@@ -874,6 +975,7 @@ extension DriftlyRootView {
         updateIdleTimer()
         DriftHaptics.sleepTimerSet()
         updateTicking()
+        updateClockTicking()
     }
 
     private struct SleepTimerScreenTV: View {

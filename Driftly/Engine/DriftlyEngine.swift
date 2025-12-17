@@ -22,6 +22,7 @@ private enum DriftlyDefaultsKey {
     static let favoriteModes         = "driftly.favoriteModes"
     static let autoDriftFavoritesOnly = "driftly.autoDriftFavoritesOnly"
     static let modeDisplayOrder      = "driftly.modeDisplayOrder"
+    static let clockEnabled          = "driftly.clockEnabled"
 }
 
 final class DriftlyEngine: ObservableObject {
@@ -89,6 +90,10 @@ final class DriftlyEngine: ObservableObject {
 
     /// When set, Driftly will fade out once this time is reached (not persisted across launches)
     @Published var sleepTimerEndDate: Date? = nil
+    /// Whether to show the clock overlay
+    @Published var clockEnabled: Bool {
+        didSet { persistClockEnabled() }
+    }
 
     var allModes: [DriftMode] {
         DriftMode.allCases
@@ -190,6 +195,13 @@ final class DriftlyEngine: ObservableObject {
             autoDriftFavoritesOnly = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftFavoritesOnly)
         } else {
             autoDriftFavoritesOnly = false
+        }
+
+        // clock overlay (default: false)
+        if defaults.object(forKey: DriftlyDefaultsKey.clockEnabled) != nil {
+            clockEnabled = defaults.bool(forKey: DriftlyDefaultsKey.clockEnabled)
+        } else {
+            clockEnabled = false
         }
 
         // mode display order (default: all modes in their defined order)
@@ -355,6 +367,10 @@ final class DriftlyEngine: ObservableObject {
     private func persistModeDisplayOrder() {
         let rawValues = modeDisplayOrder.map(\.rawValue)
         defaults.set(rawValues, forKey: DriftlyDefaultsKey.modeDisplayOrder)
+    }
+
+    private func persistClockEnabled() {
+        defaults.set(clockEnabled, forKey: DriftlyDefaultsKey.clockEnabled)
     }
 
     private static func initialFavorites(

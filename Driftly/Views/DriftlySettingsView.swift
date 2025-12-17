@@ -55,6 +55,7 @@ private var iosSettings: some View {
 
             Section("Screen") {
                 Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                Toggle("Show Clock Overlay", isOn: $engine.clockEnabled)
             }
 
             Section("About") {
@@ -114,12 +115,13 @@ private var tvSettings: some View {
                     }
                 }
 
-                Section("Screen") {
-                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                    Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+            Section("Screen") {
+                Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                Toggle("Show Clock Overlay", isOn: $engine.clockEnabled)
+                Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
 
                 Section("About") {
                     HStack {
