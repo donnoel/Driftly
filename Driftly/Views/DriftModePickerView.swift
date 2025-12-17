@@ -206,39 +206,38 @@ private struct ModeRow: View {
     let favoriteAction: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(mode.displayName)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                }
-
-                Spacer()
-
-                Button(action: favoriteAction) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(isFavorite ? .yellow : .white.opacity(0.6))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isFavorite ? "Unfavorite" : "Favorite")
-                .accessibilityIdentifier("favorite-\(mode.rawValue)")
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(mode.displayName)
+                    .font(.headline)
+                    .foregroundStyle(.white)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(isSelected ? 0.10 : 0.06))
-            )
+
+            Spacer()
+
+            Button(action: favoriteAction) {
+                Image(systemName: isFavorite ? "star.fill" : "star")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isFavorite ? .yellow : .white.opacity(0.6))
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(isFavorite ? "Unfavorite" : "Favorite")
+            .accessibilityIdentifier("favorite-\(mode.rawValue)")
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(isSelected ? 0.10 : 0.06))
+        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
         .accessibilityIdentifier("modeRow-\(mode.rawValue)")
     }
 }
