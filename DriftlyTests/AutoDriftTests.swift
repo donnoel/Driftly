@@ -88,11 +88,11 @@ struct AutoDriftTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.autoDriftEnabled = true
-        engine.autoDriftIntervalMinutes = 1 // below minimum clamp
+        engine.autoDriftIntervalMinutes = 0 // below minimum clamp (should clamp to 1)
 
         let start = Date()
-        let tooSoon = start.addingTimeInterval(2 * 60)
-        let afterMin = start.addingTimeInterval(3 * 60 + 1)
+        let tooSoon = start.addingTimeInterval(30) // 0.5 minutes
+        let afterMin = start.addingTimeInterval(61) // just over 1 minute
 
         #expect(engine.shouldAutoDrift(now: tooSoon, lastChange: start, sleepTimerHasExpired: false) == false)
         #expect(engine.shouldAutoDrift(now: afterMin, lastChange: start, sleepTimerHasExpired: false) == true)

@@ -671,8 +671,8 @@ struct DriftlyRootView: View {
         )
         UIApplication.shared.isIdleTimerDisabled = prevent
 #elseif os(tvOS)
-        // Keep Driftly in the foreground on tvOS by preventing the screen saver while active.
-        let prevent = scenePhase == .active && !sleepState.sleepTimerAllowsLock
+        // Allow users to opt in to preventing the screen saver on tvOS.
+        let prevent = engine.preventAutoLock && scenePhase == .active && !sleepState.sleepTimerAllowsLock
         UIApplication.shared.isIdleTimerDisabled = prevent
 #endif
     }

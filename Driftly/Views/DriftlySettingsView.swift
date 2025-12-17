@@ -8,7 +8,7 @@ struct DriftlySettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     // Matches your existing settings file
-    private let autoDriftOptions: [Int] = [5, 10, 15, 30]
+    private let autoDriftOptions: [Int] = [1, 5, 10, 15, 30]
 
     var body: some View {
         #if os(tvOS)

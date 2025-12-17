@@ -169,7 +169,7 @@ final class DriftlyEngine: ObservableObject {
         if storedInterval == 0 {
             autoDriftIntervalMinutes = 15
         } else {
-            autoDriftIntervalMinutes = max(3, storedInterval)
+            autoDriftIntervalMinutes = max(1, storedInterval)
         }
 
         // favorites (default: empty)
@@ -245,7 +245,7 @@ final class DriftlyEngine: ObservableObject {
     ) -> Bool {
         guard autoDriftEnabled, !sleepTimerHasExpired else { return false }
 
-        let intervalMinutes = max(3, autoDriftIntervalMinutes)
+        let intervalMinutes = max(1, autoDriftIntervalMinutes)
         let intervalSeconds = Double(intervalMinutes * 60)
         let elapsed = now.timeIntervalSince(lastChange)
 

@@ -27,8 +27,9 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 | 🌙 **Sleep Timer** | Set a timer and Driftly gently powers down the visuals. |
 | ☀️ **Brightness Edge Gestures** | Drag up/down on screen edges to adjust in-app brightness (clamped with haptic feedback). |
 | 🌀 **Motion Parallax** | Optional subtle motion parallax using device motion for extra depth. |
+| ⭐️ **Favorites Sync** | Favorites sync via iCloud key-value store so they match across iOS and tvOS. |
 | 💾 **Persistence** | Remembers mode, brightness, chrome visibility, auto-drift settings, favorites, and ordering. |
-| 📺 **tvOS Support** | Includes a tvOS target for big-screen ambient Driftly vibes. |
+| 📺 **tvOS Support** | Includes a tvOS target for big-screen ambient Driftly vibes with shared favorites. |
 
 ---
 
@@ -85,7 +86,7 @@ A mix of cosmic-liquid gradients and “generative art gallery” modes:
 - **Canvas** + **TimelineView** (smooth infinite animation)
 - **Combine** (timers & reactive state)
 - **Core Motion** (subtle parallax via `DriftMotionManager`)
-- **UserDefaults** persistence (via `DriftlyEngine`)
+- **UserDefaults** + iCloud key-value store (favorites sync) via `DriftlyEngine`
 
 ---
 
@@ -99,6 +100,7 @@ The single source of truth for the app:
 - Auto-drift settings (interval, shuffle, favorites-only)
 - Favorites + mode display ordering
 - Sleep timer end date
+- Favorites sync propagation to iCloud key-value store (shared between iOS/tvOS)
 
 ### **SleepAndDriftController**
 Owns the logic for:
@@ -163,6 +165,7 @@ Also included:
 - Motion sampling + phase handling
 - Idle timer policy behavior
 - Root view initialization (test overrides)
+- Favorites sync behaviors (local ↔︎ iCloud key-value store)
 
 ---
 
