@@ -468,73 +468,46 @@ struct DriftlyRootView: View {
         if sleepState.sleepTimerHasExpired {
             Color.black.ignoresSafeArea()
         } else {
-            switch engine.currentMode {
-            case .nebulaLake:
-                NebulaLakeView(config: engine.currentMode.config)
-            case .cosmicTide:
-                CosmicTideView(config: engine.currentMode.config)
-            case .auroraVeil:
-                AuroraVeilView(config: engine.currentMode.config)
-            case .abyssGlow:
-                AbyssGlowView(config: engine.currentMode.config)
-            case .starlitMist:
-                StarlitMistView(config: engine.currentMode.config)
-            case .lunarDrift:
-                LunarDriftView(config: engine.currentMode.config)
-            case .solarBloom:
-                SolarBloomView(config: engine.currentMode.config)
-            case .plasmaReef:
-                PlasmaReefView(config: engine.currentMode.config)
-            case .velvetEclipse:
-                VelvetEclipseView(config: engine.currentMode.config)
-            case .neonKelp:
-                NeonKelpView(config: engine.currentMode.config)
-            case .emberDrift:
-                EmberDriftView(config: engine.currentMode.config)
-            // Batch 2 cases
-            case .pulseAurora:
-                PulseAuroraView(config: engine.currentMode.config)
-            case .vitalWave:
-                VitalWaveView(config: engine.currentMode.config)
-            case .echoBloom:
-                EchoBloomView(config: engine.currentMode.config)
-            case .cosmicHeart:
-                CosmicHeartView(config: engine.currentMode.config)
-            case .signalDrift:
-                SignalDriftView(config: engine.currentMode.config)
-            // Batch 3 cases
-            case .horizonPulse:
-                HorizonPulseView(config: engine.currentMode.config)
-            case .photonRain:
-                PhotonRainView(config: engine.currentMode.config)
-            case .gravityRings:
-                GravityRingsView(config: engine.currentMode.config)
-            case .driftGrid:
-                DriftGridView(config: engine.currentMode.config)
-            case .quietSignal:
-                QuietSignalView(config: engine.currentMode.config)
-            // Batch 4 cases
-            case .chromaticSpine:
-                ChromaticSpineView(config: engine.currentMode.config)
-            case .ribbonOrbit:
-                RibbonOrbitView(config: engine.currentMode.config)
-            case .inkTopography:
-                InkTopographyView(config: engine.currentMode.config)
-            case .prismShards:
-                PrismShardsView(config: engine.currentMode.config)
-            case .lissajousBloom:
-                LissajousBloomView(config: engine.currentMode.config)
-            case .meridianArcs:
-                MeridianArcsView(config: engine.currentMode.config)
-            case .spectralLoom:
-                SpectralLoomView(config: engine.currentMode.config)
-            case .voxelMirage:
-                VoxelMirageView(config: engine.currentMode.config)
-            case .haloInterference:
-                HaloInterferenceView(config: engine.currentMode.config)
+            if let builder = Self.modeViewBuilders[engine.currentMode] {
+                builder(engine.currentMode.config)
+            } else {
+                Color.black
             }
         }
     }
+
+    private static let modeViewBuilders: [DriftMode: (DriftModeConfig) -> AnyView] = [
+        .nebulaLake: { AnyView(NebulaLakeView(config: $0)) },
+        .cosmicTide: { AnyView(CosmicTideView(config: $0)) },
+        .auroraVeil: { AnyView(AuroraVeilView(config: $0)) },
+        .abyssGlow: { AnyView(AbyssGlowView(config: $0)) },
+        .starlitMist: { AnyView(StarlitMistView(config: $0)) },
+        .lunarDrift: { AnyView(LunarDriftView(config: $0)) },
+        .solarBloom: { AnyView(SolarBloomView(config: $0)) },
+        .plasmaReef: { AnyView(PlasmaReefView(config: $0)) },
+        .velvetEclipse: { AnyView(VelvetEclipseView(config: $0)) },
+        .neonKelp: { AnyView(NeonKelpView(config: $0)) },
+        .emberDrift: { AnyView(EmberDriftView(config: $0)) },
+        .pulseAurora: { AnyView(PulseAuroraView(config: $0)) },
+        .vitalWave: { AnyView(VitalWaveView(config: $0)) },
+        .echoBloom: { AnyView(EchoBloomView(config: $0)) },
+        .cosmicHeart: { AnyView(CosmicHeartView(config: $0)) },
+        .signalDrift: { AnyView(SignalDriftView(config: $0)) },
+        .horizonPulse: { AnyView(HorizonPulseView(config: $0)) },
+        .photonRain: { AnyView(PhotonRainView(config: $0)) },
+        .gravityRings: { AnyView(GravityRingsView(config: $0)) },
+        .driftGrid: { AnyView(DriftGridView(config: $0)) },
+        .quietSignal: { AnyView(QuietSignalView(config: $0)) },
+        .chromaticSpine: { AnyView(ChromaticSpineView(config: $0)) },
+        .ribbonOrbit: { AnyView(RibbonOrbitView(config: $0)) },
+        .inkTopography: { AnyView(InkTopographyView(config: $0)) },
+        .prismShards: { AnyView(PrismShardsView(config: $0)) },
+        .lissajousBloom: { AnyView(LissajousBloomView(config: $0)) },
+        .meridianArcs: { AnyView(MeridianArcsView(config: $0)) },
+        .spectralLoom: { AnyView(SpectralLoomView(config: $0)) },
+        .voxelMirage: { AnyView(VoxelMirageView(config: $0)) },
+        .haloInterference: { AnyView(HaloInterferenceView(config: $0)) }
+    ]
     
     // MARK: - Chrome
     
