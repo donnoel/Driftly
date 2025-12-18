@@ -944,13 +944,17 @@ struct DriftlyRootView: View {
 
         private static let formatter: DateFormatter = {
             let df = DateFormatter()
-            df.locale = .current
-            df.dateFormat = "h:mm a"
+            df.locale = .autoupdatingCurrent
+            if let format = DateFormatter.dateFormat(fromTemplate: "j:mm", options: 0, locale: df.locale) {
+                df.dateFormat = format
+            } else {
+                df.timeStyle = .short
+            }
             return df
         }()
 
         var body: some View {
-            Text(Self.formatter.string(from: time).uppercased())
+            Text(Self.formatter.string(from: time))
                 .font(style.font)
                 .foregroundStyle(style.color)
                 .tracking(style.tracking)
