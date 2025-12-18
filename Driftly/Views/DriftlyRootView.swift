@@ -178,7 +178,7 @@ struct DriftlyRootView: View {
         }
         .overlay(alignment: .topLeading) {
             if engine.clockEnabled && !sleepState.sleepTimerHasExpired {
-                let style = Self.clockStyle(for: engine.currentMode)
+                let style = Self.clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
                 GeometryReader { proxy in
                     ClockOverlay(
                         time: clockNow,
@@ -1020,32 +1020,28 @@ struct DriftlyRootView: View {
             return "\(percent)%"
         }
         
-        private static func clockStyle(for mode: DriftMode) -> ClockStyle {
-            let styles: [ClockStyle] = [
-                ClockStyle(
+        private static func clockStyle(for mode: DriftMode, idiom: UIUserInterfaceIdiom = UIDevice.current.userInterfaceIdiom) -> ClockStyle {
+            let palette = mode.config.palette
+            switch idiom {
+            case .pad:
+                return ClockStyle(
                     font: .system(size: 44, weight: .heavy, design: .rounded).monospacedDigit(),
-                    color: mode.config.palette.primary,
+                    color: palette.primary,
                     tracking: 1.4
-                ),
-                ClockStyle(
-                    font: .system(size: 40, weight: .semibold, design: .serif).monospacedDigit(),
-                    color: mode.config.palette.secondary,
-                    tracking: 1.8
-                ),
-                ClockStyle(
-                    font: .system(size: 38, weight: .bold, design: .monospaced),
-                    color: mode.config.palette.tertiary,
-                    tracking: 1.0
-                ),
-                ClockStyle(
-                    font: .system(size: 46, weight: .black, design: .rounded).monospacedDigit(),
-                    color: mode.config.palette.primary.opacity(0.9),
-                    tracking: 1.2
                 )
-            ]
-            
-            let idx = abs(mode.rawValue.hashValue) % styles.count
-            return styles[idx]
+            case .tv:
+                return ClockStyle(
+                    font: .system(size: 70, weight: .black, design: .rounded).monospacedDigit(),
+                    color: palette.primary,
+                    tracking: 1.8
+                )
+            default: // iPhone and others
+                return ClockStyle(
+                    font: .system(size: 28, weight: .semibold, design: .rounded).monospacedDigit(),
+                    color: palette.primary,
+                    tracking: 1.1
+                )
+            }
         }
         
         private struct ClockStyle {
@@ -1116,7 +1112,7 @@ struct DriftlyRootView: View {
 
             private func scheduleNextMove() {
                 moveWork?.cancel()
-                let interval: TimeInterval = 8 + Double.random(in: 0...10) // 8–18s between hops
+                let interval: TimeInterval = 20 + Double.random(in: 0...22) // 20–42s between hops
                 let work = DispatchWorkItem { moveClock() }
                 moveWork = work
                 DispatchQueue.main.asyncAfter(deadline: .now() + interval, execute: work)
@@ -1127,9 +1123,24 @@ struct DriftlyRootView: View {
                     scheduleNextMove()
                     return
                 }
-                let margin: CGFloat = 36
-                let x = CGFloat.random(in: margin...(containerSize.width - margin))
-                let y = CGFloat.random(in: margin...(containerSize.height - margin))
+                // Estimate clock size heuristically based on idiom to keep it fully on-screen.
+                let (estimatedWidth, estimatedHeight): (CGFloat, CGFloat) = {
+                    #if os(tvOS)
+                    return (420, 180)
+                    #else
+                    switch UIDevice.current.userInterfaceIdiom {
+                    case .pad: return (300, 140)
+                    case .tv: return (420, 180)
+                    default: return (240, 120)
+                    }
+                    #endif
+                }()
+                let marginX = max(36, estimatedWidth / 2 + 20)
+                let marginY = max(36, estimatedHeight / 2 + 24)
+                let xRange = max(marginX, 0)...max(marginX, containerSize.width - marginX)
+                let yRange = max(marginY, 0)...max(marginY, containerSize.height - marginY)
+                let x = CGFloat.random(in: xRange)
+                let y = CGFloat.random(in: yRange)
                 let newPoint = CGPoint(x: x, y: y)
 
                 let fadeOut: TimeInterval = 1.8
