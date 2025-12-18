@@ -23,7 +23,9 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 |--------|-------------|
 | 🌈 **30 Ambient Modes** | A curated gallery of “Cosmic Liquid” gradients plus abstract, line-based generative modes. |
 | 🫥 **Minimal UI Chrome** | Fullscreen experience with tiny controls that fade away. |
-| 🔁 **Auto Drift** | Automatically cycles modes on a timer (with shuffle + favorites-only options). |
+| 🔁 **Auto Drift** | Automatically cycles modes on a timer (with shuffle + favorites-only options) and pre-warms the next mode before the switch. |
+| 🎚️ **Seamless Transitions** | Stacked crossfades keep the previous mode alive until the new one is drawn, hiding Canvas warm-up and avoiding black flashes. |
+| ⏱️ **Phase-Stable Animation** | A shared phase anchor keeps animations continuous across pauses, backgrounding, and mode switches. |
 | 🌙 **Sleep Timer** | Set a timer and Driftly gently powers down the visuals. |
 | ☀️ **Brightness Edge Gestures** | Drag up/down on screen edges to adjust in-app brightness (clamped with haptic feedback). |
 | 🌀 **Motion Parallax** | Optional subtle motion parallax using device motion for extra depth. |
@@ -87,6 +89,7 @@ A mix of cosmic-liquid gradients and “generative art gallery” modes:
 - **Combine** (timers & reactive state)
 - **Core Motion** (subtle parallax via `DriftMotionManager`)
 - **UserDefaults** + iCloud key-value store (favorites sync) via `DriftlyEngine`
+- **Environment-driven animation** (`driftAnimationSpeed`, `driftPhaseAnchorDate`, `driftAnimationsPaused`) for consistent speed/phase control
 
 ---
 
@@ -114,9 +117,12 @@ The full-screen shell:
 - Presents the mode picker + settings
 - Handles brightness edge gestures
 - Coordinates motion + idle timer policy
+- Runs stacked crossfades between modes and pre-warms the upcoming auto-drift mode to avoid first-frame hitches
+- Injects a shared phase anchor + animation speed into mode views so they stay in sync across pauses and switches
 
 ### **Mode Views**
 Each mode is its own `SwiftUI.View` (mostly Canvas-driven), enabling a clean “gallery” architecture.
+- Mode animations use `PhaseController` with a shared anchor and `PausableTimelineView` so pausing/resuming doesn’t snap phases.
 
 ---
 
@@ -162,10 +168,11 @@ Also included:
 - Auto-drift timing
 - Sleep timer state transitions
 - Brightness clamping
-- Motion sampling + phase handling
+- Motion sampling + phase handling (including paused/resume continuity)
 - Idle timer policy behavior
 - Root view initialization (test overrides)
 - Favorites sync behaviors (local ↔︎ iCloud key-value store)
+- Mode builder coverage (all modes have a view builder)
 
 ---
 

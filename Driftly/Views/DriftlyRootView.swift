@@ -179,12 +179,16 @@ struct DriftlyRootView: View {
         .overlay(alignment: .topLeading) {
             if engine.clockEnabled && !sleepState.sleepTimerHasExpired {
                 let style = Self.clockStyle(for: engine.currentMode)
-                ClockOverlay(
-                    time: clockNow,
-                    style: style
-                )
-                .padding(.top, 18)
-                .padding(.leading, 16)
+                GeometryReader { proxy in
+                    ClockOverlay(
+                        time: clockNow,
+                        style: style,
+                        anchorDate: phaseAnchorDate,
+                        containerSize: proxy.size
+                    )
+                    .padding(.top, 18)
+                    .padding(.leading, 16)
+                }
             }
         }
         // Global animation speed for all lamp views
@@ -1019,24 +1023,24 @@ struct DriftlyRootView: View {
         private static func clockStyle(for mode: DriftMode) -> ClockStyle {
             let styles: [ClockStyle] = [
                 ClockStyle(
-                    font: .system(size: 32, weight: .heavy, design: .rounded).monospacedDigit(),
+                    font: .system(size: 44, weight: .heavy, design: .rounded).monospacedDigit(),
                     color: mode.config.palette.primary,
-                    tracking: 1.2
+                    tracking: 1.4
                 ),
                 ClockStyle(
-                    font: .system(size: 30, weight: .semibold, design: .serif).monospacedDigit(),
+                    font: .system(size: 40, weight: .semibold, design: .serif).monospacedDigit(),
                     color: mode.config.palette.secondary,
-                    tracking: 1.6
+                    tracking: 1.8
                 ),
                 ClockStyle(
-                    font: .system(size: 28, weight: .bold, design: .monospaced),
+                    font: .system(size: 38, weight: .bold, design: .monospaced),
                     color: mode.config.palette.tertiary,
-                    tracking: 0.8
+                    tracking: 1.0
                 ),
                 ClockStyle(
-                    font: .system(size: 30, weight: .black, design: .rounded).monospacedDigit(),
+                    font: .system(size: 46, weight: .black, design: .rounded).monospacedDigit(),
                     color: mode.config.palette.primary.opacity(0.9),
-                    tracking: 1.0
+                    tracking: 1.2
                 )
             ]
             
@@ -1053,6 +1057,13 @@ struct DriftlyRootView: View {
         private struct ClockOverlay: View {
             let time: Date
             let style: ClockStyle
+            let anchorDate: Date
+            let containerSize: CGSize
+            @Environment(\.driftAnimationsPaused) private var animationsPaused
+            @State private var targetPosition: CGPoint = .zero
+            @State private var opacity: Double = 1
+            @State private var scale: CGFloat = 1
+            @State private var moveWork: DispatchWorkItem?
             
             private static let formatter: DateFormatter = {
                 let df = DateFormatter()
@@ -1066,15 +1077,79 @@ struct DriftlyRootView: View {
             }()
             
             var body: some View {
-                Text(Self.formatter.string(from: time))
-                    .font(style.font)
-                    .foregroundStyle(style.color)
-                    .tracking(style.tracking)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
-                    .accessibilityLabel("Current time \(Self.formatter.string(from: time))")
+                TimelineView(.animation) { timeline in
+                    let raw = animationsPaused ? 0 : timeline.date.timeIntervalSince(anchorDate)
+                    let beat = 0.5 + 0.5 * sin(raw * 1.3)
+                    let pulseScale = 1.0 + 0.05 * beat
+                    let glow = style.color.opacity(0.22 + 0.10 * beat)
+
+                    Text(Self.formatter.string(from: time))
+                        .font(style.font)
+                        .foregroundStyle(style.color)
+                        .tracking(style.tracking)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .scaleEffect(pulseScale * scale)
+                        .opacity(opacity)
+                        .shadow(color: glow, radius: 20 + 6 * beat, x: 0, y: 10)
+                        .shadow(color: .black.opacity(0.32), radius: 16, x: 0, y: 8)
+                        .position(currentPosition)
+                        .accessibilityLabel("Current time \(Self.formatter.string(from: time))")
+                        .accessibilityHint("Clock pulses gently")
+                }
+                .onAppear {
+                    scheduleNextMove()
+                }
+                .onDisappear {
+                    moveWork?.cancel()
+                    moveWork = nil
+                }
+            }
+
+            private var currentPosition: CGPoint {
+                if targetPosition == .zero {
+                    return CGPoint(x: containerSize.width * 0.18, y: containerSize.height * 0.12)
+                }
+                return targetPosition
+            }
+
+            private func scheduleNextMove() {
+                moveWork?.cancel()
+                let interval: TimeInterval = 8 + Double.random(in: 0...10) // 8–18s between hops
+                let work = DispatchWorkItem { moveClock() }
+                moveWork = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + interval, execute: work)
+            }
+
+            private func moveClock() {
+                guard containerSize.width > 72, containerSize.height > 72 else {
+                    scheduleNextMove()
+                    return
+                }
+                let margin: CGFloat = 36
+                let x = CGFloat.random(in: margin...(containerSize.width - margin))
+                let y = CGFloat.random(in: margin...(containerSize.height - margin))
+                let newPoint = CGPoint(x: x, y: y)
+
+                let fadeOut: TimeInterval = 1.8
+                let fadeIn: TimeInterval = 2.0
+                let gap: TimeInterval = 0.6
+
+                withAnimation(.easeInOut(duration: fadeOut)) {
+                    opacity = 0
+                    scale = 0.92
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + fadeOut + gap) {
+                    targetPosition = newPoint
+                    withAnimation(.easeInOut(duration: fadeIn)) {
+                        opacity = 1
+                        scale = 1
+                    }
+                }
+
+                scheduleNextMove()
             }
         }
     }
