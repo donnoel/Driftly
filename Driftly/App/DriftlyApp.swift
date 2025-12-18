@@ -20,7 +20,35 @@ struct DriftlyApp: App {
             }
         }
         #endif
-        return DriftlyEngine()
+
+        let engine = DriftlyEngine()
+
+        #if DEBUG
+        applyUITestEngineOverrides(to: engine)
+        #endif
+
+        return engine
     }
+
+#if DEBUG
+    private static func applyUITestEngineOverrides(to engine: DriftlyEngine) {
+        let args = ProcessInfo.processInfo.arguments
+
+        // Force chrome visible for any UI test that needs it.
+        if args.contains("UITestingForceChromeVisible")
+            || args.contains("UITestingOpenModePicker")
+            || args.contains("UITestingOpenSleepTimer") {
+            engine.isChromeVisible = true
+        }
+
+        // Apply a specific mode if requested.
+        if let setModeArg = args.first(where: { $0.hasPrefix("UITestingSetMode=") }) {
+            let raw = String(setModeArg.split(separator: "=", maxSplits: 1).last ?? "")
+            if let mode = DriftMode(rawValue: raw) {
+                engine.currentMode = mode
+            }
+        }
+    }
+#endif
 }
 #endif

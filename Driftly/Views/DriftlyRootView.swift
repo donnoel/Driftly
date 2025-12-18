@@ -18,11 +18,12 @@ struct DriftlyRootView: View {
     @State private var brightnessHUDVisible = false
     @State private var brightnessHUDValue: Double = 1.0
     @State private var brightnessHUDHideWorkItem: DispatchWorkItem?
+    @State private var brightnessDragLastTranslation: CGFloat = 0
     @State private var clockTimer = Timer.publish(every: 1, on: .main, in: .common)
     @State private var clockConnection: Cancellable?
     @State private var clockNow = Date()
     @State private var autoDriftPausedAt: Date?
-    @State private var didApplyUITestOverrides = false
+    @State private var didRunInitialSetup = false
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
@@ -657,9 +658,15 @@ struct DriftlyRootView: View {
                 .gesture(
                     DragGesture(minimumDistance: 5)
                         .onChanged { value in
+                            // Use incremental delta so brightness changes smoothly instead of compounding total translation.
+                            let delta = value.translation.height - brightnessDragLastTranslation
+                            brightnessDragLastTranslation = value.translation.height
                             // Drag up (negative height) → increase brightness
                             // Drag down (positive height) → decrease brightness
-                            adjustBrightness(by: -value.translation.height / 1800.0)
+                            adjustBrightness(by: -delta / 1800.0)
+                        }
+                        .onEnded { _ in
+                            brightnessDragLastTranslation = 0
                         }
                 )
 #endif
@@ -818,9 +825,9 @@ struct DriftlyRootView: View {
                 fallbackFocus = !willShow
             }
         }
-#endif
+    #endif
         
-#if os(tvOS)
+    #if os(tvOS)
         private func handlePlayPauseCommand() {
             if sleepState.sleepTimerHasExpired {
                 wakeFromSleepTimer()
@@ -828,14 +835,12 @@ struct DriftlyRootView: View {
                 toggleChromeTvOS(forceToggle: true)
             }
         }
-#endif
+    #endif
         
         @MainActor
         private func initialAppearanceSetup() {
-            if !didApplyUITestOverrides {
-                didApplyUITestOverrides = true
-                applyUITestOverridesIfNeeded()
-            }
+            guard !didRunInitialSetup else { return }
+            didRunInitialSetup = true
             
             updateIdleTimer()
             updateClockTicking()
@@ -847,37 +852,6 @@ struct DriftlyRootView: View {
             if engine.isChromeVisible {
                 focusedButton = .modePicker
                 fallbackFocus = false
-            }
-#endif
-        }
-        
-        private func applyUITestOverridesIfNeeded() {
-#if DEBUG
-            let args = ProcessInfo.processInfo.arguments
-            guard args.contains(where: { arg in
-                arg == "UITestingForceChromeVisible" ||
-                arg == "UITestingOpenModePicker" ||
-                arg == "UITestingOpenSleepTimer" ||
-                arg.hasPrefix("UITestingSetMode=")
-            }) else { return }
-            
-        if args.contains("UITestingForceChromeVisible") {
-            engine.isChromeVisible = true
-        }
-        if args.contains("UITestingOpenModePicker") || args.contains("UITestingOpenSleepTimer") {
-            engine.isChromeVisible = true
-        }
-        if args.contains("UITestingOpenModePicker") {
-            isModePickerPresented = true
-        }
-        if args.contains("UITestingOpenSleepTimer") {
-            isSleepTimerDialogPresented = true
-            }
-            if let setModeArg = args.first(where: { $0.hasPrefix("UITestingSetMode=") }) {
-                let raw = String(setModeArg.split(separator: "=", maxSplits: 1).last ?? "")
-                if let mode = DriftMode(rawValue: raw) {
-                    engine.currentMode = mode
-                }
             }
 #endif
         }
