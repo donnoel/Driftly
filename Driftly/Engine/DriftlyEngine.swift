@@ -119,7 +119,7 @@ final class DriftlyEngine: ObservableObject {
     ) {
         self.defaults = defaults
         self.ubiquitousStore = ubiquitousStore
-        self.ubiquitousStore?.synchronize()
+        _ = self.ubiquitousStore?.synchronize()
 
         // currentMode
         if let raw = defaults.string(forKey: DriftlyDefaultsKey.currentMode),
@@ -385,7 +385,7 @@ final class DriftlyEngine: ObservableObject {
         } else {
             let rawValues = localFavorites.map(\.rawValue)
             ubiquitousStore?.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
-            ubiquitousStore?.synchronize()
+            _ = ubiquitousStore?.synchronize()
             return localFavorites
         }
     }
@@ -402,7 +402,7 @@ final class DriftlyEngine: ObservableObject {
         guard let ubiquitousStore, !applyingCloudFavorites else { return }
         let rawValues = favorites.map(\.rawValue)
         ubiquitousStore.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
-        ubiquitousStore.synchronize()
+        _ = ubiquitousStore.synchronize()
     }
 
     private func startObservingUbiquitousStore() {
