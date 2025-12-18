@@ -5,6 +5,8 @@ struct PhotonRainView: View {
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
     @State private var drops: [DropMeta] = Self.makeDrops(maxCount: 140)
+    private let leftPadding: CGFloat = 60
+    private let rightPadding: CGFloat = 140
 
     var body: some View {
         if animationsPaused {
@@ -24,6 +26,8 @@ struct PhotonRainView: View {
                         render(in: &ctx, size: size, t: t, dropCountBase: dropCount)
                     }
                 }
+                .padding(.leading, -leftPadding)
+                .padding(.trailing, -rightPadding)
                 .background(config.palette.backgroundBottom)
                 .ignoresSafeArea()
             }
@@ -31,7 +35,8 @@ struct PhotonRainView: View {
     }
 
     private func render(in context: inout GraphicsContext, size: CGSize, t: Double, dropCountBase: Int) {
-        let w = max(size.width, 1)
+        // Expand drawing width so streaks extend beyond both edges (heavier on the right per design).
+        let w = max(size.width + leftPadding + rightPadding, 1)
         let h = max(size.height, 1)
         let dropCount = Self.adjustedDropCount(base: dropCountBase, size: size)
         let denom = Double(max(dropCount - 1, 1))
@@ -42,7 +47,7 @@ struct PhotonRainView: View {
             let p = Double(drop.index) / denom
 
             // Base x lane + drift so streaks cross and "clash"
-            let baseX = CGFloat(p) * w
+            let baseX = -leftPadding + CGFloat(p) * w
             let laneDrift = CGFloat(drop.laneDriftD) * CGFloat(sin(t * drop.laneDriftFreq + Double(drop.index) * 0.21))
 
             // Fall speed varies per drop
@@ -156,7 +161,7 @@ struct PhotonRainView: View {
 
     // Fallback path for visual comparison/testing; computes per-drop seeds each frame.
     private func renderLegacy(in context: inout GraphicsContext, size: CGSize, t: Double, dropCountBase: Int) {
-        let w = max(size.width, 1)
+        let w = max(size.width + leftPadding + rightPadding, 1)
         let h = max(size.height, 1)
         let dropCount = Self.adjustedDropCount(base: dropCountBase, size: size)
         let denom = Double(max(dropCount - 1, 1))
@@ -168,7 +173,7 @@ struct PhotonRainView: View {
             let b = Self.hash01(i, 41)
             let c = Self.hash01(i, 83)
 
-            let baseX = CGFloat(p) * w
+            let baseX = -leftPadding + CGFloat(p) * w
             let laneDriftD = (a - 0.5) * 110.0
             let laneDrift = CGFloat(laneDriftD) * CGFloat(sin(t * (0.14 + 0.04 * b) + Double(i) * 0.21))
 
