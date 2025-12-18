@@ -3,10 +3,11 @@ import SwiftUI
 struct HorizonPulseView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * speed * 0.04
+        PausableTimelineView(paused: animationsPaused) { date in
+            let t = date.timeIntervalSinceReferenceDate * speed * 0.04
 
             LinearGradient(
                 colors: [

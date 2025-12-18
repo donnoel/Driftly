@@ -45,10 +45,11 @@ private struct HorizonWaveGlowOverlay: View {
 private struct HorizonWaveGlowTimeline: View {
     let palette: DriftPalette
     let speed: Double
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let raw: Double = timeline.date.timeIntervalSinceReferenceDate
+        PausableTimelineView(paused: animationsPaused) { date in
+            let raw: Double = date.timeIntervalSinceReferenceDate
             let speedFactor: Double = max(0.25, speed) * 0.075
             let t: Double = raw * speedFactor
             HorizonWaveGlowCanvas(palette: palette, t: t)

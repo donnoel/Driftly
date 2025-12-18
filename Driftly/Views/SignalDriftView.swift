@@ -3,10 +3,11 @@ import SwiftUI
 struct SignalDriftView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed)
+        PausableTimelineView(paused: animationsPaused) { date in
+            let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
 
             ZStack {
                 // Pink velvet backdrop

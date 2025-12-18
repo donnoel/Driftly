@@ -3,6 +3,7 @@ import SwiftUI
 struct PlasmaReefView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     private func render(in context: inout GraphicsContext, size: CGSize, t: Double) {
         // Background gradient
@@ -124,8 +125,8 @@ struct PlasmaReefView: View {
     }
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed)
+        PausableTimelineView(paused: animationsPaused) { date in
+            let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
 
             GeometryReader { proxy in
                 let size = proxy.size

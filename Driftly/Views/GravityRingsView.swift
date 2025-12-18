@@ -3,12 +3,16 @@ import SwiftUI
 struct GravityRingsView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
     @State private var timelineStart: TimeInterval = Date().timeIntervalSinceReferenceDate
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        PausableTimelineView(paused: animationsPaused) { date in
             // Use a local time base to avoid a visible "jerk" on entry
-            let raw = timeline.date.timeIntervalSinceReferenceDate - timelineStart
+            let effectiveDate = animationsPaused
+            ? Date(timeIntervalSinceReferenceDate: timelineStart)
+            : date
+            let raw = effectiveDate.timeIntervalSinceReferenceDate - timelineStart
             let t = raw * max(0.25, speed) * 0.18
 
             GeometryReader { proxy in

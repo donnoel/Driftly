@@ -11,3 +11,20 @@ extension EnvironmentValues {
         set { self[DriftAnimationSpeedKey.self] = newValue }
     }
 }
+
+/// Renders a single static frame when paused; otherwise mirrors `TimelineView(.animation)`.
+struct PausableTimelineView<Content: View>: View {
+    let paused: Bool
+    @ViewBuilder let content: (Date) -> Content
+
+    @ViewBuilder
+    var body: some View {
+        if paused {
+            content(Date(timeIntervalSinceReferenceDate: 0))
+        } else {
+            TimelineView(.animation) { timeline in
+                content(timeline.date)
+            }
+        }
+    }
+}

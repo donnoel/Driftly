@@ -15,10 +15,11 @@ struct NeonKelpView: View {
 private struct AcidRainPollockView: View {
     let config: DriftModeConfig
     let speed: Double
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let raw = timeline.date.timeIntervalSinceReferenceDate
+        PausableTimelineView(paused: animationsPaused) { date in
+            let raw = date.timeIntervalSinceReferenceDate
             let t = raw * max(0.25, speed) * 0.095
 
             Canvas { context, size in
