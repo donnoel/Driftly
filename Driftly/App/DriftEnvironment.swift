@@ -4,11 +4,21 @@ private struct DriftAnimationSpeedKey: EnvironmentKey {
     static let defaultValue: Double = 1.0
 }
 
+private struct DriftPhaseAnchorDateKey: EnvironmentKey {
+    static let defaultValue: Date = Date()
+}
+
 extension EnvironmentValues {
     /// Global animation speed multiplier for Driftly lamp views.
     var driftAnimationSpeed: Double {
         get { self[DriftAnimationSpeedKey.self] }
         set { self[DriftAnimationSpeedKey.self] = newValue }
+    }
+
+    /// Shared phase anchor so mode views can stay in sync across transitions.
+    var driftPhaseAnchorDate: Date {
+        get { self[DriftPhaseAnchorDateKey.self] }
+        set { self[DriftPhaseAnchorDateKey.self] = newValue }
     }
 }
 
@@ -19,6 +29,7 @@ struct PausableTimelineView<Content: View>: View {
     // Keeps a continuous timeline that stops advancing while paused.
     @State private var accumulated: TimeInterval = 0
     @State private var startDate = Date()
+    @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
 
     @ViewBuilder
     var body: some View {
@@ -37,7 +48,7 @@ struct PausableTimelineView<Content: View>: View {
             }
         }
         .onAppear {
-            startDate = Date()
+            startDate = phaseAnchorDate
         }
     }
 }

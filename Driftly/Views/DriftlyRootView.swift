@@ -24,6 +24,9 @@ struct DriftlyRootView: View {
     @State private var clockNow = Date()
     @State private var autoDriftPausedAt: Date?
     @State private var didRunInitialSetup = false
+    @State private var phaseAnchorDate = Date()
+    @State private var prewarmMode: DriftMode?
+    @State private var prewarmLayerID: UUID?
     @State private var previousMode: DriftMode?
     @State private var previousModeLayerID: UUID?
     @State private var currentModeLayerID = UUID()
@@ -185,6 +188,7 @@ struct DriftlyRootView: View {
             }
         }
         // Global animation speed for all lamp views
+        .environment(\.driftPhaseAnchorDate, phaseAnchorDate)
         .environment(\.driftAnimationSpeed, engine.animationSpeed)
         .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
         .background(Color.black)
@@ -514,6 +518,14 @@ struct DriftlyRootView: View {
                     modeView(for: engine.currentMode)
                         .id(currentModeLayerID)
                         .opacity(modeCrossfade)
+
+                    if let prewarmMode, prewarmMode != engine.currentMode, let prewarmLayerID {
+                        modeView(for: prewarmMode)
+                            .id(prewarmLayerID)
+                            .opacity(0)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
                 }
             }
         }
@@ -531,6 +543,8 @@ struct DriftlyRootView: View {
             previousMode = oldMode
             previousModeLayerID = currentModeLayerID
             currentModeLayerID = UUID()
+            prewarmMode = nil
+            prewarmLayerID = nil
 
             modeFadeCleanupWorkItem?.cancel()
             modeCrossfade = 0
@@ -795,6 +809,7 @@ struct DriftlyRootView: View {
             
             updateTicking()
             updateClockTicking()
+            updatePrewarm(now: now)
         }
         
         private func updateTicking() {
@@ -822,6 +837,31 @@ struct DriftlyRootView: View {
             } else {
                 clockConnection?.cancel()
                 clockConnection = nil
+            }
+        }
+
+        private func updatePrewarm(now: Date) {
+            guard engine.autoDriftEnabled, !sleepState.sleepTimerHasExpired else {
+                prewarmMode = nil
+                prewarmLayerID = nil
+                return
+            }
+
+            let intervalMinutes = max(1, engine.autoDriftIntervalMinutes)
+            let intervalSeconds = Double(intervalMinutes * 60)
+            let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
+            let remaining = intervalSeconds - elapsed
+            let window: TimeInterval = 2.0
+
+            if remaining <= window && remaining > 0 {
+                let next = engine.nextAutoDriftMode(after: engine.currentMode)
+                if prewarmMode != next {
+                    prewarmMode = next
+                    prewarmLayerID = UUID()
+                }
+            } else {
+                prewarmMode = nil
+                prewarmLayerID = nil
             }
         }
         

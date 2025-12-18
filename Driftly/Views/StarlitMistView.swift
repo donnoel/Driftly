@@ -4,7 +4,9 @@ struct StarlitMistView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speedMultiplier
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
     @State private var phaseController = PhaseController()
+    @State private var didApplyPhaseAnchor = false
 
     var body: some View {
         if animationsPaused {
@@ -48,7 +50,11 @@ struct StarlitMistView: View {
     }
 
     private func currentPhase(for date: Date) -> Double {
-        phaseController.phase(
+        if !didApplyPhaseAnchor {
+            phaseController.resetStart(date: phaseAnchorDate)
+            didApplyPhaseAnchor = true
+        }
+        return phaseController.phase(
             for: date,
             speed: speedMultiplier,
             cycleDuration: max(config.cycleDuration, 12),
