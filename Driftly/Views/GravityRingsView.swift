@@ -13,7 +13,8 @@ struct GravityRingsView: View {
             ? Date(timeIntervalSinceReferenceDate: timelineStart)
             : date
             let raw = effectiveDate.timeIntervalSinceReferenceDate - timelineStart
-            let t = raw * max(0.25, speed) * 0.18
+            let seconds = raw * max(0.25, speed)
+            let t = seconds * 0.18
 
             GeometryReader { proxy in
                 let size = proxy.size
@@ -51,7 +52,7 @@ struct GravityRingsView: View {
                     // Some rings become circular "ripples" that switch over time.
                     Canvas { context, _ in
                         var ctx = context
-                        renderRings(in: &ctx, size: size, center: center, t: t)
+                        renderRings(in: &ctx, size: size, center: center, t: t, seconds: seconds)
                     }
                     .ignoresSafeArea()
                 }
@@ -63,8 +64,32 @@ struct GravityRingsView: View {
 
     // MARK: - Ring Renderer
 
-    private func renderRings(in context: inout GraphicsContext, size: CGSize, center: CGPoint, t: Double) {
+    private func renderRings(in context: inout GraphicsContext, size: CGSize, center: CGPoint, t: Double, seconds: Double) {
         let ringCount = 7
+        // Keep the outermost strokes fully inside the screen bounds
+        let minDim = min(size.width, size.height)
+        let baseMaxRadius = (minDim * 0.5) - 28.0 // padding for thick glow strokes
+
+        // Global drift for the whole ring system (slow, bouncing within safe bounds)
+        // We keep enough margin so even the outer ring + glow stays inside the screen.
+        let safeOuter = baseMaxRadius * 0.98
+        let wobblePad: CGFloat = 18.0
+        let extraPad: CGFloat = 10.0
+
+        let marginX = min(size.width * 0.5 - 2.0, safeOuter + wobblePad + extraPad)
+        let marginY = min(size.height * 0.5 - 2.0, safeOuter + wobblePad + extraPad)
+
+        let rangeX = max(0.0, size.width - 2.0 * marginX)
+        let rangeY = max(0.0, size.height - 2.0 * marginY)
+
+        // Triangle waves act like slow “bounces” (reflecting at edges) without needing state.
+        let bx = triangle01((seconds / 42.0) + 0.17)
+        let by = triangle01((seconds / 49.0) + 0.53)
+
+        let driftCenter = CGPoint(
+            x: marginX + CGFloat(bx) * rangeX,
+            y: marginY + CGFloat(by) * rangeY
+        )
 
         // Global spacing drift: sometimes compresses rings so they overlap slightly
         let spacingDrift = CGFloat(1.0 - 0.10 * (0.5 + 0.5 * sin(t * 0.12)))
@@ -77,7 +102,10 @@ struct GravityRingsView: View {
 
         for i in 0..<ringCount {
             let phase = Double(i) * 0.9
-            let baseScale = 0.26 + CGFloat(i) * 0.16
+
+            // Normalized ring spacing: ensures all rings fit within the screen
+            let n = CGFloat(i) / CGFloat(max(1, ringCount - 1))
+            let baseScale = 0.18 + 0.72 * n // 0.18 ... 0.90
             let scaleBase = baseScale * spacingDrift
 
             // Pulse envelope
@@ -87,6 +115,8 @@ struct GravityRingsView: View {
             // Wiggle: tiny orbital drift around center
             let wobX = CGFloat(10 * sin(t * 0.22 + phase) + 6 * sin(t * 0.41 + phase * 0.7))
             let wobY = CGFloat(10 * cos(t * 0.20 + phase) + 6 * cos(t * 0.38 + phase * 0.8))
+            let wobScale = (0.35 + 0.10 * CGFloat(i))
+            let ringCenter = CGPoint(x: driftCenter.x + wobX * wobScale, y: driftCenter.y + wobY * wobScale)
 
             // Slight additional per-ring convergence so adjacent rings can occasionally nudge into each other
             let converge = CGFloat(0.018 * sin(t * 0.18 + phase * 1.7))
@@ -94,17 +124,28 @@ struct GravityRingsView: View {
             // Rotation shimmer
             let rot = CGFloat(t * 0.08 + phase * 0.25)
 
-            // Compute a pixel radius from scale
-            let minDim = min(size.width, size.height)
-            let radius = (minDim * 0.5) * (scaleBase + 0.06 * CGFloat(pulse2) + converge)
+            // Compute a pixel radius from scale, then clamp so the full circle stays within bounds.
+            let radiusRaw = baseMaxRadius * (scaleBase + 0.05 * CGFloat(pulse2) + converge)
 
-            // Determine ripple membership and crossfade to next set
+            // Stroke weights (pulse affects width) — compute early so we can pad correctly
+            let lw = 1.4 + CGFloat(1.6 * pulse)
+            let maxStroke = (lw * 6.0) // widest glow stroke used below
+
+            // Ripple parameters depend on radius; compute a provisional amplitude for padding
             let sel0 = rippleSelection(index: i, key: k0)
             let sel1 = rippleSelection(index: i, key: k0 + 1)
             let rippleMix = lerp(sel0, sel1, s) // 0..1
+            let ampRaw = radiusRaw * CGFloat(0.020 + 0.018 * pulse) * CGFloat(rippleMix)
+
+            // Edge-aware clamp: leave room for stroke + ripple peak
+            let edge = min(ringCenter.x, size.width - ringCenter.x, ringCenter.y, size.height - ringCenter.y)
+            let pad = (maxStroke * 0.5) + abs(ampRaw) + 3.0
+            let radius = min(radiusRaw, max(0.0, edge - pad))
+
+            // Final ripple amplitude (based on clamped radius)
+            let amp = radius * CGFloat(0.020 + 0.018 * pulse) * CGFloat(rippleMix)
 
             // Ripple parameters: only some rings, but smoothly blended
-            let amp = radius * CGFloat(0.020 + 0.018 * pulse) * CGFloat(rippleMix)
             let lobes = 8 + (i % 4) * 2
             let ripplePhase = t * (0.95 + 0.10 * Double(i)) + phase * 0.8
 
@@ -115,29 +156,21 @@ struct GravityRingsView: View {
 
             // Build path: circle when no ripple, rippled ring when selected
             let path = (rippleMix > 0.001)
-                ? rippledRingPath(center: CGPoint(x: center.x + wobX * (0.35 + 0.10 * CGFloat(i)),
-                                                 y: center.y + wobY * (0.35 + 0.10 * CGFloat(i))),
+                ? rippledRingPath(center: ringCenter,
                                   radius: radius,
                                   amp: amp,
                                   lobes: lobes,
                                   phase: ripplePhase,
                                   rotation: rot)
-                : circlePath(center: CGPoint(x: center.x + wobX * (0.35 + 0.10 * CGFloat(i)),
-                                             y: center.y + wobY * (0.35 + 0.10 * CGFloat(i))),
+                : circlePath(center: ringCenter,
                              radius: radius)
-
-            // Stroke weights (pulse affects width)
-            let lw = 1.4 + CGFloat(1.6 * pulse)
 
             // Center glow (only the innermost ring)
             if i == 0 {
                 let glowPulse = 0.5 + 0.5 * sin(t * 1.25 + phase * 0.6)
                 let glowRadius = radius * (0.42 + 0.12 * CGFloat(glowPulse))
 
-                let glowCenter = CGPoint(
-                    x: center.x + wobX * (0.35 + 0.10 * CGFloat(i)),
-                    y: center.y + wobY * (0.35 + 0.10 * CGFloat(i))
-                )
+                let glowCenter = ringCenter
 
                 let glowRect = CGRect(
                     x: glowCenter.x - glowRadius,
@@ -208,6 +241,12 @@ struct GravityRingsView: View {
     }
 
     private func fract(_ x: Double) -> Double { x - floor(x) }
+
+    private func triangle01(_ x: Double) -> Double {
+        // 0 → 1 → 0 repeating (like bouncing between edges)
+        let f = fract(x)
+        return 1.0 - abs(2.0 * f - 1.0)
+    }
 
     private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) * t }
 

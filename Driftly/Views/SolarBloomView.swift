@@ -113,6 +113,51 @@ private struct BanksyBloomStencilView: View {
                 // Soft overspray mist around the sun (very subtle)
                 drawOverspray(in: &context, center: center, sunRadius: sunR, t: t)
 
+                // Small white "bubble" highlight drifting gently left-to-right (subtle motion cue)
+                let bubbleU = 0.5 + 0.5 * sin(t * 0.06)
+                let bubbleAmp = min(size.width * 0.08, 70) // don't travel too far
+                let bubbleR = (min(size.width, size.height) * 0.030).clamped(to: 10...32)
+
+                let bubbleCenter = CGPoint(
+                    x: center.x - bubbleAmp + (2 * bubbleAmp) * CGFloat(bubbleU),
+                    y: center.y - sunR * 0.55 + CGFloat(6.0 * cos(t * 0.05))
+                )
+
+                let bubbleRect = CGRect(
+                    x: bubbleCenter.x - bubbleR,
+                    y: bubbleCenter.y - bubbleR,
+                    width: bubbleR * 2,
+                    height: bubbleR * 2
+                )
+
+                context.fill(
+                    Path(ellipseIn: bubbleRect),
+                    with: .radialGradient(
+                        Gradient(colors: [
+                            Color.white.opacity(0.14),
+                            Color.white.opacity(0.05),
+                            Color.clear
+                        ]),
+                        center: bubbleCenter,
+                        startRadius: 0,
+                        endRadius: bubbleR * 1.55
+                    )
+                )
+                context.stroke(
+                    Path(ellipseIn: bubbleRect),
+                    with: .color(Color.white.opacity(0.07)),
+                    lineWidth: 1.0
+                )
+
+                // Tiny specular highlight so it reads as a "bubble" (very subtle)
+                let hR = bubbleR * 0.38
+                let hx = bubbleCenter.x - bubbleR * 0.22
+                let hy = bubbleCenter.y - bubbleR * 0.28
+                context.fill(
+                    Path(ellipseIn: CGRect(x: hx - hR, y: hy - hR, width: hR * 2, height: hR * 2)),
+                    with: .color(Color.white.opacity(0.10))
+                )
+
                 // Animated sweep (like a gallery light catching wet paint)
                 let sweepX = center.x + CGFloat(sin(t * 0.10)) * size.width * 0.42
                 let sweepRect = CGRect(x: sweepX - 180, y: 0, width: 360, height: size.height)
@@ -249,13 +294,59 @@ private struct BanksyBloomStencilView: View {
             let inset = min(blobRect.width, blobRect.height) * 0.12
             let eyeRect = blobRect.insetBy(dx: inset, dy: inset)
 
-            // Subtle pulse so it feels alive
-            let eyePulse = 0.5 + 0.5 * sin(t * 0.28)
-            let irisScale = CGFloat(0.72 + 0.10 * eyePulse)
-            let pupilScale = CGFloat(0.28 + 0.06 * (1.0 - eyePulse))
+            // Heartbeat pulse (two-lobed "lub-dub") with rests.
+            // Goal: noticeable beats, but not constant pulsing. Also keep a tiny idle motion so it never feels frozen.
+            let gateBase = t * 0.48               // decision windows (a bit faster so it doesn't feel dead)
+            let window = floor(gateBase)
+            let wPhase = gateBase - window        // 0...1 within window
+            let k = Int(window)
 
-            let cx = eyeRect.midX
-            let cy = eyeRect.midY
+            // Idle presence: always-on but very small (prevents "is it frozen?" moments)
+            let idle = CGFloat(0.06 + 0.08 * (0.5 + 0.5 * sin(t * 0.14 + hash01(k, 25003) * Double.pi * 2.0)))
+
+            // Only some windows emit a beat burst (creates pauses)
+            let active = hash01(k, 25001) < 0.40
+
+            var burst: CGFloat = 0
+            if active {
+                // Randomized start time within the window
+                let start = 0.08 + 0.42 * hash01(k, 25007)
+                let u = max(0.0, wPhase - start)
+
+                // A short burst envelope so it returns to rest within the window (smoothstep)
+                let dur = 0.58
+                let env0 = max(0.0, 1.0 - (u / dur))
+                let env = env0 * env0 * (3.0 - 2.0 * env0)
+
+                // Beat speed + amplitude variation per window
+                let beatRate = 2.0 + 0.9 * hash01(k, 25009)
+                let amp = 1.25 + 1.10 * hash01(k, 25013)
+
+                let raw = Double(heartbeat(u * beatRate))
+                burst = CGFloat(min(1.0, raw * env * amp))
+            }
+
+            // Beat is the actual "thump" (intermittent). Idle is the always-on life signal.
+            let beat: CGFloat = min(1.0, burst)
+            let presence: CGFloat = min(1.0, idle)
+
+            let pulseMix: CGFloat = min(1.0, presence * 0.25 + beat)
+
+            let irisScale = CGFloat(0.72 + 0.06 * presence + 0.22 * beat)
+            let pupilScale = CGFloat(0.28 + 0.05 * (1.0 - presence) + 0.10 * (1.0 - beat))
+
+            // Use the beat to breathe brightness + glow (more readable than a tiny sine)
+            let irisOpacity = 0.76 + 0.10 * Double(presence) + 0.24 * Double(beat)
+            let glowOpacity = 0.10 + 0.08 * Double(presence) + 0.22 * Double(beat)
+            let specOpacity = 0.14 + 0.08 * Double(presence) + 0.18 * Double(beat)
+            let ringOpacity = 0.06 + 0.06 * Double(presence) + 0.18 * Double(beat)
+            let ringWidth: CGFloat = 1.0 + 0.35 * presence + 1.10 * beat
+
+            // Tiny eye drift so you can always perceive motion even when the beat is resting
+            let driftX = (eyeRect.width * 0.018) * sin(t * 0.10 + hash01(k, 25021) * Double.pi * 2.0)
+            let driftY = (eyeRect.height * 0.014) * cos(t * 0.11 + hash01(k, 25023) * Double.pi * 2.0)
+            let cx = eyeRect.midX + CGFloat(driftX)
+            let cy = eyeRect.midY + CGFloat(driftY)
             let irisR = min(eyeRect.width, eyeRect.height) * 0.5 * irisScale
             let pupilR = irisR * pupilScale
 
@@ -272,16 +363,27 @@ private struct BanksyBloomStencilView: View {
             // Iris glow
             let irisGlowRect = CGRect(x: cx - irisR * 1.35, y: cy - irisR * 1.35, width: irisR * 2.7, height: irisR * 2.7)
             context.fill(Path(ellipseIn: irisGlowRect), with: .radialGradient(
-                Gradient(colors: [red.opacity(0.18), red.opacity(0.00)]),
+                Gradient(colors: [red.opacity(glowOpacity), red.opacity(0.00)]),
                 center: CGPoint(x: cx, y: cy),
                 startRadius: 0,
                 endRadius: irisR * 1.35
             ))
 
+            // Beat ring (makes the heartbeat readable even with pauses)
+            if pulseMix > 0.02 {
+                let ringR = irisR * (1.55 + 0.55 * pulseMix)
+                let ringRect = CGRect(x: cx - ringR, y: cy - ringR, width: ringR * 2, height: ringR * 2)
+                context.stroke(
+                    Path(ellipseIn: ringRect),
+                    with: .color(red.opacity(0.10 + 0.20 * Double(pulseMix))),
+                    lineWidth: 1.0 + 2.0 * pulseMix
+                )
+            }
+
             // Iris
             let irisRect = CGRect(x: cx - irisR, y: cy - irisR, width: irisR * 2, height: irisR * 2)
-            context.fill(Path(ellipseIn: irisRect), with: .color(red.opacity(0.90)))
-            context.stroke(Path(ellipseIn: irisRect), with: .color(Color.white.opacity(0.10)), lineWidth: 1.0)
+            context.fill(Path(ellipseIn: irisRect), with: .color(red.opacity(irisOpacity)))
+            context.stroke(Path(ellipseIn: irisRect), with: .color(Color.white.opacity(ringOpacity)), lineWidth: ringWidth)
 
             // Pupil
             let pupilRect = CGRect(x: cx - pupilR, y: cy - pupilR, width: pupilR * 2, height: pupilR * 2)
@@ -292,7 +394,7 @@ private struct BanksyBloomStencilView: View {
             let hx = cx - irisR * 0.22
             let hy = cy - irisR * 0.28
             context.fill(Path(ellipseIn: CGRect(x: hx - hR, y: hy - hR, width: hR * 2, height: hR * 2)),
-                         with: .color(Color.white.opacity(0.22)))
+                         with: .color(Color.white.opacity(specOpacity)))
         }
 
         // Paint drips from the cutout holes (feels like wet stencil ink)
