@@ -200,7 +200,6 @@ private struct MorphRectDiamond: Shape {
         }
 
         let p0a = insetPoint(p0, p1, by: corner)
-        let p1b = insetPoint(p1, p0, by: corner)
         let p1a = insetPoint(p1, p2, by: corner)
         let p2b = insetPoint(p2, p1, by: corner)
         let p2a = insetPoint(p2, p3, by: corner)

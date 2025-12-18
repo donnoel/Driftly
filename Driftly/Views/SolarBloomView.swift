@@ -301,7 +301,6 @@ private struct BanksyBloomStencilView: View {
             let dripCount = isShadow ? 3 : 6
 
             for j in 0..<min(dripCount, cutoutAnchors.count) {
-                let (p0, sz) = cutoutAnchors[j]
                 let pick = Int(floor(hash01(j, isShadow ? 9801 : 9901) * Double(cutoutAnchors.count)))
                 let (p, szz) = cutoutAnchors[max(0, min(cutoutAnchors.count - 1, pick))]
 
