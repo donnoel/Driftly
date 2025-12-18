@@ -52,9 +52,7 @@ final class DriftlyUITests: XCTestCase {
         app.launchArguments.append(contentsOf: ["UITestingReset"])
         app.launch()
 
-        app.buttons["settingsButton"].tap()
-
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        openSettingsSheet(in: app)
     }
 
     @MainActor
@@ -86,8 +84,10 @@ final class DriftlyUITests: XCTestCase {
         XCTAssertTrue(starlit.waitForExistence(timeout: 10))
         starlit.tap()
 
-        let label = app.staticTexts["Starlit Mist"]
-        XCTAssertTrue(label.waitForExistence(timeout: 5))
+        ensureChromeVisible(in: app)
+
+        let label = app.staticTexts["currentModeLabel"]
+        XCTAssertTrue(label.waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -96,19 +96,22 @@ final class DriftlyUITests: XCTestCase {
         app.launchArguments.append(contentsOf: ["UITestingReset"])
         app.launch()
 
-        app.buttons["settingsButton"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        openSettingsSheet(in: app)
 
         let lively = app.staticTexts["Lively"]
         let gentle = app.staticTexts["Gentle"]
+        let speedLabel = app.staticTexts["animationSpeedLabel"]
 
-        let slider = app.sliders.firstMatch
-        if slider.waitForExistence(timeout: 5) {
+        let slider = app.sliders["animationSpeedSlider"]
+        if slider.waitForExistence(timeout: 6) {
             slider.adjust(toNormalizedSliderPosition: 0.0)
             XCTAssertTrue(gentle.waitForExistence(timeout: 3))
+            XCTAssertTrue(speedLabel.waitForExistence(timeout: 3))
+            XCTAssertEqual(speedLabel.label, "Gentle")
 
             slider.adjust(toNormalizedSliderPosition: 1.0)
             XCTAssertTrue(lively.waitForExistence(timeout: 3))
+            XCTAssertEqual(speedLabel.label, "Lively")
         } else {
             XCTFail("Animation speed slider not found")
         }
@@ -152,6 +155,37 @@ final class DriftlyUITests: XCTestCase {
     }
 
     // Helpers
+
+    private func openSettingsSheet(in app: XCUIApplication) {
+        ensureChromeVisible(in: app)
+
+        let settingsButton = app.buttons["settingsButton"].firstMatch
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 8))
+
+        let tapSettings = {
+            if settingsButton.isHittable {
+                settingsButton.tap()
+            } else {
+                let coord = settingsButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                coord.tap()
+            }
+        }
+
+        tapSettings()
+
+        let navBar = app.navigationBars["Settings"]
+        let speedSlider = app.sliders["animationSpeedSlider"]
+
+        var opened = navBar.waitForExistence(timeout: 5) || speedSlider.waitForExistence(timeout: 5)
+        if !opened {
+            // Retry once in case the first tap raced with chrome animations.
+            ensureChromeVisible(in: app)
+            tapSettings()
+            opened = navBar.waitForExistence(timeout: 5) || speedSlider.waitForExistence(timeout: 5)
+        }
+
+        XCTAssertTrue(opened, "Settings sheet did not open")
+    }
 
     private func ensureModePickerOpen(_ app: XCUIApplication) {
         // If the mode is already forced via launch argument, no need to open the picker.

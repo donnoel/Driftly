@@ -33,10 +33,13 @@ private var iosSettings: some View {
                     } maximumValueLabel: {
                         Text("Faster").font(.caption2)
                     }
+                    .accessibilityIdentifier("animationSpeedSlider")
 
                     Text(speedLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("animationSpeedLabel")
+                        .accessibilityValue(speedLabel)
                 }
             }
 
@@ -98,6 +101,7 @@ private var tvSettings: some View {
                         Text(speedLabel)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("animationSpeedLabel")
                     }
                     .padding(.vertical, 8)
                 }
