@@ -24,6 +24,11 @@ struct DriftlyRootView: View {
     @State private var clockNow = Date()
     @State private var autoDriftPausedAt: Date?
     @State private var didRunInitialSetup = false
+    @State private var previousMode: DriftMode?
+    @State private var previousModeLayerID: UUID?
+    @State private var currentModeLayerID = UUID()
+    @State private var modeCrossfade: Double = 1.0
+    @State private var modeFadeCleanupWorkItem: DispatchWorkItem?
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
@@ -57,9 +62,6 @@ struct DriftlyRootView: View {
                 activeModeView
                     .offset(motionManager.parallaxOffset)
                     .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
-                    .id(engine.currentMode) // ensures clean crossfade per mode
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.9), value: engine.currentMode)
                     .ignoresSafeArea()
             }
             
@@ -306,7 +308,10 @@ struct DriftlyRootView: View {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
         }
-        .onChange(of: engine.currentMode) { _, _ in
+        .onChange(of: engine.currentMode) { oldMode, newMode in
+            if oldMode != newMode {
+                beginModeCrossfade(from: oldMode, to: newMode)
+            }
             if engine.autoDriftEnabled {
                 SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
             }
@@ -500,12 +505,47 @@ struct DriftlyRootView: View {
             if sleepState.sleepTimerHasExpired {
                 Color.black.ignoresSafeArea()
             } else {
-                if let builder = Self.modeViewBuilders[engine.currentMode] {
-                    builder(engine.currentMode.config)
-                } else {
-                    Color.black
+                ZStack {
+                    if let previousMode, let previousModeLayerID {
+                        modeView(for: previousMode)
+                            .id(previousModeLayerID)
+                            .opacity(1 - modeCrossfade)
+                    }
+                    modeView(for: engine.currentMode)
+                        .id(currentModeLayerID)
+                        .opacity(modeCrossfade)
                 }
             }
+        }
+
+        @ViewBuilder
+        private func modeView(for mode: DriftMode) -> some View {
+            if let builder = Self.modeViewBuilders[mode] {
+                builder(mode.config)
+            } else {
+                Color.black
+            }
+        }
+
+        private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
+            previousMode = oldMode
+            previousModeLayerID = currentModeLayerID
+            currentModeLayerID = UUID()
+
+            modeFadeCleanupWorkItem?.cancel()
+            modeCrossfade = 0
+
+            withAnimation(.easeInOut(duration: 0.9)) {
+                modeCrossfade = 1
+            }
+
+            let cleanup = DispatchWorkItem {
+                guard engine.currentMode == newMode else { return }
+                previousMode = nil
+                previousModeLayerID = nil
+            }
+            modeFadeCleanupWorkItem = cleanup
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: cleanup)
         }
         
         static let modeViewBuilders: [DriftMode: (DriftModeConfig) -> AnyView] = [
@@ -825,9 +865,9 @@ struct DriftlyRootView: View {
                 fallbackFocus = !willShow
             }
         }
-    #endif
+#endif
         
-    #if os(tvOS)
+#if os(tvOS)
         private func handlePlayPauseCommand() {
             if sleepState.sleepTimerHasExpired {
                 wakeFromSleepTimer()
@@ -835,13 +875,14 @@ struct DriftlyRootView: View {
                 toggleChromeTvOS(forceToggle: true)
             }
         }
-    #endif
+#endif
         
         @MainActor
         private func initialAppearanceSetup() {
             guard !didRunInitialSetup else { return }
             didRunInitialSetup = true
-            
+
+            applyUITestOverridesIfNeeded()
             updateIdleTimer()
             updateClockTicking()
             SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
@@ -852,6 +893,37 @@ struct DriftlyRootView: View {
             if engine.isChromeVisible {
                 focusedButton = .modePicker
                 fallbackFocus = false
+            }
+#endif
+        }
+
+        private func applyUITestOverridesIfNeeded() {
+#if DEBUG
+            let args = ProcessInfo.processInfo.arguments
+            guard args.contains(where: { arg in
+                arg == "UITestingForceChromeVisible" ||
+                arg == "UITestingOpenModePicker" ||
+                arg == "UITestingOpenSleepTimer" ||
+                arg.hasPrefix("UITestingSetMode=")
+            }) else { return }
+
+            if args.contains("UITestingForceChromeVisible") {
+                engine.isChromeVisible = true
+            }
+            if args.contains("UITestingOpenModePicker") || args.contains("UITestingOpenSleepTimer") {
+                engine.isChromeVisible = true
+            }
+            if args.contains("UITestingOpenModePicker") {
+                isModePickerPresented = true
+            }
+            if args.contains("UITestingOpenSleepTimer") {
+                isSleepTimerDialogPresented = true
+            }
+            if let setModeArg = args.first(where: { $0.hasPrefix("UITestingSetMode=") }) {
+                let raw = String(setModeArg.split(separator: "=", maxSplits: 1).last ?? "")
+                if let mode = DriftMode(rawValue: raw) {
+                    engine.currentMode = mode
+                }
             }
 #endif
         }
