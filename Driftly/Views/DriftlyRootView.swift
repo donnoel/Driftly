@@ -21,6 +21,7 @@ struct DriftlyRootView: View {
     @State private var clockTimer = Timer.publish(every: 1, on: .main, in: .common)
     @State private var clockConnection: Cancellable?
     @State private var clockNow = Date()
+    @State private var autoDriftPausedAt: Date?
 #if os(tvOS)
     @FocusState private var focusedButton: FocusTarget?
     @FocusState private var fallbackFocus: Bool
@@ -269,6 +270,17 @@ struct DriftlyRootView: View {
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                if let pausedAt = autoDriftPausedAt {
+                    let now = Date()
+                    let delta = now.timeIntervalSince(pausedAt)
+                    let adjusted = sleepState.lastAutoDriftChange.addingTimeInterval(delta)
+                    sleepState.lastAutoDriftChange = min(adjusted, now)
+                    autoDriftPausedAt = nil
+                }
+            } else {
+                autoDriftPausedAt = Date()
+            }
             updateIdleTimer()
             updateClockTicking()
             handleMotion(for: newPhase)
