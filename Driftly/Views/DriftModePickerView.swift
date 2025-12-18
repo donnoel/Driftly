@@ -163,9 +163,8 @@ struct DriftModePickerView: View {
             dismiss()
         } label: {
             HStack(spacing: 14) {
-                Text(mode.displayName)
+                FocusAdaptiveText(text: mode.displayName)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
 
                 Spacer()
 
@@ -198,6 +197,16 @@ struct DriftModePickerView: View {
             }
         }
         .accessibilityIdentifier("mode-\(mode.rawValue)")
+    }
+
+    private struct FocusAdaptiveText: View {
+        let text: String
+        @Environment(\.isFocused) private var isFocused
+
+        var body: some View {
+            Text(text)
+                .foregroundStyle(isFocused ? Color.black : Color.white)
+        }
     }
 #endif
 }
