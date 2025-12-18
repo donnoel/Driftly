@@ -60,6 +60,11 @@ struct PrismShardsView: View {
                     }
                 }
                 .blur(radius: 0.9)
+                .overlay(
+                    Color.white.opacity(0.08)
+                        .blendMode(.screen)
+                        .ignoresSafeArea()
+                )
             }
             .ignoresSafeArea()
         }
