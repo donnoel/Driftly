@@ -26,14 +26,22 @@ private var iosSettings: some View {
         Form {
             Section("Animation") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Slider(value: $engine.animationSpeed, in: 0.5...1.8, step: 0.05) {
-                        Text("Animation Speed")
-                    } minimumValueLabel: {
-                        Text("Slower").font(.caption2)
-                    } maximumValueLabel: {
-                        Text("Faster").font(.caption2)
+                    Text("Animation Speed")
+                        .font(.subheadline.weight(.semibold))
+
+                    HStack(spacing: 12) {
+                        Text("Slower")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+
+                        Slider(value: $engine.animationSpeed, in: 0.5...1.8, step: 0.05)
+                            .accessibilityIdentifier("animationSpeedSlider")
+                            .accessibilityLabel("Animation Speed")
+
+                        Text("Faster")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
-                    .accessibilityIdentifier("animationSpeedSlider")
 
                     Text(speedLabel)
                         .font(.caption)

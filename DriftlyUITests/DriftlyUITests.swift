@@ -98,20 +98,16 @@ final class DriftlyUITests: XCTestCase {
 
         openSettingsSheet(in: app)
 
-        let lively = app.staticTexts["Lively"]
-        let gentle = app.staticTexts["Gentle"]
         let speedLabel = app.staticTexts["animationSpeedLabel"]
 
         let slider = app.sliders["animationSpeedSlider"]
         if slider.waitForExistence(timeout: 6) {
             slider.adjust(toNormalizedSliderPosition: 0.0)
-            XCTAssertTrue(gentle.waitForExistence(timeout: 3))
             XCTAssertTrue(speedLabel.waitForExistence(timeout: 3))
-            XCTAssertEqual(speedLabel.label, "Gentle")
+            waitForLabel(speedLabel, equals: "Gentle")
 
             slider.adjust(toNormalizedSliderPosition: 1.0)
-            XCTAssertTrue(lively.waitForExistence(timeout: 3))
-            XCTAssertEqual(speedLabel.label, "Lively")
+            waitForLabel(speedLabel, equals: "Lively")
         } else {
             XCTFail("Animation speed slider not found")
         }
@@ -185,6 +181,25 @@ final class DriftlyUITests: XCTestCase {
         }
 
         XCTAssertTrue(opened, "Settings sheet did not open")
+    }
+
+    private func waitForLabel(
+        _ element: XCUIElement,
+        equals value: String,
+        timeout: TimeInterval = 3,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let predicate = NSPredicate(format: "label == %@", value)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
+        XCTAssertEqual(
+            result,
+            .completed,
+            "Expected label to be \(value), got \(element.label)",
+            file: file,
+            line: line
+        )
     }
 
     private func ensureModePickerOpen(_ app: XCUIApplication) {
