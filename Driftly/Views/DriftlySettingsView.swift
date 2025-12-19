@@ -62,7 +62,6 @@ private var iosSettings: some View {
                         Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                     }
                 }
-                .disabled(engine.activeSceneID == nil)
 
                 Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                     ForEach(autoDriftOptions, id: \.self) { minutes in
@@ -132,7 +131,6 @@ private var tvSettings: some View {
                             Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                         }
                     }
-                    .disabled(engine.activeSceneID == nil)
 
                     Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                         ForEach(autoDriftOptions, id: \.self) { minutes in

@@ -325,13 +325,18 @@ final class DriftlyEngine: ObservableObject {
         } else {
             storedScenes = []
         }
-        scenes = storedScenes
+        let resolvedScenes = Self.initialScenes(
+            localScenes: storedScenes,
+            ubiquitousStore: ubiquitousStore,
+            defaults: defaults
+        )
+        scenes = resolvedScenes
 
         // active scene (default: none)
         let storedActiveScene: UUID?
         if let rawID = defaults.string(forKey: DriftlyDefaultsKey.activeSceneID),
            let uuid = UUID(uuidString: rawID),
-           storedScenes.contains(where: { $0.id == uuid && $0.deletedAt == nil }) {
+           resolvedScenes.contains(where: { $0.id == uuid && $0.deletedAt == nil }) {
             storedActiveScene = uuid
         } else {
             storedActiveScene = nil
@@ -736,6 +741,29 @@ final class DriftlyEngine: ObservableObject {
             ubiquitousStore?.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
             _ = ubiquitousStore?.synchronize()
             return localFavorites
+        }
+    }
+
+    private static func initialScenes(
+        localScenes: [DriftScene],
+        ubiquitousStore: UbiquitousKeyValueStoring?,
+        defaults: UserDefaults
+    ) -> [DriftScene] {
+        guard let ubiquitousStore else { return localScenes }
+
+        if let data = ubiquitousStore.data(forKey: DriftlyDefaultsKey.scenes),
+           let cloudScenes = decodeScenes(from: data) {
+            let merged = mergeScenes(local: localScenes, cloud: cloudScenes)
+            if let mergedData = try? JSONEncoder().encode(merged) {
+                defaults.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
+            }
+            return merged
+        } else {
+            if let data = try? JSONEncoder().encode(localScenes) {
+                ubiquitousStore.set(data, forKey: DriftlyDefaultsKey.scenes)
+                _ = ubiquitousStore.synchronize()
+            }
+            return localScenes
         }
     }
 
