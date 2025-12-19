@@ -377,6 +377,7 @@ struct DriftlyRootView: View {
                         sleepState.sleepTimerHasExpired = false
                     }
                     sleepState.sleepTimerAllowsLock = false
+                    updateIdleTimer()
                     startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     updateTicking()
@@ -389,6 +390,7 @@ struct DriftlyRootView: View {
                         sleepState.sleepTimerHasExpired = false
                     }
                     sleepState.sleepTimerAllowsLock = false
+                    updateIdleTimer()
                     startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     updateTicking()
@@ -401,6 +403,7 @@ struct DriftlyRootView: View {
                         sleepState.sleepTimerHasExpired = false
                     }
                     sleepState.sleepTimerAllowsLock = false
+                    updateIdleTimer()
                     startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     updateTicking()
@@ -477,9 +480,11 @@ struct DriftlyRootView: View {
                                     sleepState.sleepTimerHasExpired = false
                                 }
                                 sleepState.sleepTimerAllowsLock = false
+                                updateIdleTimer()
                                 startMotionIfNeeded()
                                 DriftHaptics.sleepTimerSet()
                                 updateTicking()
+                                updateClockTicking()
                                 isCustomSleepTimerPresented = false
                             }
                         }
@@ -858,7 +863,7 @@ struct DriftlyRootView: View {
             let window: TimeInterval = 2.0
 
             if remaining <= window && remaining > 0 {
-                let next = engine.nextAutoDriftMode(after: engine.currentMode)
+                let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
                 if prewarmMode != next {
                     prewarmMode = next
                     prewarmLayerID = UUID()

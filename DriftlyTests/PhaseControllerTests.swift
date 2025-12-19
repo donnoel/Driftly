@@ -38,4 +38,16 @@ struct PhaseControllerTests {
 
         #expect(abs(resumed - paused) < 0.001)
     }
+
+    @Test func speedChangesWhileRunningKeepsPhaseContinuous() async throws {
+        var controller = PhaseController()
+        let start = Date()
+        let cycle: TimeInterval = 20
+
+        let t1 = controller.phase(for: start.addingTimeInterval(2), speed: 1.0, cycleDuration: cycle, paused: false)
+        let t2 = controller.phase(for: start.addingTimeInterval(3), speed: 0.5, cycleDuration: cycle, paused: false)
+        let expected = t1 + (1.0 / cycle)
+
+        #expect(abs(t2 - expected) < 0.001)
+    }
 }

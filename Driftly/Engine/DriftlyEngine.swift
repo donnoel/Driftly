@@ -277,6 +277,20 @@ final class DriftlyEngine: ObservableObject {
         return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
     }
 
+    /// Returns the next auto-drift mode without advancing the shuffle queue.
+    func peekNextAutoDriftMode(after current: DriftMode) -> DriftMode {
+        if autoDriftShuffleEnabled {
+            let pool = shuffleCandidatePool(current: current)
+            return peekShuffledMode(from: pool, current: current)
+        }
+
+        let modes = autoDriftCandidates(startingAt: current)
+        guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
+
+        let nextIndex = modes.index(after: idx)
+        return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+    }
+
     func toggleFavorite(_ mode: DriftMode) {
         if favoriteModes.contains(mode) {
             favoriteModes.remove(mode)
@@ -315,15 +329,27 @@ final class DriftlyEngine: ObservableObject {
     private func nextShuffledMode(from candidates: [DriftMode], current: DriftMode) -> DriftMode {
         guard !candidates.isEmpty else { return current }
 
+        shuffleQueue = preparedShuffleQueue(candidates: candidates, current: current)
+        return shuffleQueue.isEmpty ? current : shuffleQueue.removeFirst()
+    }
+
+    private func peekShuffledMode(from candidates: [DriftMode], current: DriftMode) -> DriftMode {
+        guard !candidates.isEmpty else { return current }
+
+        shuffleQueue = preparedShuffleQueue(candidates: candidates, current: current)
+        return shuffleQueue.first ?? current
+    }
+
+    private func preparedShuffleQueue(candidates: [DriftMode], current: DriftMode) -> [DriftMode] {
         let candidateSet = Set(candidates)
         // Prune any stale entries and never keep the current mode in the queue.
-        shuffleQueue = shuffleQueue.filter { candidateSet.contains($0) && $0 != current }
+        var queue = shuffleQueue.filter { candidateSet.contains($0) && $0 != current }
 
-        if shuffleQueue.isEmpty {
-            shuffleQueue = candidates.filter { $0 != current }.shuffled()
+        if queue.isEmpty {
+            queue = candidates.filter { $0 != current }.shuffled()
         }
 
-        return shuffleQueue.isEmpty ? current : shuffleQueue.removeFirst()
+        return queue
     }
 
     private func persistAnimationSpeed() {
