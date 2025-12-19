@@ -9,7 +9,7 @@ struct DriftPalette: Equatable {
     let backgroundBottom: Color
 }
 
-enum DriftMode: String, CaseIterable, Identifiable {
+enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case nebulaLake
     case cosmicTide
     case auroraVeil

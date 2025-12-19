@@ -98,6 +98,10 @@ final class MockUbiquitousKeyValueStore: UbiquitousKeyValueStoring {
         storage[key] as? [Any]
     }
 
+    func data(forKey key: String) -> Data? {
+        storage[key] as? Data
+    }
+
     func set(_ value: Any?, forKey key: String) {
         if let value {
             storage[key] = value

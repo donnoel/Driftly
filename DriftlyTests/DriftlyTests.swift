@@ -30,7 +30,7 @@ struct DriftlyTests {
             engine.autoDriftShuffleEnabled = true
             engine.autoDriftIntervalMinutes = 10
             engine.favoriteModes = [DriftMode.auroraVeil, DriftMode.cosmicTide]
-            engine.autoDriftFavoritesOnly = true
+            engine.autoDriftSource = .favorites
             engine.clockEnabled = true
             engine.modeDisplayOrder = [
                 .cosmicTide,
@@ -50,7 +50,7 @@ struct DriftlyTests {
             #expect(engine.autoDriftShuffleEnabled == true)
             #expect(engine.autoDriftIntervalMinutes == 10)
             #expect(engine.favoriteModes == [DriftMode.auroraVeil, DriftMode.cosmicTide])
-            #expect(engine.autoDriftFavoritesOnly == true)
+            #expect(engine.autoDriftSource == .favorites)
             #expect(engine.clockEnabled == true)
             #expect(engine.modeDisplayOrder.starts(with: [.cosmicTide, .auroraVeil]))
         }

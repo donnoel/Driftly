@@ -60,7 +60,7 @@ struct DriftlyTVTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.favoriteModes = [.auroraVeil, .cosmicTide]
-        engine.autoDriftFavoritesOnly = true
+        engine.autoDriftSource = .favorites
         engine.autoDriftShuffleEnabled = false
 
         engine.currentMode = .auroraVeil

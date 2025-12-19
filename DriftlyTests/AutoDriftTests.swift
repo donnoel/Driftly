@@ -66,7 +66,7 @@ struct AutoDriftTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.favoriteModes = [.auroraVeil, .cosmicTide]
-        engine.autoDriftFavoritesOnly = true
+        engine.autoDriftSource = .favorites
         engine.autoDriftShuffleEnabled = false
 
         engine.currentMode = .auroraVeil
@@ -96,5 +96,24 @@ struct AutoDriftTests {
 
         #expect(engine.shouldAutoDrift(now: tooSoon, lastChange: start, sleepTimerHasExpired: false) == false)
         #expect(engine.shouldAutoDrift(now: afterMin, lastChange: start, sleepTimerHasExpired: false) == true)
+    }
+
+    @Test func sceneAutoDriftRespectsSceneModes() async throws {
+        let suiteName = "AutoDriftScene-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        let scene = engine.createScene(name: "Two Modes", modeIDs: [.auroraVeil, .cosmicTide])
+        engine.activateScene(id: scene.id)
+        #expect(engine.autoDriftSource == .scene(scene.id))
+
+        engine.currentMode = .auroraVeil
+        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .cosmicTide)
+
+        // If current mode is outside the scene, auto-drift immediately jumps into the scene list.
+        engine.currentMode = .driftGrid
+        #expect(engine.nextAutoDriftMode(after: .driftGrid) == .auroraVeil)
     }
 }

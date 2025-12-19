@@ -7,10 +7,43 @@ struct DriftModePickerView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @State private var editMode: EditMode = .inactive
+    @State private var isSceneEditorPresented = false
+    @State private var sceneEditorSelection: Set<DriftMode> = []
+    @State private var sceneEditorName: String = ""
+    @State private var editingSceneID: UUID?
 #if os(tvOS)
     @State private var showFavoritesOnly: Bool = false
     @FocusState private var focusedMode: DriftMode?
 #endif
+
+    @ViewBuilder
+    private var scenesSection: some View {
+        Section("Scenes") {
+            if engine.availableScenes.isEmpty {
+                Text("Capture a set of modes and settings as a Scene.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 4)
+            } else {
+                ForEach(engine.availableScenes) { scene in
+                    SceneRow(
+                        scene: scene,
+                        isActive: engine.activeSceneID == scene.id,
+                        onActivate: { engine.activateScene(id: scene.id) },
+                        onEdit: { beginEditing(scene) },
+                        onDelete: { engine.deleteScene(id: scene.id) }
+                    )
+                }
+            }
+
+            Button {
+                beginNewScene()
+            } label: {
+                Label("New Scene", systemImage: "plus")
+            }
+            .accessibilityIdentifier("newSceneButton")
+        }
+    }
 
     var body: some View {
 #if os(tvOS)
@@ -25,6 +58,8 @@ struct DriftModePickerView: View {
     private var iosPicker: some View {
         NavigationStack {
             List {
+                scenesSection
+
                 Section {
                     ForEach(engine.modePickerModes) { mode in
                         let isFavorite = engine.favoriteModes.contains(mode)
@@ -77,6 +112,33 @@ struct DriftModePickerView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $isSceneEditorPresented) {
+            SceneEditorView(
+                name: $sceneEditorName,
+                selection: $sceneEditorSelection,
+                allModes: engine.modePickerModes,
+                isEditing: editingSceneID != nil,
+                onSave: {
+                    let ordered = engine.modeDisplayOrder.filter { sceneEditorSelection.contains($0) }
+                    if let editingSceneID {
+                        engine.updateScene(id: editingSceneID, name: sceneEditorName, modeIDs: ordered)
+                        if engine.activeSceneID == editingSceneID {
+                            engine.activateScene(id: editingSceneID)
+                        }
+                    } else {
+                        engine.createScene(name: sceneEditorName, modeIDs: ordered)
+                    }
+                    isSceneEditorPresented = false
+                    editingSceneID = nil
+                },
+                onCancel: {
+                    isSceneEditorPresented = false
+                    editingSceneID = nil
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
     }
 #endif
 
@@ -92,6 +154,27 @@ struct DriftModePickerView: View {
 
             NavigationStack {
                 List {
+                    if !engine.availableScenes.isEmpty {
+                        Section("Scenes") {
+                            ForEach(engine.availableScenes) { scene in
+                                Button {
+                                    engine.activateScene(id: scene.id)
+                                } label: {
+                                    HStack {
+                                        Text(scene.name)
+                                            .font(.title3.weight(.semibold))
+                                        Spacer()
+                                        if engine.activeSceneID == scene.id {
+                                            Image(systemName: "checkmark")
+                                                .font(.title3.weight(.semibold))
+                                        }
+                                    }
+                                    .padding(.vertical, 6)
+                                }
+                            }
+                        }
+                    }
+
                     // Filter row
                     Section {
                         Picker("Filter", selection: $showFavoritesOnly) {
@@ -209,10 +292,116 @@ struct DriftModePickerView: View {
         }
     }
 #endif
+
+    private func beginNewScene() {
+        sceneEditorName = "Scene \(engine.availableScenes.count + 1)"
+        sceneEditorSelection = Set(engine.modeDisplayOrder)
+        editingSceneID = nil
+        isSceneEditorPresented = true
+    }
+
+    private func beginEditing(_ scene: DriftScene) {
+        sceneEditorName = scene.name
+        sceneEditorSelection = Set(scene.modeIDs)
+        editingSceneID = scene.id
+        isSceneEditorPresented = true
+    }
 }
 
 // MARK: - Existing row view (as in your codebase)
 #if !os(tvOS)
+private struct SceneEditorView: View {
+    @Binding var name: String
+    @Binding var selection: Set<DriftMode>
+    let allModes: [DriftMode]
+    let isEditing: Bool
+    let onSave: () -> Void
+    let onCancel: () -> Void
+
+    private func binding(for mode: DriftMode) -> Binding<Bool> {
+        Binding {
+            selection.contains(mode)
+        } set: { newValue in
+            if newValue {
+                selection.insert(mode)
+            } else {
+                selection.remove(mode)
+            }
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Name") {
+                    TextField("Scene name", text: $name)
+                }
+
+                Section("Modes") {
+                    ForEach(allModes) { mode in
+                        Toggle(mode.displayName, isOn: binding(for: mode))
+                    }
+                }
+            }
+            .navigationTitle(isEditing ? "Edit Scene" : "New Scene")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onCancel() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { onSave() }
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selection.isEmpty)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+private struct SceneRow: View {
+    let scene: DriftScene
+    let isActive: Bool
+    let onActivate: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        Button {
+            onActivate()
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(scene.name)
+                        .font(.headline)
+                    Text("\(scene.modeIDs.count) modes")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+        }
+    }
+}
+
 private struct ModeRow: View {
     let mode: DriftMode
     let isSelected: Bool

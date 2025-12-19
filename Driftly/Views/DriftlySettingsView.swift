@@ -54,8 +54,15 @@ private var iosSettings: some View {
             Section("Auto Drift") {
                 Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
                 Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
-                    .disabled(engine.favoriteModes.isEmpty)
+                Picker("Drift From", selection: $engine.autoDriftSource) {
+                    Text("All Modes").tag(AutoDriftSource.all)
+                    Text("Favorites").tag(AutoDriftSource.favorites)
+                    if let sceneID = engine.activeSceneID,
+                       let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                        Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                    }
+                }
+                .disabled(engine.activeSceneID == nil)
 
                 Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                     ForEach(autoDriftOptions, id: \.self) { minutes in
@@ -117,8 +124,15 @@ private var tvSettings: some View {
                 Section("Auto Drift") {
                     Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
                     Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                    Toggle("Use Favorites Only", isOn: $engine.autoDriftFavoritesOnly)
-                        .disabled(engine.favoriteModes.isEmpty)
+                    Picker("Drift From", selection: $engine.autoDriftSource) {
+                        Text("All Modes").tag(AutoDriftSource.all)
+                        Text("Favorites").tag(AutoDriftSource.favorites)
+                        if let sceneID = engine.activeSceneID,
+                           let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                            Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                        }
+                    }
+                    .disabled(engine.activeSceneID == nil)
 
                     Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
                         ForEach(autoDriftOptions, id: \.self) { minutes in
