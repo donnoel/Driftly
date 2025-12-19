@@ -675,25 +675,31 @@ struct DriftlyRootView: View {
             var accessibilityIdentifier: String? = nil
             var isActive: Bool = false
             var isTvOS: Bool = false
-            
+
             var body: some View {
                 Button(action: action) {
                     let tint = isActive ? Color.yellow.opacity(0.95) : Color.white.opacity(0.95)
-                    let size: CGFloat = isTvOS ? 40 : 36
+                    let visualSize: CGFloat = isTvOS ? 40 : 36
+                    let hitSize: CGFloat = isTvOS ? 40 : 44 // iOS minimum recommended touch target
                     let fontSize: CGFloat = isTvOS ? 16 : 15
-                    Image(systemName: systemName)
-                        .font(.system(size: fontSize, weight: .semibold))
-                        .foregroundStyle(tint)
-                        .frame(width: size, height: size)
-                        .background(
-                            Circle()
-                                .fill(isActive ? Color.white.opacity(0.14) : Color.black.opacity(0.45))
-                                .blur(radius: 0.5)
-                                .overlay(
-                                    Circle()
-                                        .stroke(tint.opacity(0.6))
-                                )
-                        )
+
+                    ZStack {
+                        Circle()
+                            .fill(isActive ? Color.white.opacity(0.14) : Color.black.opacity(0.45))
+                            .frame(width: visualSize, height: visualSize)
+                            .overlay(
+                                Circle()
+                                    .stroke(tint.opacity(0.6))
+                            )
+                            .blur(radius: 0.5)
+
+                        Image(systemName: systemName)
+                            .font(.system(size: fontSize, weight: .semibold))
+                            .foregroundStyle(tint)
+                    }
+                    // Expand hit area without changing the visual circle size.
+                    .frame(width: hitSize, height: hitSize)
+                    .contentShape(Rectangle())
                 }
                 .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
                 .buttonStyle(.plain)
