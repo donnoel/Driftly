@@ -609,18 +609,12 @@ struct DriftlyRootView: View {
         private var bottomChrome: some View {
             HStack(spacing: 16) {
                 // Left: current mode
-            VStack(alignment: .leading, spacing: 4) {
-                Text(engine.currentMode.displayName)
-                    .accessibilityIdentifier("currentModeLabel")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    
-                    Text("Tap name to change • Tap anywhere to hide controls")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.6))
 #if os(tvOS)
-                        .opacity(0.0) // hide small helper text on tvOS
-#endif
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(engine.currentMode.displayName)
+                        .accessibilityIdentifier("currentModeLabel")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -629,9 +623,37 @@ struct DriftlyRootView: View {
                     }
                     DriftHaptics.modeChanged()
                 }
-                
+#else
+                Button {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        isModePickerPresented = true
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(engine.currentMode.displayName)
+                            .accessibilityIdentifier("currentModeLabel")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        Image(systemName: "chevron.down")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: Capsule(style: .continuous))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Choose mode")
+                .accessibilityHint("Opens the mode picker")
+#endif
+
                 Spacer()
-                
+
                 // Right: tiny buttons
                 HStack(spacing: isTvOSDevice ? 40 : 12) {
                     CircleButton(systemName: "sparkles", action: {
@@ -640,14 +662,14 @@ struct DriftlyRootView: View {
 #if os(tvOS)
                     .focused($focusedButton, equals: .modePicker)
 #endif
-                    
+
                     CircleButton(systemName: "moon.zzz", action: {
                         isSleepTimerDialogPresented = true
                     }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice)
 #if os(tvOS)
                     .focused($focusedButton, equals: .sleepTimer)
 #endif
-                    
+
                     CircleButton(systemName: "gearshape", action: {
                         isSettingsPresented = true
                     }, accessibilityIdentifier: "settingsButton", isTvOS: isTvOSDevice)
@@ -658,15 +680,29 @@ struct DriftlyRootView: View {
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.black.opacity(0.35))
-                    .blur(radius: 18)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(.white.opacity(0.08))
-                    )
-            )
+            .background(chromeBackground)
+        }
+
+        @ViewBuilder
+        private var chromeBackground: some View {
+            let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+#if os(tvOS)
+            shape
+                .fill(.black.opacity(0.35))
+                .blur(radius: 18)
+                .overlay(
+                    shape
+                        .stroke(.white.opacity(0.08))
+                )
+#else
+            shape
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 10)
+                .overlay(
+                    shape
+                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                )
+#endif
         }
         
         private struct CircleButton: View {

@@ -16,6 +16,7 @@ struct DriftModePickerView: View {
     @FocusState private var focusedMode: DriftMode?
 #endif
 
+    #if !os(tvOS)
     @ViewBuilder
     private var scenesSection: some View {
         Section("Scenes") {
@@ -44,6 +45,7 @@ struct DriftModePickerView: View {
             .accessibilityIdentifier("newSceneButton")
         }
     }
+    #endif
 
     var body: some View {
 #if os(tvOS)
