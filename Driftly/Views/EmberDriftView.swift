@@ -3,6 +3,7 @@ import SwiftUI
 struct EmberDriftView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
         DriftLiquidLampView(
@@ -12,5 +13,6 @@ struct EmberDriftView: View {
             energy: 0.90,
             speed: speed
         )
+        .environment(\.driftAnimationsPaused, animationsPaused)
     }
 }

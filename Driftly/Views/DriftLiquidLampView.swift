@@ -9,13 +9,9 @@ struct DriftLiquidLampView: View {
     @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        if animationsPaused {
-            scene(t: 0)
-        } else {
-            TimelineView(.animation) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed) * 0.18
-                scene(t: t)
-            }
+        PausableTimelineView(paused: animationsPaused) { date in
+            let t = date.timeIntervalSinceReferenceDate * max(0.25, speed) * 0.18
+            scene(t: t)
         }
     }
 

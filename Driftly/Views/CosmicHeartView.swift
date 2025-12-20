@@ -3,6 +3,7 @@ import SwiftUI
 struct CosmicHeartView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
         ZStack {
@@ -13,6 +14,7 @@ struct CosmicHeartView: View {
                 energy: 0.90,
                 speed: speed
             )
+            .environment(\.driftAnimationsPaused, animationsPaused)
 
             DriftHeartbeatLine(
                 color: Color.white.opacity(0.7),
@@ -20,6 +22,7 @@ struct CosmicHeartView: View {
                 period: 9,
                 speed: speed
             )
+            .environment(\.driftAnimationsPaused, animationsPaused)
         }
     }
 }

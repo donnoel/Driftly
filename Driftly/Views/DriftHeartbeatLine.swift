@@ -8,12 +8,8 @@ struct DriftHeartbeatLine: View {
     @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        if animationsPaused {
-            scene(t: 0)
-        } else {
-            TimelineView(.animation) { timeline in
-                scene(t: timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed))
-            }
+        PausableTimelineView(paused: animationsPaused) { date in
+            scene(t: date.timeIntervalSinceReferenceDate * max(0.25, speed))
         }
     }
 

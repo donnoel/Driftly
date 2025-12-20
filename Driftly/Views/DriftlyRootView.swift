@@ -5,6 +5,7 @@ import Combine
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @StateObject private var motionManager = DriftMotionManager()
     @State private var sleepState = SleepAndDriftController.State()
@@ -63,8 +64,8 @@ struct DriftlyRootView: View {
             
             if !sleepState.sleepTimerHasExpired {
                 activeModeView
-                    .offset(motionManager.parallaxOffset)
-                    .scaleEffect(1.03) // tiny scale so edges don’t reveal gaps when moving
+                    .offset(reduceMotion ? .zero : motionManager.parallaxOffset)
+                    .scaleEffect(reduceMotion ? 1.0 : 1.03) // tiny scale so edges don’t reveal gaps when moving
                     .ignoresSafeArea()
             }
             
@@ -289,6 +290,17 @@ struct DriftlyRootView: View {
             updateMotionSampling()
             updateTicking()
         }
+#if os(iOS)
+        .onChange(of: reduceMotion) { _, newValue in
+#if os(iOS)
+            if newValue {
+                motionManager.stopUpdates()
+            } else {
+                startMotionIfNeeded()
+            }
+#endif
+        }
+#endif
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
@@ -798,6 +810,10 @@ struct DriftlyRootView: View {
         
         private func handleMotion(for phase: ScenePhase) {
 #if os(iOS)
+            guard !reduceMotion else {
+                motionManager.stopUpdates()
+                return
+            }
             guard !sleepState.sleepTimerHasExpired else {
                 motionManager.stopUpdates()
                 return
@@ -808,7 +824,7 @@ struct DriftlyRootView: View {
         
         private func startMotionIfNeeded() {
 #if os(iOS)
-            guard !sleepState.sleepTimerHasExpired, scenePhase == .active else { return }
+            guard !reduceMotion, !sleepState.sleepTimerHasExpired, scenePhase == .active else { return }
             updateMotionSampling()
             motionManager.startIfNeeded()
 #endif
@@ -816,6 +832,7 @@ struct DriftlyRootView: View {
         
         private func updateMotionSampling() {
 #if os(iOS)
+            guard !reduceMotion else { return }
             motionManager.updateSampling(
                 brightness: engine.brightness,
                 isChromeVisible: engine.isChromeVisible
