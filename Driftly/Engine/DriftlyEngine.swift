@@ -14,6 +14,7 @@ extension NSUbiquitousKeyValueStore: UbiquitousKeyValueStoring {}
 private enum DriftlyDefaultsKey {
     static let currentMode           = "driftly.currentMode"
     static let animationSpeed        = "driftly.animationSpeed"
+    static let respectReduceMotion   = "driftly.respectReduceMotion"
     static let preventAutoLock       = "driftly.preventAutoLock"
     static let isChromeVisible       = "driftly.isChromeVisible"
     static let brightness            = "driftly.brightness"
@@ -123,6 +124,13 @@ final class DriftlyEngine: ObservableObject {
         didSet {
             persistAnimationSpeed()
             updateActiveSceneFromState()
+        }
+    }
+
+    /// Whether to honor the system Reduce Motion setting for animation speed scaling.
+    @Published var respectSystemReduceMotion: Bool {
+        didSet {
+            persistRespectReduceMotion()
         }
     }
 
@@ -266,6 +274,13 @@ final class DriftlyEngine: ObservableObject {
         // animationSpeed (default: 1.0)
         let storedSpeed = defaults.double(forKey: DriftlyDefaultsKey.animationSpeed)
         animationSpeed = storedSpeed == 0 ? 1.0 : storedSpeed
+
+        // respectSystemReduceMotion (default: true)
+        if defaults.object(forKey: DriftlyDefaultsKey.respectReduceMotion) != nil {
+            respectSystemReduceMotion = defaults.bool(forKey: DriftlyDefaultsKey.respectReduceMotion)
+        } else {
+            respectSystemReduceMotion = true
+        }
 
         // preventAutoLock (default: false)
         if defaults.object(forKey: DriftlyDefaultsKey.preventAutoLock) != nil {
@@ -681,6 +696,10 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistAnimationSpeed() {
         defaults.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
+    }
+
+    private func persistRespectReduceMotion() {
+        defaults.set(respectSystemReduceMotion, forKey: DriftlyDefaultsKey.respectReduceMotion)
     }
 
     private func persistPreventAutoLock() {

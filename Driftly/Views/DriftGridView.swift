@@ -6,12 +6,8 @@ struct DriftGridView: View {
     @Environment(\.driftAnimationsPaused) private var animationsPaused
 
     var body: some View {
-        if animationsPaused {
-            scene(raw: 0)
-        } else {
-            TimelineView(.animation) { timeline in
-                scene(raw: timeline.date.timeIntervalSinceReferenceDate)
-            }
+        PausableTimelineView(paused: animationsPaused) { date in
+            scene(raw: date.timeIntervalSinceReferenceDate)
         }
     }
 

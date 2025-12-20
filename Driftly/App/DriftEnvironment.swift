@@ -22,6 +22,15 @@ extension EnvironmentValues {
     }
 }
 
+enum DriftAnimationPolicy {
+    static let reduceMotionScale: Double = 0.55
+
+    static func effectiveSpeed(base: Double, reduceMotion: Bool, respectSystemReduceMotion: Bool) -> Double {
+        guard respectSystemReduceMotion, reduceMotion else { return base }
+        return max(0.25, base * reduceMotionScale)
+    }
+}
+
 /// Renders a single static frame when paused; otherwise mirrors `TimelineView(.animation)`.
 struct PausableTimelineView<Content: View>: View {
     let paused: Bool

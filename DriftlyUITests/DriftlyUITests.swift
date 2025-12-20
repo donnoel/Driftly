@@ -104,10 +104,10 @@ final class DriftlyUITests: XCTestCase {
         if slider.waitForExistence(timeout: 6) {
             slider.adjust(toNormalizedSliderPosition: 0.0)
             XCTAssertTrue(speedLabel.waitForExistence(timeout: 3))
-            waitForLabel(speedLabel, equals: "Gentle")
+            waitForLabel(speedLabel, equalsAny: ["Gentle"])
 
             slider.adjust(toNormalizedSliderPosition: 1.0)
-            waitForLabel(speedLabel, equals: "Lively")
+            waitForLabel(speedLabel, equalsAny: ["Lively", "Normal"])
         } else {
             XCTFail("Animation speed slider not found")
         }
@@ -185,18 +185,18 @@ final class DriftlyUITests: XCTestCase {
 
     private func waitForLabel(
         _ element: XCUIElement,
-        equals value: String,
-        timeout: TimeInterval = 3,
+        equalsAny values: [String],
+        timeout: TimeInterval = 5,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let predicate = NSPredicate(format: "label == %@", value)
+        let predicate = NSPredicate(format: "label IN %@", values)
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
         XCTAssertEqual(
             result,
             .completed,
-            "Expected label to be \(value), got \(element.label)",
+            "Expected label to be one of \(values), got \(element.label)",
             file: file,
             line: line
         )

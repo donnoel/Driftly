@@ -763,10 +763,11 @@ struct DriftlyRootView: View {
         }
 
         private var effectiveAnimationSpeed: Double {
-            if reduceMotion {
-                return max(0.25, engine.animationSpeed * 0.55)
-            }
-            return engine.animationSpeed
+            DriftAnimationPolicy.effectiveSpeed(
+                base: engine.animationSpeed,
+                reduceMotion: reduceMotion,
+                respectSystemReduceMotion: engine.respectSystemReduceMotion
+            )
         }
         
         // MARK: - Brightness edges

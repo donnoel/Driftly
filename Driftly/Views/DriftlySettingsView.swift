@@ -6,6 +6,7 @@ import UIKit
 struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // Matches your existing settings file
     private let autoDriftOptions: [Int] = [1, 5, 10, 15, 30]
@@ -41,19 +42,29 @@ private var iosSettings: some View {
                         Text("Faster")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                    }
-
-                    Text(speedLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("animationSpeedLabel")
-                        .accessibilityValue(speedLabel)
                 }
+
+                Text(speedLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("animationSpeedLabel")
+                    .accessibilityValue(speedLabel)
             }
 
-            Section("Auto Drift") {
-                Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+            Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
+                .accessibilityIdentifier("respectReduceMotionToggle")
+
+            if let notice = reduceMotionNotice {
+                Text(notice)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("reduceMotionNotice")
+            }
+        }
+
+        Section("Auto Drift") {
+            Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+            Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
                 Picker("Drift From", selection: $engine.autoDriftSource) {
                     Text("All Modes").tag(AutoDriftSource.all)
                     Text("Favorites").tag(AutoDriftSource.favorites)
@@ -118,6 +129,16 @@ private var tvSettings: some View {
                             .accessibilityIdentifier("animationSpeedLabel")
                     }
                     .padding(.vertical, 8)
+
+                    Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
+                        .accessibilityIdentifier("respectReduceMotionToggle")
+
+                    if let notice = reduceMotionNotice {
+                        Text(notice)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("reduceMotionNotice")
+                    }
                 }
 
                 Section("Auto Drift") {
@@ -180,7 +201,28 @@ private var tvSettings: some View {
 #endif
 
     private var speedLabel: String {
-        switch engine.animationSpeed {
+        speedDescriptor(for: effectiveAnimationSpeed)
+    }
+
+    private var reduceMotionNotice: String? {
+        guard reduceMotion else { return nil }
+        if engine.respectSystemReduceMotion {
+            return "System Reduce Motion is on; animations are softened."
+        } else {
+            return "System Reduce Motion is on, but Driftly will keep full animation speed."
+        }
+    }
+
+    private var effectiveAnimationSpeed: Double {
+        DriftAnimationPolicy.effectiveSpeed(
+            base: engine.animationSpeed,
+            reduceMotion: reduceMotion,
+            respectSystemReduceMotion: engine.respectSystemReduceMotion
+        )
+    }
+
+    private func speedDescriptor(for speed: Double) -> String {
+        switch speed {
         case ..<0.8: return "Gentle"
         case 0.8...1.2: return "Normal"
         default: return "Lively"
