@@ -814,6 +814,13 @@ final class DriftlyEngine: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
+    /// Immediately run any pending scene persistence so recent changes are not lost (e.g., on background).
+    func flushPendingScenePersistence() {
+        guard let work = scenesPersistWorkItem else { return }
+        work.perform()
+        scenesPersistWorkItem = nil
+    }
+
     private func persistActiveSceneID() {
         if let id = activeSceneID {
             defaults.set(id.uuidString, forKey: DriftlyDefaultsKey.activeSceneID)

@@ -289,6 +289,9 @@ struct DriftlyRootView: View {
             handleMotion(for: newPhase)
             updateMotionSampling()
             updateTicking()
+            if newPhase == .background {
+                engine.flushPendingScenePersistence()
+            }
         }
 #if os(iOS)
         .onChange(of: reduceMotion) { _, newValue in
