@@ -15,8 +15,17 @@ final class DriftlyUITests: XCTestCase {
 
     private func launchApp(arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: arguments)
+        if app.state != .notRunning {
+            app.terminate()
+            sleep(1)
+        }
+        app.launchArguments = arguments
         app.launch()
+        addTeardownBlock {
+            if app.state != .notRunning {
+                app.terminate()
+            }
+        }
         return app
     }
 
@@ -32,12 +41,10 @@ final class DriftlyUITests: XCTestCase {
 
     @MainActor
     func testModePickerOpensAndSelectsMode() throws {
-        let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: [
+        let app = launchApp(arguments: [
             "UITestingReset",
             "UITestingOpenModePicker"
         ])
-        app.launch()
 
         ensureChromeVisible(in: app)
 
@@ -48,21 +55,17 @@ final class DriftlyUITests: XCTestCase {
 
     @MainActor
     func testSettingsSheetOpens() throws {
-        let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: ["UITestingReset"])
-        app.launch()
+        let app = launchApp(arguments: ["UITestingReset"])
 
         openSettingsSheet(in: app)
     }
 
     @MainActor
     func testSleepTimerCanBeSet() throws {
-        let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: [
+        let app = launchApp(arguments: [
             "UITestingReset",
             "UITestingOpenSleepTimer"
         ])
-        app.launch()
 
         ensureChromeVisible(in: app)
 
@@ -73,12 +76,10 @@ final class DriftlyUITests: XCTestCase {
 
     @MainActor
     func testModeLabelUpdatesAfterSelection() throws {
-        let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: [
+        let app = launchApp(arguments: [
             "UITestingReset",
             "UITestingOpenModePicker"
         ])
-        app.launch()
 
         let starlit = app.buttons["modeRow-starlitMist"].firstMatch
         XCTAssertTrue(starlit.waitForExistence(timeout: 10))
@@ -92,9 +93,7 @@ final class DriftlyUITests: XCTestCase {
 
     @MainActor
     func testSettingsSpeedLabelChanges() throws {
-        let app = XCUIApplication()
-        app.launchArguments.append(contentsOf: ["UITestingReset"])
-        app.launch()
+        let app = launchApp(arguments: ["UITestingReset"])
 
         openSettingsSheet(in: app)
 

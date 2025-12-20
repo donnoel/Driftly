@@ -775,6 +775,9 @@ final class DriftlyEngine: ObservableObject {
             let merged = mergeScenes(local: localScenes, cloud: cloudScenes)
             if let mergedData = try? JSONEncoder().encode(merged) {
                 defaults.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
+                // Push the merged result back to iCloud so other devices converge immediately.
+                ubiquitousStore.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
+                _ = ubiquitousStore.synchronize()
             }
             return merged
         } else {
