@@ -194,7 +194,7 @@ struct DriftlyRootView: View {
         }
         // Global animation speed for all lamp views
         .environment(\.driftPhaseAnchorDate, phaseAnchorDate)
-        .environment(\.driftAnimationSpeed, engine.animationSpeed)
+        .environment(\.driftAnimationSpeed, effectiveAnimationSpeed)
         .environment(\.driftAnimationsPaused, sleepState.sleepTimerHasExpired || scenePhase != .active)
         .background(Color.black)
         .ignoresSafeArea()
@@ -760,6 +760,13 @@ struct DriftlyRootView: View {
 #else
             false
 #endif
+        }
+
+        private var effectiveAnimationSpeed: Double {
+            if reduceMotion {
+                return max(0.25, engine.animationSpeed * 0.55)
+            }
+            return engine.animationSpeed
         }
         
         // MARK: - Brightness edges
