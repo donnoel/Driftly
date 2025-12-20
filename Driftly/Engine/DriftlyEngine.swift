@@ -106,6 +106,7 @@ final class DriftlyEngine: ObservableObject {
     private var applyingCloudScenes = false
     private var applyingScene = false
     private var scenesCloudPushWorkItem: DispatchWorkItem?
+    private var scenesPersistWorkItem: DispatchWorkItem?
     private var isInitializing = true
 
     @Published var currentMode: DriftMode {
@@ -406,6 +407,7 @@ final class DriftlyEngine: ObservableObject {
             NotificationCenter.default.removeObserver(ubiquitousObserver)
         }
         scenesCloudPushWorkItem?.cancel()
+        scenesPersistWorkItem?.cancel()
     }
 
     // MARK: - Public API
@@ -799,9 +801,17 @@ final class DriftlyEngine: ObservableObject {
 
     private func persistScenes() {
         guard !applyingCloudScenes else { return }
-        let data = try? JSONEncoder().encode(scenes)
-        defaults.set(data, forKey: DriftlyDefaultsKey.scenes)
-        scheduleScenesCloudPush(data: data)
+        scenesPersistWorkItem?.cancel()
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            let data = try? JSONEncoder().encode(self.scenes)
+            self.defaults.set(data, forKey: DriftlyDefaultsKey.scenes)
+            self.scheduleScenesCloudPush(data: data)
+        }
+
+        scenesPersistWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     private func persistActiveSceneID() {

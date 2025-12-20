@@ -20,6 +20,9 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
     private var filteredRoll: Double = 0
     private var filteredPitch: Double = 0
     private var lastInterval: TimeInterval = 1.0 / 30.0
+    private var lastBrightness: Double = 1.0
+    private var lastChromeVisible: Bool = true
+    private var powerObserver: NSObjectProtocol?
 #endif
 
     @Published var xTilt: Double = 0
@@ -34,18 +37,31 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         }
 
         motionManager.deviceMotionUpdateInterval = lastInterval
+
+        powerObserver = NotificationCenter.default.addObserver(
+            forName: ProcessInfo.powerStateDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handlePowerStateChange()
+        }
         #endif
     }
 
     deinit {
         #if os(iOS)
         motionManager.stopDeviceMotionUpdates()
+        if let powerObserver {
+            NotificationCenter.default.removeObserver(powerObserver)
+        }
         #endif
     }
 
 #if os(iOS)
     func updateSampling(brightness: Double, isChromeVisible: Bool) {
         guard motionManager.isDeviceMotionAvailable else { return }
+        lastBrightness = brightness
+        lastChromeVisible = isChromeVisible
 
         let interval = Self.samplingInterval(
             brightness: brightness,
@@ -128,6 +144,12 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
         }
         return interval
     }
+
+#if os(iOS)
+    private func handlePowerStateChange() {
+        updateSampling(brightness: lastBrightness, isChromeVisible: lastChromeVisible)
+    }
+#endif
 }
 
 #if !os(iOS)
