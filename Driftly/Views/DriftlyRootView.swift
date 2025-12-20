@@ -669,8 +669,14 @@ struct DriftlyRootView: View {
 
                 Spacer()
 
-                // Right: tiny buttons (no second mode picker)
+                // Right: tiny buttons
                 HStack(spacing: isTvOSDevice ? 40 : 12) {
+#if os(tvOS)
+                    CircleButton(systemName: "sparkles", action: {
+                        isModePickerPresented = true
+                    }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice, tintColor: chromeTint)
+                    .focused($focusedButton, equals: .modePicker)
+#endif
                     CircleButton(systemName: "moon.zzz", action: {
                         isSleepTimerDialogPresented = true
                     }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice, tintColor: chromeTint)
@@ -689,20 +695,20 @@ struct DriftlyRootView: View {
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
             .background(chromeBackground)
-            .opacity(0.78)
+            .opacity(0.62)
         }
 
         @ViewBuilder
         private var chromeBackground: some View {
             let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-            let tint = chromeTint.opacity(0.38)
+            let tint = chromeTint.opacity(0.26)
             shape
-                .fill(.ultraThinMaterial.opacity(0.7))
+                .fill(.ultraThinMaterial.opacity(0.45))
                 .overlay(
                     shape
                         .stroke(tint, lineWidth: 1)
                 )
-                .shadow(color: tint.opacity(0.25), radius: 6, x: 0, y: 4)
+                .shadow(color: tint.opacity(0.15), radius: 5, x: 0, y: 3)
         }
         
         private struct CircleButton: View {
@@ -717,15 +723,15 @@ struct DriftlyRootView: View {
                 Button(action: action) {
                     let baseTint = tintColor ?? Color.white
                     let tint = isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86)
-                    let visualSize: CGFloat = isTvOS ? 40 : 34
+                    let visualSize: CGFloat = isTvOS ? 38 : 32
                     let hitSize: CGFloat = isTvOS ? 40 : 44 // iOS minimum recommended touch target
                     let fontSize: CGFloat = isTvOS ? 16 : 15
 
                     ZStack {
                         Circle()
-                            .fill(Color.white.opacity(0.08))
+                            .fill(Color.white.opacity(0.05))
                             .frame(width: visualSize, height: visualSize)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .background(.ultraThinMaterial.opacity(0.5), in: Circle())
                             .overlay(
                                 Circle()
                                     .stroke(tint.opacity(isActive ? 0.9 : 0.55), lineWidth: 1)
