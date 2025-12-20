@@ -669,15 +669,8 @@ struct DriftlyRootView: View {
 
                 Spacer()
 
-                // Right: tiny buttons
+                // Right: tiny buttons (no second mode picker)
                 HStack(spacing: isTvOSDevice ? 40 : 12) {
-                    CircleButton(systemName: "sparkles", action: {
-                        isModePickerPresented = true
-                    }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice, tintColor: chromeTint)
-#if os(tvOS)
-                    .focused($focusedButton, equals: .modePicker)
-#endif
-
                     CircleButton(systemName: "moon.zzz", action: {
                         isSleepTimerDialogPresented = true
                     }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice, tintColor: chromeTint)
@@ -696,7 +689,7 @@ struct DriftlyRootView: View {
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
             .background(chromeBackground)
-            .opacity(0.9)
+            .opacity(0.78)
         }
 
         @ViewBuilder
@@ -704,12 +697,12 @@ struct DriftlyRootView: View {
             let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
             let tint = chromeTint.opacity(0.38)
             shape
-                .fill(.ultraThinMaterial)
+                .fill(.ultraThinMaterial.opacity(0.7))
                 .overlay(
                     shape
                         .stroke(tint, lineWidth: 1)
                 )
-                .shadow(color: tint.opacity(0.4), radius: 8, x: 0, y: 6)
+                .shadow(color: tint.opacity(0.25), radius: 6, x: 0, y: 4)
         }
         
         private struct CircleButton: View {
