@@ -5,7 +5,7 @@ import Testing
 struct ModeViewBuilderTests {
 
     @Test func coversAllModes() async throws {
-        let builders = DriftlyRootView.modeViewBuilders
+        let builders = ModeViewRegistry.builders
         #expect(builders.count == DriftMode.allCases.count)
 
         for mode in DriftMode.allCases {

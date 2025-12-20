@@ -46,7 +46,7 @@ final class DriftlyUITests: XCTestCase {
             "UITestingOpenModePicker"
         ])
 
-        ensureChromeVisible(in: app)
+        ensureModePickerOpen(app)
 
         let modeRow = app.buttons["modeRow-nebulaLake"].firstMatch
         XCTAssertTrue(modeRow.waitForExistence(timeout: 10))
@@ -80,6 +80,8 @@ final class DriftlyUITests: XCTestCase {
             "UITestingReset",
             "UITestingOpenModePicker"
         ])
+
+        ensureModePickerOpen(app)
 
         let starlit = app.buttons["modeRow-starlitMist"].firstMatch
         XCTAssertTrue(starlit.waitForExistence(timeout: 10))
