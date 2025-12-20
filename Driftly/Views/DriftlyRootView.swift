@@ -622,7 +622,7 @@ struct DriftlyRootView: View {
         // MARK: - Chrome
         
         private var bottomChrome: some View {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 // Left: current mode
 #if os(tvOS)
                 VStack(alignment: .leading, spacing: 4) {
@@ -673,51 +673,43 @@ struct DriftlyRootView: View {
                 HStack(spacing: isTvOSDevice ? 40 : 12) {
                     CircleButton(systemName: "sparkles", action: {
                         isModePickerPresented = true
-                    }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice)
+                    }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOSDevice, tintColor: chromeTint)
 #if os(tvOS)
                     .focused($focusedButton, equals: .modePicker)
 #endif
 
                     CircleButton(systemName: "moon.zzz", action: {
                         isSleepTimerDialogPresented = true
-                    }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice)
+                    }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOSDevice, tintColor: chromeTint)
 #if os(tvOS)
                     .focused($focusedButton, equals: .sleepTimer)
 #endif
 
                     CircleButton(systemName: "gearshape", action: {
                         isSettingsPresented = true
-                    }, accessibilityIdentifier: "settingsButton", isTvOS: isTvOSDevice)
+                    }, accessibilityIdentifier: "settingsButton", isTvOS: isTvOSDevice, tintColor: chromeTint)
 #if os(tvOS)
                     .focused($focusedButton, equals: .settings)
 #endif
                 }
             }
             .padding(.vertical, 10)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .background(chromeBackground)
+            .opacity(0.9)
         }
 
         @ViewBuilder
         private var chromeBackground: some View {
             let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-#if os(tvOS)
-            shape
-                .fill(.black.opacity(0.35))
-                .blur(radius: 18)
-                .overlay(
-                    shape
-                        .stroke(.white.opacity(0.08))
-                )
-#else
+            let tint = chromeTint.opacity(0.38)
             shape
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 10)
                 .overlay(
                     shape
-                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                        .stroke(tint, lineWidth: 1)
                 )
-#endif
+                .shadow(color: tint.opacity(0.4), radius: 8, x: 0, y: 6)
         }
         
         private struct CircleButton: View {
@@ -726,23 +718,25 @@ struct DriftlyRootView: View {
             var accessibilityIdentifier: String? = nil
             var isActive: Bool = false
             var isTvOS: Bool = false
+            var tintColor: Color? = nil
 
             var body: some View {
                 Button(action: action) {
-                    let tint = isActive ? Color.yellow.opacity(0.95) : Color.white.opacity(0.95)
-                    let visualSize: CGFloat = isTvOS ? 40 : 36
+                    let baseTint = tintColor ?? Color.white
+                    let tint = isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86)
+                    let visualSize: CGFloat = isTvOS ? 40 : 34
                     let hitSize: CGFloat = isTvOS ? 40 : 44 // iOS minimum recommended touch target
                     let fontSize: CGFloat = isTvOS ? 16 : 15
 
                     ZStack {
                         Circle()
-                            .fill(isActive ? Color.white.opacity(0.14) : Color.black.opacity(0.45))
+                            .fill(Color.white.opacity(0.08))
                             .frame(width: visualSize, height: visualSize)
+                            .background(.ultraThinMaterial, in: Circle())
                             .overlay(
                                 Circle()
-                                    .stroke(tint.opacity(0.6))
+                                    .stroke(tint.opacity(isActive ? 0.9 : 0.55), lineWidth: 1)
                             )
-                            .blur(radius: 0.5)
 
                         Image(systemName: systemName)
                             .font(.system(size: fontSize, weight: .semibold))
@@ -763,6 +757,10 @@ struct DriftlyRootView: View {
 #else
             false
 #endif
+        }
+
+        private var chromeTint: Color {
+            engine.currentMode.config.palette.primary
         }
 
         private var effectiveAnimationSpeed: Double {
