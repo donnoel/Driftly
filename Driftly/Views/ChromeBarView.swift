@@ -19,7 +19,7 @@ struct ChromeBarView: View {
 
     private var chromeOpacity: Double { isTvOS ? 0.82 : 0.78 }
     private var chromeCornerRadius: CGFloat { isTvOS ? 22 : 18 }
-    private var chromePaddingV: CGFloat { isTvOS ? 12 : 10 }
+    private var chromePaddingV: CGFloat { isTvOS ? 10 : 10 }
     private var chromePaddingH: CGFloat { isTvOS ? 16 : 12 }
 
     var body: some View {
@@ -172,10 +172,17 @@ private struct CircleButton: View {
                     .foregroundStyle(tint)
             }
             .frame(width: hitSize, height: hitSize)
+#if os(tvOS)
+            // tvOS: make the system focus effect follow the circular control, not a big rectangle.
+            .contentShape(Circle())
+#else
             .contentShape(Rectangle())
+#endif
         }
         .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
+#if !os(tvOS)
         .buttonStyle(.plain)
+#endif
     }
 }
 
