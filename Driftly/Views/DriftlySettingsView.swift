@@ -42,29 +42,29 @@ private var iosSettings: some View {
                         Text("Faster")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                    }
+
+                    Text(speedLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("animationSpeedLabel")
+                        .accessibilityValue(speedLabel)
                 }
 
-                Text(speedLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("animationSpeedLabel")
-                    .accessibilityValue(speedLabel)
+                Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
+                    .accessibilityIdentifier("respectReduceMotionToggle")
+
+                if let notice = reduceMotionNotice {
+                    Text(notice)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("reduceMotionNotice")
+                }
             }
 
-            Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
-                .accessibilityIdentifier("respectReduceMotionToggle")
-
-            if let notice = reduceMotionNotice {
-                Text(notice)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("reduceMotionNotice")
-            }
-        }
-
-        Section("Auto Drift") {
-            Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-            Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+            Section("Auto Drift") {
+                Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
                 Picker("Drift From", selection: $engine.autoDriftSource) {
                     Text("All Modes").tag(AutoDriftSource.all)
                     Text("Favorites").tag(AutoDriftSource.favorites)

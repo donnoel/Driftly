@@ -245,7 +245,6 @@ struct DriftlyRootView: View {
             }
         }
         .onChange(of: engine.currentMode) { _, _ in
-            coordinator.prewarmMode = nil
             if engine.autoDriftEnabled {
                 coordinator.resetAutoDriftClock()
             }

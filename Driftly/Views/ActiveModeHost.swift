@@ -9,6 +9,7 @@ struct ActiveModeHost: View {
     @State private var previousModeLayerID: UUID?
     @State private var currentModeLayerID = UUID()
     @State private var prewarmLayerID: UUID?
+    @State private var warmedMode: DriftMode?
     @State private var modeCrossfade: Double = 1.0
     @State private var modeFadeCleanupWorkItem: DispatchWorkItem?
 
@@ -50,8 +51,13 @@ struct ActiveModeHost: View {
     private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
         previousMode = oldMode
         previousModeLayerID = currentModeLayerID
-        currentModeLayerID = UUID()
+        if warmedMode == newMode, let prewarmLayerID {
+            currentModeLayerID = prewarmLayerID
+        } else {
+            currentModeLayerID = UUID()
+        }
         prewarmLayerID = nil
+        warmedMode = nil
 
         modeFadeCleanupWorkItem?.cancel()
         modeCrossfade = 0
@@ -72,8 +78,13 @@ struct ActiveModeHost: View {
     private func updatePrewarmLayer(for mode: DriftMode?) {
         guard let mode, mode != currentMode else {
             prewarmLayerID = nil
+            warmedMode = nil
             return
         }
-        prewarmLayerID = UUID()
+        if warmedMode == mode, prewarmLayerID != nil {
+            return
+        }
+        warmedMode = mode
+        prewarmLayerID = prewarmLayerID ?? UUID()
     }
 }

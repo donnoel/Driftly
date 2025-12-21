@@ -120,7 +120,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         let intervalSeconds = Double(intervalMinutes * 60)
         let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
         let remaining = intervalSeconds - elapsed
-        let window: TimeInterval = 2.0
+        let window: TimeInterval = 3.0
 
         if remaining <= window && remaining > 0 {
             let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
