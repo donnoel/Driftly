@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 enum DriftNoise {
     static func fract(_ x: Double) -> Double { x - floor(x) }

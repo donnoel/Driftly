@@ -547,13 +547,6 @@ final class DriftlyEngine: ObservableObject {
         applyScene(scene)
     }
 
-    func deactivateScene() {
-        activeSceneID = nil
-        if case .scene = autoDriftSource {
-            autoDriftSource = .all
-        }
-    }
-
     private func applyScene(_ scene: DriftScene, setAutoDriftSource: Bool = true) {
         guard scene.deletedAt == nil else { return }
         var mutableScene = scene
