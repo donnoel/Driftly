@@ -13,9 +13,14 @@ struct ChromeBarView: View {
     let onSleepTimer: () -> Void
     let onSettings: () -> Void
     let onNextMode: () -> Void
-#if os(tvOS)
+    #if os(tvOS)
     var focusedButton: FocusState<ChromeFocusTarget?>.Binding?
-#endif
+    #endif
+
+    private var chromeOpacity: Double { isTvOS ? 0.82 : 0.78 }
+    private var chromeCornerRadius: CGFloat { isTvOS ? 22 : 18 }
+    private var chromePaddingV: CGFloat { isTvOS ? 12 : 10 }
+    private var chromePaddingH: CGFloat { isTvOS ? 16 : 12 }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -87,23 +92,52 @@ struct ChromeBarView: View {
 #endif
             }
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
+        .padding(.vertical, chromePaddingV)
+        .padding(.horizontal, chromePaddingH)
         .background(chromeBackground)
-        .opacity(0.62)
+        .opacity(chromeOpacity)
     }
 
     @ViewBuilder
     private var chromeBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-        let tint = chromeTint.opacity(0.26)
+        let shape = RoundedRectangle(cornerRadius: chromeCornerRadius, style: .continuous)
+        let tint = chromeTint
+
         shape
-            .fill(.ultraThinMaterial.opacity(0.45))
+            .fill(.ultraThinMaterial)
+            // Soft, mode-tinted base wash
+            .overlay(shape.fill(tint.opacity(isTvOS ? 0.10 : 0.08)))
+            // Specular highlight (top edge) + gentle falloff
             .overlay(
                 shape
-                    .stroke(tint, lineWidth: 1)
+                    .fill(
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white.opacity(isTvOS ? 0.22 : 0.18), location: 0.0),
+                                .init(color: Color.white.opacity(0.06), location: 0.22),
+                                .init(color: Color.clear, location: 0.75)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .blendMode(.screen)
+                    .allowsHitTesting(false)
             )
-            .shadow(color: tint.opacity(0.15), radius: 5, x: 0, y: 3)
+            // Crisp glass edge + subtle inner depth
+            .overlay(shape.stroke(Color.white.opacity(isTvOS ? 0.18 : 0.14), lineWidth: 1).allowsHitTesting(false))
+            .overlay(shape.stroke(tint.opacity(isTvOS ? 0.32 : 0.26), lineWidth: 1).allowsHitTesting(false))
+            .overlay(
+                shape
+                    .stroke(Color.black.opacity(0.18), lineWidth: 1)
+                    .blur(radius: 0.8)
+                    .offset(y: 1)
+                    .mask(shape)
+                    .allowsHitTesting(false)
+            )
+            // Lift off the background (tuned per platform)
+            .shadow(color: Color.black.opacity(isTvOS ? 0.32 : 0.22), radius: isTvOS ? 14 : 10, x: 0, y: isTvOS ? 10 : 8)
+            .shadow(color: tint.opacity(isTvOS ? 0.16 : 0.12), radius: isTvOS ? 16 : 12, x: 0, y: 10)
     }
 }
 
@@ -147,9 +181,13 @@ private struct CircleButton: View {
 
 #if os(tvOS)
 private extension View {
+    @ViewBuilder
     func applyFocus(_ binding: FocusState<ChromeFocusTarget?>.Binding?, target: ChromeFocusTarget) -> some View {
-        guard let binding else { return AnyView(self) }
-        return AnyView(self.focused(binding, equals: target))
+        if let binding {
+            self.focused(binding, equals: target)
+        } else {
+            self
+        }
     }
 }
 #endif
