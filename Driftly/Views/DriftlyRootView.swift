@@ -125,7 +125,7 @@ struct DriftlyRootView: View {
             }
             // Only toggle when nothing is focused (chrome hidden)
             if focusedButton == nil {
-                toggleChromeTvOS(forceToggle: true)
+                toggleChromeTvOS()
             }
         }
 #if os(tvOS)
@@ -697,7 +697,7 @@ struct DriftlyRootView: View {
     }
     
 #if os(tvOS)
-    private func toggleChromeTvOS(forceToggle: Bool) {
+    private func toggleChromeTvOS() {
         DispatchQueue.main.async {
             let willShow = !engine.isChromeVisible
             withAnimation(.easeInOut(duration: 0.35)) {
@@ -714,7 +714,7 @@ struct DriftlyRootView: View {
         if coordinator.sleepState.sleepTimerHasExpired {
             wakeFromSleepTimer()
         } else {
-            toggleChromeTvOS(forceToggle: true)
+            toggleChromeTvOS()
         }
     }
 #endif
