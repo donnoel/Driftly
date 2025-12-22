@@ -13,7 +13,7 @@ struct ActiveModeHost: View {
     @State private var modeCrossfade: Double = 1.0
     @State private var modeFadeCleanupWorkItem: DispatchWorkItem?
 
-    private let crossfadeDuration: TimeInterval = 0.9
+    private let crossfadeDuration: TimeInterval = 1.1
     private let cleanupDelay: TimeInterval = 1.0
 
     var body: some View {
@@ -61,9 +61,11 @@ struct ActiveModeHost: View {
 
         modeFadeCleanupWorkItem?.cancel()
         modeCrossfade = 0
-
-        withAnimation(.easeInOut(duration: crossfadeDuration)) {
-            modeCrossfade = 1
+        // Defer the animation a tick so the new layer can render once before we start fading.
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: crossfadeDuration)) {
+                modeCrossfade = 1
+            }
         }
 
         let cleanup = DispatchWorkItem {
