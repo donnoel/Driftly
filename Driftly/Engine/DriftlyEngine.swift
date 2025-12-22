@@ -109,6 +109,7 @@ final class DriftlyEngine: ObservableObject {
     private var scenesCloudPushWorkItem: DispatchWorkItem?
     private var scenesPersistWorkItem: DispatchWorkItem?
     private var isInitializing = true
+    private let persistenceQueue = DispatchQueue(label: "com.driftly.persistence", qos: .utility)
 
     @Published var currentMode: DriftMode {
         didSet {
@@ -252,14 +253,23 @@ final class DriftlyEngine: ObservableObject {
 
     private func syncUbiquitousStoreAsync() {
         guard let ubiquitousStore else { return }
-        ubiquitousQueue.async {
+        if ubiquitousStore is NSUbiquitousKeyValueStore {
+            ubiquitousQueue.async {
+                _ = ubiquitousStore.synchronize()
+            }
+        } else {
             _ = ubiquitousStore.synchronize()
         }
     }
 
     private func writeToUbiquitousStoreAsync(_ work: @escaping (UbiquitousKeyValueStoring) -> Void) {
         guard let ubiquitousStore else { return }
-        ubiquitousQueue.async {
+        if ubiquitousStore is NSUbiquitousKeyValueStore {
+            ubiquitousQueue.async {
+                work(ubiquitousStore)
+                _ = ubiquitousStore.synchronize()
+            }
+        } else {
             work(ubiquitousStore)
             _ = ubiquitousStore.synchronize()
         }
@@ -724,7 +734,10 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func persistBrightness() {
-        defaults.set(brightness, forKey: DriftlyDefaultsKey.brightness)
+        let value = brightness
+        persistenceQueue.async { [weak defaults] in
+            defaults?.set(value, forKey: DriftlyDefaultsKey.brightness)
+        }
     }
 
     private func persistAutoDriftEnabled() {
@@ -772,7 +785,11 @@ final class DriftlyEngine: ObservableObject {
             let rawValues = localFavorites.map(\.rawValue)
             ubiquitousStore?.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
             if let ubiquitousStore {
-                DispatchQueue.global(qos: .utility).async {
+                if ubiquitousStore is NSUbiquitousKeyValueStore {
+                    DispatchQueue.global(qos: .utility).async {
+                        _ = ubiquitousStore.synchronize()
+                    }
+                } else {
                     _ = ubiquitousStore.synchronize()
                 }
             }
@@ -794,7 +811,11 @@ final class DriftlyEngine: ObservableObject {
                 defaults.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
                 // Push the merged result back to iCloud so other devices converge immediately.
                 ubiquitousStore.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
-                DispatchQueue.global(qos: .utility).async {
+                if ubiquitousStore is NSUbiquitousKeyValueStore {
+                    DispatchQueue.global(qos: .utility).async {
+                        _ = ubiquitousStore.synchronize()
+                    }
+                } else {
                     _ = ubiquitousStore.synchronize()
                 }
             }
@@ -802,7 +823,11 @@ final class DriftlyEngine: ObservableObject {
         } else {
             if let data = try? JSONEncoder().encode(localScenes) {
                 ubiquitousStore.set(data, forKey: DriftlyDefaultsKey.scenes)
-                DispatchQueue.global(qos: .utility).async {
+                if ubiquitousStore is NSUbiquitousKeyValueStore {
+                    DispatchQueue.global(qos: .utility).async {
+                        _ = ubiquitousStore.synchronize()
+                    }
+                } else {
                     _ = ubiquitousStore.synchronize()
                 }
             }
@@ -824,9 +849,12 @@ final class DriftlyEngine: ObservableObject {
 
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            let data = try? JSONEncoder().encode(self.scenes)
-            self.defaults.set(data, forKey: DriftlyDefaultsKey.scenes)
-            self.scheduleScenesCloudPush(data: data)
+            persistenceQueue.async { [weak self] in
+                guard let self else { return }
+                let data = try? JSONEncoder().encode(self.scenes)
+                self.defaults.set(data, forKey: DriftlyDefaultsKey.scenes)
+                self.scheduleScenesCloudPush(data: data)
+            }
         }
 
         scenesPersistWorkItem = work
@@ -892,7 +920,12 @@ final class DriftlyEngine: ObservableObject {
     private func pushFavoritesToCloud(_ favorites: Set<DriftMode>) {
         guard let ubiquitousStore, !applyingCloudFavorites else { return }
         let rawValues = favorites.map(\.rawValue)
-        ubiquitousQueue.async {
+        if ubiquitousStore is NSUbiquitousKeyValueStore {
+            ubiquitousQueue.async {
+                ubiquitousStore.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
+                _ = ubiquitousStore.synchronize()
+            }
+        } else {
             ubiquitousStore.set(rawValues, forKey: DriftlyDefaultsKey.favoriteModes)
             _ = ubiquitousStore.synchronize()
         }

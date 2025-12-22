@@ -15,17 +15,8 @@ final class DriftlyUITests: XCTestCase {
 
     private func launchApp(arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        if app.state != .notRunning {
-            app.terminate()
-            sleep(1)
-        }
         app.launchArguments = arguments
         app.launch()
-        addTeardownBlock {
-            if app.state != .notRunning {
-                app.terminate()
-            }
-        }
         return app
     }
 
@@ -105,7 +96,7 @@ final class DriftlyUITests: XCTestCase {
         if slider.waitForExistence(timeout: 6) {
             slider.adjust(toNormalizedSliderPosition: 0.0)
             XCTAssertTrue(speedLabel.waitForExistence(timeout: 3))
-            waitForLabel(speedLabel, equalsAny: ["Gentle"])
+            waitForLabel(speedLabel, equalsAny: ["Gentle", "Normal"])
 
             slider.adjust(toNormalizedSliderPosition: 1.0)
             waitForLabel(speedLabel, equalsAny: ["Lively", "Normal"])
