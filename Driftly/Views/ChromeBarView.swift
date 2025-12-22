@@ -17,10 +17,10 @@ struct ChromeBarView: View {
     var focusedButton: FocusState<ChromeFocusTarget?>.Binding?
     #endif
 
-    private var chromeOpacity: Double { isTvOS ? 0.82 : 0.78 }
-    private var chromeCornerRadius: CGFloat { isTvOS ? 22 : 18 }
-    private var chromePaddingV: CGFloat { isTvOS ? 10 : 10 }
-    private var chromePaddingH: CGFloat { isTvOS ? 16 : 12 }
+    private var chromeOpacity: Double { isTvOS ? 0.45 : 0.38 }
+    private var chromeCornerRadius: CGFloat { isTvOS ? 18 : 14 }
+    private var chromePaddingV: CGFloat { isTvOS ? 8 : 6 }
+    private var chromePaddingH: CGFloat { isTvOS ? 14 : 10 }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -54,8 +54,8 @@ struct ChromeBarView: View {
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
                 .background(.thinMaterial, in: Capsule(style: .continuous))
                 .overlay(
                     Capsule(style: .continuous)
@@ -106,15 +106,15 @@ struct ChromeBarView: View {
         shape
             .fill(.ultraThinMaterial)
             // Soft, mode-tinted base wash
-            .overlay(shape.fill(tint.opacity(isTvOS ? 0.10 : 0.08)))
+            .overlay(shape.fill(tint.opacity(isTvOS ? 0.07 : 0.06)))
             // Specular highlight (top edge) + gentle falloff
             .overlay(
                 shape
                     .fill(
                         LinearGradient(
                             stops: [
-                                .init(color: Color.white.opacity(isTvOS ? 0.22 : 0.18), location: 0.0),
-                                .init(color: Color.white.opacity(0.06), location: 0.22),
+                                .init(color: Color.white.opacity(isTvOS ? 0.16 : 0.12), location: 0.0),
+                                .init(color: Color.white.opacity(0.04), location: 0.22),
                                 .init(color: Color.clear, location: 0.75)
                             ],
                             startPoint: .top,
@@ -125,8 +125,8 @@ struct ChromeBarView: View {
                     .allowsHitTesting(false)
             )
             // Crisp glass edge + subtle inner depth
-            .overlay(shape.stroke(Color.white.opacity(isTvOS ? 0.18 : 0.14), lineWidth: 1).allowsHitTesting(false))
-            .overlay(shape.stroke(tint.opacity(isTvOS ? 0.32 : 0.26), lineWidth: 1).allowsHitTesting(false))
+            .overlay(shape.stroke(Color.white.opacity(isTvOS ? 0.14 : 0.10), lineWidth: 1).allowsHitTesting(false))
+            .overlay(shape.stroke(tint.opacity(isTvOS ? 0.24 : 0.20), lineWidth: 1).allowsHitTesting(false))
             .overlay(
                 shape
                     .stroke(Color.black.opacity(0.18), lineWidth: 1)
@@ -136,8 +136,8 @@ struct ChromeBarView: View {
                     .allowsHitTesting(false)
             )
             // Lift off the background (tuned per platform)
-            .shadow(color: Color.black.opacity(isTvOS ? 0.32 : 0.22), radius: isTvOS ? 14 : 10, x: 0, y: isTvOS ? 10 : 8)
-            .shadow(color: tint.opacity(isTvOS ? 0.16 : 0.12), radius: isTvOS ? 16 : 12, x: 0, y: 10)
+            .shadow(color: Color.black.opacity(isTvOS ? 0.22 : 0.16), radius: isTvOS ? 10 : 8, x: 0, y: isTvOS ? 8 : 6)
+            .shadow(color: tint.opacity(isTvOS ? 0.12 : 0.08), radius: isTvOS ? 12 : 10, x: 0, y: 8)
     }
 }
 
@@ -153,9 +153,9 @@ private struct CircleButton: View {
         Button(action: action) {
             let baseTint = tintColor ?? Color.white
             let tint = isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86)
-            let visualSize: CGFloat = isTvOS ? 38 : 32
-            let hitSize: CGFloat = isTvOS ? 40 : 44
-            let fontSize: CGFloat = isTvOS ? 16 : 15
+            let visualSize: CGFloat = isTvOS ? 34 : 28
+            let hitSize: CGFloat = isTvOS ? 40 : 40
+            let fontSize: CGFloat = isTvOS ? 15 : 14
 
             ZStack {
                 Circle()
