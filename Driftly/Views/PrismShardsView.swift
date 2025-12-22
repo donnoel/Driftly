@@ -16,9 +16,12 @@ struct PrismShardsView: View {
                     context.fill(
                         Path(CGRect(origin: .zero, size: size)),
                         with: .linearGradient(
-                            Gradient(colors: [config.palette.backgroundTop, config.palette.backgroundBottom]),
-                            startPoint: .zero,
-                            endPoint: CGPoint(x: size.width, y: size.height)
+                            Gradient(colors: [
+                                config.palette.backgroundTop.opacity(0.25),
+                                config.palette.backgroundBottom.opacity(0.6)
+                            ]),
+                            startPoint: CGPoint(x: size.width * 0.2, y: 0),
+                            endPoint: CGPoint(x: size.width * 0.8, y: size.height)
                         )
                     )
 
@@ -61,7 +64,7 @@ struct PrismShardsView: View {
                 }
                 .blur(radius: 0.9)
                 .overlay(
-                    Color.white.opacity(0.08)
+                    Color.white.opacity(0.045)
                         .blendMode(.screen)
                         .ignoresSafeArea()
                 )
