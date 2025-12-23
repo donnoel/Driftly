@@ -43,7 +43,9 @@ final class DriftMotionManager: ObservableObject, MotionControlling {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handlePowerStateChange()
+            Task { @MainActor [weak self] in
+                self?.handlePowerStateChange()
+            }
         }
         #endif
     }

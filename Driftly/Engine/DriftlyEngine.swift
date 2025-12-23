@@ -937,7 +937,7 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func scheduleScenesCloudPush(data: Data?) {
-        guard let ubiquitousStore, !applyingCloudScenes else { return }
+        guard ubiquitousStore != nil, !applyingCloudScenes else { return }
         scenesCloudPushWorkItem?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
