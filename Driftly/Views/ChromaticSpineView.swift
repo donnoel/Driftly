@@ -4,12 +4,13 @@ struct ChromaticSpineView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         if animationsPaused {
             scene(t: 0)
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                 scene(t: timeline.date.timeIntervalSinceReferenceDate * max(0.25, speed))
             }
         }
@@ -20,6 +21,8 @@ struct ChromaticSpineView: View {
             let size = proxy.size
 
             Canvas { context, _ in
+                let now = CACurrentMediaTime()
+                guard frameGate.shouldCommit(now: now) else { return }
                 // Background
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),

@@ -9,7 +9,7 @@ struct QuietSignalView: View {
         if animationsPaused {
             scene(t: 0)
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                 scene(t: timeline.date.timeIntervalSinceReferenceDate * speed)
             }
         }

@@ -4,18 +4,21 @@ struct VoxelMirageView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         if animationsPaused {
             staticBackground
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                 let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
                 let effectiveSpeed = max(0.25, speed) * (isLowPower ? 0.75 : 1.0)
                 let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed
 
                 GeometryReader { proxy in
                     let size = proxy.size
+                    let now = CACurrentMediaTime()
+                    if !frameGate.shouldCommit(now: now) { Color.clear }
 
                     Canvas { context, _ in
                         // Lifted background for daytime visibility

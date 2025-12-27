@@ -9,7 +9,7 @@ struct MeridianArcsView: View {
         if animationsPaused {
             staticBackground
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                 let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
                 let effectiveSpeed = max(0.25, speed) * (isLowPower ? 0.75 : 1.0)
                 let t = timeline.date.timeIntervalSinceReferenceDate * effectiveSpeed

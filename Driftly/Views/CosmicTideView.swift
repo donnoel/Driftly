@@ -7,12 +7,13 @@ struct CosmicTideView: View {
     @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
     @State private var phaseController = PhaseController()
     @State private var didApplyPhaseAnchor = false
+    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         if animationsPaused {
             content(phase: currentPhase(for: Date()))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
                 content(phase: currentPhase(for: context.date))
             }
         }
@@ -39,7 +40,7 @@ struct CosmicTideView: View {
                 .blendMode(.screen)
                 .opacity(0.55)
         }
-        .compositingGroup()
+        // Let the stack render without an offscreen composite.
     }
 
     private func currentPhase(for date: Date) -> Double {
@@ -60,37 +61,41 @@ struct CosmicTideView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let base = max(size.width, size.height)
+            let now = CACurrentMediaTime()
+            if !frameGate.shouldCommit(now: now) {
+                Color.clear
+            } else {
+                let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.22
+                let verticalShift2 = CGFloat(sin(t * .pi * 4 + .pi / 3)) * base * 0.08
+                let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.12
 
-            let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.22
-            let verticalShift2 = CGFloat(sin(t * .pi * 4 + .pi / 3)) * base * 0.08
-            let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.12
+                ZStack {
+                    // Top band – primary
+                    tideBand(
+                        size: size,
+                        base: base,
+                        offsetY: base * 0.20 + verticalShift + verticalShift2,
+                        color: config.palette.primary
+                    )
 
-            ZStack {
-                // Top band – primary
-                tideBand(
-                    size: size,
-                    base: base,
-                    offsetY: base * 0.20 + verticalShift + verticalShift2,
-                    color: config.palette.primary
-                )
+                    // Middle band – secondary
+                    tideBand(
+                        size: size,
+                        base: base,
+                        offsetY: base * 0.48 - verticalShift * 0.5 + verticalShift2 * 0.4,
+                        color: config.palette.secondary
+                    )
 
-                // Middle band – secondary
-                tideBand(
-                    size: size,
-                    base: base,
-                    offsetY: base * 0.48 - verticalShift * 0.5 + verticalShift2 * 0.4,
-                    color: config.palette.secondary
-                )
-
-                // Lower band – tertiary
-                tideBand(
-                    size: size,
-                    base: base,
-                    offsetY: base * 0.82 + verticalShift * 0.4 - verticalShift2 * 0.6,
-                    color: config.palette.tertiary
-                )
+                    // Lower band – tertiary
+                    tideBand(
+                        size: size,
+                        base: base,
+                        offsetY: base * 0.82 + verticalShift * 0.4 - verticalShift2 * 0.6,
+                        color: config.palette.tertiary
+                    )
+                }
+                .offset(x: horizontalShift)
             }
-            .offset(x: horizontalShift)
         }
     }
 
@@ -113,7 +118,7 @@ struct CosmicTideView: View {
             )
             .frame(width: size.width * 1.7, height: base * 0.55)
             .position(x: size.width / 2, y: offsetY)
-            .blur(radius: base * 0.12)
+            .blur(radius: base * 0.05)
     }
 
     @ViewBuilder
@@ -133,7 +138,7 @@ struct CosmicTideView: View {
                 y: 0.5 + 0.22 * cos(t * .pi * 2)
             )
         )
-        .blur(radius: 2.6)
+        .blur(radius: 1.2)
         .overlay(
             LinearGradient(
                 colors: [
@@ -150,7 +155,7 @@ struct CosmicTideView: View {
                     y: 0.4 + 0.15 * cos(t * .pi * 3)
                 )
             )
-            .blur(radius: 1.2)
+            .blur(radius: 0.6)
         )
     }
 }

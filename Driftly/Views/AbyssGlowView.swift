@@ -12,7 +12,7 @@ struct AbyssGlowView: View {
         if animationsPaused {
             content(phase: currentPhase(for: Date()))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
                 content(phase: currentPhase(for: context.date))
             }
         }
@@ -41,7 +41,7 @@ struct AbyssGlowView: View {
                 .blendMode(.screen)
                 .opacity(0.85)
         }
-        .compositingGroup()
+        // Avoid forcing a composite layer; gradients already blend efficiently.
     }
 
     private func currentPhase(for date: Date) -> Double {
@@ -124,7 +124,8 @@ struct AbyssGlowView: View {
                 x: size.width * centerXFactor,
                 y: size.height * 0.55
             )
-            .blur(radius: columnWidth * 0.55)
+            // Slightly tighter blur to reduce offscreen work
+            .blur(radius: columnWidth * 0.32)
     }
 
     // MARK: - Bottom vents / blooms
@@ -188,7 +189,7 @@ struct AbyssGlowView: View {
                     y: size.height * 0.99 + offset2 * 0.6
                 )
             }
-            .blur(radius: base * 0.05)
+            .blur(radius: base * 0.028)
         }
     }
 }

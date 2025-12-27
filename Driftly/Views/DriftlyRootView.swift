@@ -1,14 +1,15 @@
 import SwiftUI
 import UIKit
 import Combine
+import os
 
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
-    @StateObject private var motionManager = DriftMotionManager()
     @StateObject private var coordinator: DriftlyRootCoordinator
+    @State private var motionUnavailable = false
     @State private var brightnessDragLastTranslation: CGFloat = 0
 #if DEBUG
     private let testInitialModePickerPresented: Bool
@@ -36,86 +37,91 @@ struct DriftlyRootView: View {
     
     var body: some View {
         baseContent
-        // Screen darkening overlay based on brightness
-        .overlay(
-            Color.black
-                .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-        )
-        .overlay(alignment: .topTrailing) {
-            if coordinator.brightnessHUDVisible && !coordinator.sleepState.sleepTimerHasExpired {
-                HStack(spacing: 8) {
-                    Image(systemName: "sun.max.fill")
-                        .foregroundStyle(.yellow.opacity(0.95))
-                    Text(brightnessLabel)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.black.opacity(0.6), in: Capsule())
-                .padding(.top, 18)
-                .padding(.trailing, 16)
-                .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .top) {
-            if motionManager.motionUnavailable && !coordinator.sleepState.sleepTimerHasExpired {
-                Text("Motion unavailable")
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.black.opacity(0.55), in: Capsule())
+            // Screen darkening overlay based on brightness
+            .overlay(
+                Color.black
+                    .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            )
+            .overlay(alignment: .topTrailing) {
+                if coordinator.brightnessHUDVisible && !coordinator.sleepState.sleepTimerHasExpired {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sun.max.fill")
+                            .foregroundStyle(.yellow.opacity(0.95))
+                        Text(brightnessLabel)
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.black.opacity(0.6), in: Capsule())
                     .padding(.top, 18)
-                    .padding(.horizontal, 16)
-            }
-        }
-        .overlay {
-            if coordinator.sleepState.sleepTimerHasExpired {
-                sleepOverlay
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if engine.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
-                let style = clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
-                GeometryReader { proxy in
-                    ClockOverlayView(
-                        time: coordinator.clockNow,
-                        style: style,
-                        anchorDate: coordinator.phaseAnchorDate,
-                        containerSize: proxy.size
-                    )
-                    .padding(.top, 18)
-                    .padding(.leading, 16)
+                    .padding(.trailing, 16)
+                    .transition(.opacity)
                 }
             }
-        }
-        // Global animation speed for all lamp views
-        .environment(\.driftPhaseAnchorDate, coordinator.phaseAnchorDate)
-        .environment(\.driftAnimationSpeed, effectiveAnimationSpeed)
-        .environment(\.driftAnimationsPaused, coordinator.sleepState.sleepTimerHasExpired || scenePhase != .active)
-        .background(Color.black)
-        .ignoresSafeArea()
+            .overlay(alignment: .top) {
+                if motionUnavailable && !coordinator.sleepState.sleepTimerHasExpired {
+                    Text("Motion unavailable")
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.55), in: Capsule())
+                        .padding(.top, 18)
+                        .padding(.horizontal, 16)
+                }
+            }
+            .overlay {
+                if coordinator.sleepState.sleepTimerHasExpired {
+                    sleepOverlay
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if engine.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
+                    let style = clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
+                    GeometryReader { proxy in
+                        ClockOverlayView(
+                            time: coordinator.clockNow,
+                            style: style,
+                            anchorDate: coordinator.phaseAnchorDate,
+                            containerSize: proxy.size
+                        )
+                        .padding(.top, 18)
+                        .padding(.leading, 16)
+                    }
+                }
+            }
+            // Global animation speed for all lamp views
+            .environment(\.driftPhaseAnchorDate, coordinator.phaseAnchorDate)
+            .environment(\.driftAnimationSpeed, effectiveAnimationSpeed)
+            .environment(\.driftAnimationsPaused, coordinator.sleepState.sleepTimerHasExpired || scenePhase != .active)
+            .background(Color.black)
+            .ignoresSafeArea()
 #if os(iOS)
-        .statusBar(hidden: true)
+            .statusBar(hidden: true)
 #endif
-#if os(iOS)
-        .onTapGesture {
-            if coordinator.sleepState.sleepTimerHasExpired {
-                wakeFromSleepTimer()
-                return
-            }
 #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("UITestingNoChromeToggle") {
-                return
+            .task {
+                DebugMetrics.startHeartbeat()
             }
 #endif
-            withAnimation(.easeInOut(duration: 0.35)) {
-                engine.isChromeVisible.toggle()
+#if os(iOS)
+            .onTapGesture {
+                if coordinator.sleepState.sleepTimerHasExpired {
+                    wakeFromSleepTimer()
+                    return
+                }
+#if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("UITestingNoChromeToggle") {
+                    return
+                }
+#endif
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    engine.isChromeVisible.toggle()
+                }
+                DriftHaptics.chromeToggled()
             }
-            DriftHaptics.chromeToggled()
-        }
 #elseif os(tvOS)
         // Leave Play/Pause for media; use tap and long-press on the touch surface for UI.
         .onTapGesture {
@@ -174,8 +180,6 @@ struct DriftlyRootView: View {
                     scenePhase: scenePhase,
                     updateIdleTimer: updateIdleTimer,
                     updateClockTicking: updateClockTicking,
-                    updateMotionSampling: updateMotionSampling,
-                    startMotionIfNeeded: startMotionIfNeeded,
                     focusChromeIfNeeded: {
                         if engine.isChromeVisible {
                             focusedButton = .modePicker
@@ -188,9 +192,7 @@ struct DriftlyRootView: View {
                     engine: engine,
                     scenePhase: scenePhase,
                     updateIdleTimer: updateIdleTimer,
-                    updateClockTicking: updateClockTicking,
-                    updateMotionSampling: updateMotionSampling,
-                    startMotionIfNeeded: startMotionIfNeeded
+                    updateClockTicking: updateClockTicking
                 )
 #endif
             }
@@ -202,21 +204,12 @@ struct DriftlyRootView: View {
             coordinator.handleScenePhaseChange(to: newPhase)
             updateIdleTimer()
             updateClockTicking()
-            handleMotion(for: newPhase)
-            updateMotionSampling()
             coordinator.updateTicking(engine: engine, scenePhase: newPhase)
+            #if DEBUG
+            DebugMetrics.uiSignposter.emitEvent("ui.safeAreaChanged")
+            DebugMetrics.uiSignposter.emitEvent("ui.appearanceChanged")
+            #endif
         }
-#if os(iOS)
-        .onChange(of: reduceMotion) { _, newValue in
-#if os(iOS)
-            if newValue {
-                motionManager.stopUpdates()
-            } else {
-                startMotionIfNeeded()
-            }
-#endif
-        }
-#endif
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
@@ -248,12 +241,6 @@ struct DriftlyRootView: View {
             if engine.autoDriftEnabled {
                 coordinator.resetAutoDriftClock()
             }
-        }
-        .onChange(of: engine.brightness) { _, _ in
-            updateMotionSampling()
-        }
-        .onChange(of: engine.isChromeVisible) { _, _ in
-            updateMotionSampling()
         }
         .onChange(of: engine.clockEnabled) { _, _ in
             updateClockTicking()
@@ -290,7 +277,6 @@ struct DriftlyRootView: View {
                     }
                     coordinator.sleepState.sleepTimerAllowsLock = false
                     updateIdleTimer()
-                    startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
@@ -303,7 +289,6 @@ struct DriftlyRootView: View {
                     }
                     coordinator.sleepState.sleepTimerAllowsLock = false
                     updateIdleTimer()
-                    startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
@@ -316,7 +301,6 @@ struct DriftlyRootView: View {
                     }
                     coordinator.sleepState.sleepTimerAllowsLock = false
                     updateIdleTimer()
-                    startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
@@ -329,7 +313,6 @@ struct DriftlyRootView: View {
                     }
                     coordinator.sleepState.sleepTimerAllowsLock = false
                     updateIdleTimer()
-                    startMotionIfNeeded()
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
@@ -406,7 +389,6 @@ struct DriftlyRootView: View {
                                 }
                                 coordinator.sleepState.sleepTimerAllowsLock = false
                                 updateIdleTimer()
-                                startMotionIfNeeded()
                                 DriftHaptics.sleepTimerSet()
                                 coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                                 updateClockTicking()
@@ -436,14 +418,19 @@ struct DriftlyRootView: View {
     @ViewBuilder
     private var baseContent: some View {
         ZStack {
-            // Base background so sleep state never shows white
             Color.black.ignoresSafeArea()
             
             if !coordinator.sleepState.sleepTimerHasExpired {
-                ActiveModeHost(currentMode: engine.currentMode, prewarmMode: coordinator.prewarmMode)
-                    .offset(reduceMotion ? .zero : motionManager.parallaxOffset)
-                    .scaleEffect(reduceMotion ? 1.0 : 1.03) // tiny scale so edges don’t reveal gaps when moving
-                    .ignoresSafeArea()
+                DriftSceneRendererView(
+                    currentMode: engine.currentMode,
+                    prewarmMode: coordinator.prewarmMode,
+                    scenePhase: scenePhase,
+                    reduceMotion: reduceMotion,
+                    sleepTimerHasExpired: coordinator.sleepState.sleepTimerHasExpired,
+                    isChromeVisible: engine.isChromeVisible,
+                    brightness: engine.brightness,
+                    motionUnavailable: $motionUnavailable
+                )
             }
             
             if engine.isChromeVisible && !coordinator.sleepState.sleepTimerHasExpired {
@@ -593,40 +580,8 @@ struct DriftlyRootView: View {
 #endif
     }
     
-    private func handleMotion(for phase: ScenePhase) {
-#if os(iOS)
-        guard !reduceMotion else {
-            motionManager.stopUpdates()
-            return
-        }
-        guard !coordinator.sleepState.sleepTimerHasExpired else {
-            motionManager.stopUpdates()
-            return
-        }
-        MotionPhaseHandler.updateMotion(for: phase, motionController: motionManager)
-#endif
-    }
-    
-    private func startMotionIfNeeded() {
-#if os(iOS)
-        guard !reduceMotion, !coordinator.sleepState.sleepTimerHasExpired, scenePhase == .active else { return }
-        updateMotionSampling()
-        motionManager.startIfNeeded()
-#endif
-    }
-
     private func updateClockTicking() {
         coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
-    }
-    
-    private func updateMotionSampling() {
-#if os(iOS)
-        guard !reduceMotion else { return }
-        motionManager.updateSampling(
-            brightness: engine.brightness,
-            isChromeVisible: engine.isChromeVisible
-        )
-#endif
     }
     
     // MARK: - Sleep timer tick & auto drift
@@ -641,7 +596,6 @@ struct DriftlyRootView: View {
                     coordinator.sleepState.sleepTimerHasExpired = true
                 }
                 updateIdleTimer()
-                stopMotionForSleep()
 #if os(tvOS)
                 // Drop focus target while asleep to avoid stray focus highlights.
                 focusedButton = nil
@@ -653,7 +607,6 @@ struct DriftlyRootView: View {
                 }
                 coordinator.sleepState.sleepTimerAllowsLock = false
                 updateIdleTimer()
-                startMotionIfNeeded()
             case .autoDrift:
                 withAnimation(.easeInOut(duration: 0.9)) {
                     engine.currentMode = engine.nextAutoDriftMode(after: engine.currentMode)
@@ -665,12 +618,6 @@ struct DriftlyRootView: View {
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
         coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
         coordinator.updatePrewarm(now: now, engine: engine)
-    }
-    
-    private func stopMotionForSleep() {
-#if os(iOS)
-        motionManager.stopUpdates()
-#endif
     }
     
     private func adjustBrightness(by delta: Double) {
@@ -727,7 +674,6 @@ struct DriftlyRootView: View {
         coordinator.resetAutoDriftClock()
         updateIdleTimer()
         updateClockTicking()
-        startMotionIfNeeded()
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
 #if os(tvOS)
         // Restore fallback focus so remote commands still arrive when chrome is hidden.

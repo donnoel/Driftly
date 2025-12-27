@@ -12,7 +12,7 @@ struct StarlitMistView: View {
         if animationsPaused {
             content(phase: currentPhase(for: Date()))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
                 content(phase: currentPhase(for: context.date))
             }
         }
@@ -46,7 +46,7 @@ struct StarlitMistView: View {
                 .blendMode(.screen)
                 .opacity(0.55)
         }
-        .compositingGroup()
+        // Avoid forcing an offscreen group; layers already blend via gradients.
     }
 
     private func currentPhase(for date: Date) -> Double {
@@ -174,7 +174,8 @@ struct StarlitMistView: View {
             )
             .opacity(0.55)
         }
-        .blur(radius: 3.0)
+        // Lighter softness without a full-scene blur
+        .blur(radius: 1.2)
     }
 
     // MARK: - Sweep
@@ -206,7 +207,8 @@ struct StarlitMistView: View {
                     y: size.height * 0.40
                 )
                 .rotationEffect(sweepAngle)
-                .blur(radius: base * 0.18)
+                // Reduced blur to limit offscreen rendering cost
+                .blur(radius: base * 0.08)
         }
     }
 // MARK: - Helpers

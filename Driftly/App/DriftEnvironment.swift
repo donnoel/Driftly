@@ -49,7 +49,7 @@ struct PausableTimelineView<Content: View>: View {
                 // IMPORTANT: no TimelineView here => no ticking/redraw loop.
                 content(Date(timeIntervalSinceReferenceDate: accumulated))
             } else {
-                TimelineView(.animation) { timeline in
+                TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                     let elapsed = timeline.date.timeIntervalSince(startDate)
                     let effective = accumulated + elapsed
                     content(Date(timeIntervalSinceReferenceDate: effective))

@@ -188,8 +188,8 @@ struct VelvetEclipseView: View {
                     }
                 }
                 .blendMode(.screen)
-                .blur(radius: 0.9)
-                .compositingGroup()
+                // Keep a slight softness without forcing a heavy offscreen path
+                .blur(radius: 0.35)
             }
         }
     }

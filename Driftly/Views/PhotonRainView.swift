@@ -12,7 +12,7 @@ struct PhotonRainView: View {
         if animationsPaused {
             staticBackground
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
                 let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
                 let effectiveSpeed = speed * (isLowPower ? 0.75 : 1.0)
                 let dropCount = isLowPower ? 90 : 140

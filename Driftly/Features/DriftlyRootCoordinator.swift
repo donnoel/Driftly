@@ -37,8 +37,6 @@ final class DriftlyRootCoordinator: ObservableObject {
         scenePhase: ScenePhase,
         updateIdleTimer: () -> Void,
         updateClockTicking: () -> Void,
-        updateMotionSampling: () -> Void,
-        startMotionIfNeeded: () -> Void,
         focusChromeIfNeeded: () -> Void = {}
     ) {
         guard !didRunInitialSetup else { return }
@@ -48,8 +46,6 @@ final class DriftlyRootCoordinator: ObservableObject {
         updateIdleTimer()
         updateClockTicking()
         SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
-        updateMotionSampling()
-        startMotionIfNeeded()
         updateTicking(engine: engine, scenePhase: scenePhase)
         focusChromeIfNeeded()
     }

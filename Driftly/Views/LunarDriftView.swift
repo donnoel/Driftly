@@ -7,12 +7,13 @@ struct LunarDriftView: View {
     @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
     @State private var phaseController = PhaseController()
     @State private var didApplyPhaseAnchor = false
+    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         if animationsPaused {
             content(phase: currentPhase(for: Date()))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
                 content(phase: currentPhase(for: context.date))
             }
         }
@@ -46,7 +47,7 @@ struct LunarDriftView: View {
                 .blendMode(.screen)
                 .opacity(0.55)
         }
-        .compositingGroup()
+        // Allow the stack to render without forcing an offscreen composite.
     }
 
     private func currentPhase(for date: Date) -> Double {
@@ -69,50 +70,53 @@ struct LunarDriftView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let base = min(size.width, size.height)
+            let shouldDraw = frameGate.shouldCommit(now: CACurrentMediaTime())
 
-            let verticalDrift = CGFloat(sin(t * .pi * 2)) * base * 0.08
-            let subtlePulse = 0.75 + 0.25 * sin(t * .pi * 2)
+            if shouldDraw {
+                let verticalDrift = CGFloat(sin(t * .pi * 2)) * base * 0.08
+                let subtlePulse = 0.75 + 0.25 * sin(t * .pi * 2)
 
-            ZStack {
-                // Halo
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                config.palette.secondary.opacity(0.7 * subtlePulse),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: base * 0.55
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    config.palette.secondary.opacity(0.7 * subtlePulse),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: base * 0.55
+                            )
                         )
-                    )
-                    .frame(width: base * 0.9, height: base * 0.9)
-                    .position(
-                        x: size.width * 0.5,
-                        y: size.height * (0.28 + verticalDrift / base)
-                    )
-
-                // Core moon
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                config.palette.primary.opacity(0.95),
-                                config.palette.primary.opacity(0.6),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: base * 0.35
+                        .frame(width: base * 0.9, height: base * 0.9)
+                        .position(
+                            x: size.width * 0.5,
+                            y: size.height * (0.28 + verticalDrift / base)
                         )
-                    )
-                    .frame(width: base * 0.55, height: base * 0.55)
-                    .position(
-                        x: size.width * 0.5,
-                        y: size.height * (0.28 + verticalDrift / base)
-                    )
-                    .blur(radius: base * 0.01)
+
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    config.palette.primary.opacity(0.95),
+                                    config.palette.primary.opacity(0.6),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: base * 0.35
+                            )
+                        )
+                        .frame(width: base * 0.55, height: base * 0.55)
+                        .position(
+                            x: size.width * 0.5,
+                            y: size.height * (0.28 + verticalDrift / base)
+                        )
+                        .blur(radius: base * 0.005)
+                }
+            } else {
+                Color.clear
             }
         }
     }
@@ -124,26 +128,31 @@ struct LunarDriftView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let base = min(size.width, size.height)
+            let shouldDraw = frameGate.shouldCommit(now: CACurrentMediaTime())
 
-            let wobble = CGFloat(sin(t * .pi * 2)) * base * 0.08
+            if shouldDraw {
+                let wobble = CGFloat(sin(t * .pi * 2)) * base * 0.08
 
-            RoundedRectangle(cornerRadius: base * 0.35, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            config.palette.tertiary.opacity(0.5),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                RoundedRectangle(cornerRadius: base * 0.35, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                config.palette.tertiary.opacity(0.5),
+                                Color.clear
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
-                .frame(width: size.width * 0.85, height: base * 0.28)
-                .position(
-                    x: size.width * 0.5 + wobble * 0.25,
-                    y: size.height * 0.72 + wobble * 0.45
-                )
-                .blur(radius: base * 0.18)
+                    .frame(width: size.width * 0.85, height: base * 0.28)
+                    .position(
+                        x: size.width * 0.5 + wobble * 0.25,
+                        y: size.height * 0.72 + wobble * 0.45
+                    )
+                    .blur(radius: base * 0.08)
+            } else {
+                Color.clear
+            }
         }
     }
 
@@ -154,45 +163,50 @@ struct LunarDriftView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let base = min(size.width, size.height)
+            let shouldDraw = frameGate.shouldCommit(now: CACurrentMediaTime())
 
-            let driftOffset = CGFloat(sin(t * .pi * 2)) * size.width * 0.22
+            if shouldDraw {
+                let driftOffset = CGFloat(sin(t * .pi * 2)) * size.width * 0.22
 
-            ZStack {
-                RoundedRectangle(cornerRadius: base * 0.4, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                config.palette.secondary.opacity(0.26),
-                                Color.clear
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                ZStack {
+                    RoundedRectangle(cornerRadius: base * 0.4, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    config.palette.secondary.opacity(0.26),
+                                    Color.clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .frame(width: size.width * 1.45, height: base * 0.26)
-                    .position(
-                        x: size.width * 0.5 + driftOffset,
-                        y: size.height * 0.5
-                    )
-
-                RoundedRectangle(cornerRadius: base * 0.4, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                config.palette.tertiary.opacity(0.22),
-                                Color.clear
-                            ],
-                            startPoint: .trailing,
-                            endPoint: .leading
+                        .frame(width: size.width * 1.45, height: base * 0.26)
+                        .position(
+                            x: size.width * 0.5 + driftOffset,
+                            y: size.height * 0.5
                         )
-                    )
-                    .frame(width: size.width * 1.35, height: base * 0.22)
-                    .position(
-                        x: size.width * 0.5 - driftOffset * 0.7,
-                        y: size.height * 0.58
-                    )
+
+                    RoundedRectangle(cornerRadius: base * 0.4, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    config.palette.tertiary.opacity(0.22),
+                                    Color.clear
+                                ],
+                                startPoint: .trailing,
+                                endPoint: .leading
+                            )
+                        )
+                        .frame(width: size.width * 1.35, height: base * 0.22)
+                        .position(
+                            x: size.width * 0.5 - driftOffset * 0.7,
+                            y: size.height * 0.58
+                        )
+                }
+                .blur(radius: base * 0.06)
+            } else {
+                Color.clear
             }
-            .blur(radius: base * 0.15)
         }
     }
 }

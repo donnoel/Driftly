@@ -12,7 +12,7 @@ struct NebulaLakeView: View {
         if animationsPaused {
             content(phase: currentPhase(for: Date()))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
                 content(phase: currentPhase(for: context.date))
             }
         }
@@ -40,7 +40,7 @@ struct NebulaLakeView: View {
                 .blendMode(.screen)
                 .opacity(0.45)
         }
-        .compositingGroup()
+        // Avoid forcing an offscreen composite for the full-scene stack.
     }
 
     private func currentPhase(for date: Date) -> Double {
@@ -158,6 +158,7 @@ struct NebulaLakeView: View {
                 endRadius: 420
             )
         )
-        .blur(radius: 1.5)
+        // Keep the halo soft but cheaper than a wide blur
+        .blur(radius: 0.6)
     }
 }
