@@ -32,6 +32,7 @@ struct ActiveModeHost: View {
                 ModeViewRegistry.view(for: prewarmMode)
                     .id(prewarmLayerID)
                     .opacity(0)
+                    .environment(\.driftAnimationsPaused, true)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }

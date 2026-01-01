@@ -112,14 +112,19 @@ final class DriftlyRootCoordinator: ObservableObject {
             return
         }
 
+        let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
         let intervalMinutes = max(1, engine.autoDriftIntervalMinutes)
         let intervalSeconds = Double(intervalMinutes * 60)
         let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
         let remaining = intervalSeconds - elapsed
-        let window: TimeInterval = 3.0
+        let window: TimeInterval = 1.0
 
         if remaining <= window && remaining > 0 {
             let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
+            if heavyPrewarmModes.contains(next) {
+                prewarmMode = nil
+                return
+            }
             if prewarmMode != next {
                 prewarmMode = next
             }
