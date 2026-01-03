@@ -6,7 +6,7 @@ import Testing
 struct PhaseControllerTests {
 
     @Test func resumesSmoothlyAfterPause() async throws {
-        var controller = PhaseController()
+        let controller = PhaseController()
         let start = Date()
         let cycle: TimeInterval = 20
 
@@ -23,7 +23,7 @@ struct PhaseControllerTests {
     }
 
     @Test func speedChangesRebaseStartWithoutJumps() async throws {
-        var controller = PhaseController()
+        let controller = PhaseController()
         let start = Date()
         let cycle: TimeInterval = 10
 
@@ -40,7 +40,7 @@ struct PhaseControllerTests {
     }
 
     @Test func speedChangesWhileRunningKeepsPhaseContinuous() async throws {
-        var controller = PhaseController()
+        let controller = PhaseController()
         let start = Date()
         let cycle: TimeInterval = 20
 

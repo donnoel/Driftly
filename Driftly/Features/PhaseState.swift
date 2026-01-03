@@ -1,19 +1,19 @@
 import Foundation
 
 /// Keeps animation phase continuous, even when pausing/resuming, by shifting the start date.
-struct PhaseController {
+final class PhaseController {
     private var startDate: Date = Date()
     private var pausedElapsed: TimeInterval? = nil
     private var lastSpeed: Double? = nil
 
-    mutating func resetStart(date: Date = Date()) {
+    func resetStart(date: Date = Date()) {
         startDate = date
         pausedElapsed = nil
         lastSpeed = nil
     }
 
     /// Returns a continuously increasing phase (not wrapped), scaled by cycle duration.
-    mutating func phase(for date: Date, speed: Double, cycleDuration: TimeInterval, paused: Bool) -> Double {
+    func phase(for date: Date, speed: Double, cycleDuration: TimeInterval, paused: Bool) -> Double {
         let safeSpeed = max(speed, 0.0001)
 
         if paused {

@@ -34,6 +34,7 @@ enum DriftAnimationPolicy {
 /// Renders a single static frame when paused; otherwise mirrors `TimelineView(.animation)`.
 struct PausableTimelineView<Content: View>: View {
     let paused: Bool
+    let fps: Double = 60
     @ViewBuilder let content: (Date) -> Content
 
     // Maintains a continuous synthetic time value (seconds since reference date)
@@ -49,12 +50,13 @@ struct PausableTimelineView<Content: View>: View {
                 // IMPORTANT: no TimelineView here => no ticking/redraw loop.
                 content(Date(timeIntervalSinceReferenceDate: accumulated))
             } else {
-                TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
-                    let elapsed = timeline.date.timeIntervalSince(startDate)
-                    let effective = accumulated + elapsed
-                    content(Date(timeIntervalSinceReferenceDate: effective))
-                }
+            let interval = 1.0 / max(fps, 1.0)
+            TimelineView(.periodic(from: .now, by: interval)) { timeline in
+                let elapsed = timeline.date.timeIntervalSince(startDate)
+                let effective = accumulated + elapsed
+                content(Date(timeIntervalSinceReferenceDate: effective))
             }
+        }
         }
         .onAppear {
             // Sync initial start to the shared anchor so transitions stay coherent.

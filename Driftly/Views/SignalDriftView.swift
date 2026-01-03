@@ -9,7 +9,6 @@ struct SignalDriftView: View {
 #if DEBUG
     private let diagnosticsEnabled = false
 #endif
-    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused) { date in
@@ -68,7 +67,6 @@ private struct SignalPillowCloudLayer: View {
     let secondary: Color
     let t: Double
     @StateObject private var cache = PillowCache()
-    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         GeometryReader { proxy in
@@ -79,8 +77,6 @@ private struct SignalPillowCloudLayer: View {
                 let interval = DebugMetrics.renderSignposter.beginInterval("render.frame")
                 defer { DebugMetrics.renderSignposter.endInterval("render.frame", interval) }
 #endif
-                let now = CACurrentMediaTime()
-                guard frameGate.shouldCommit(now: now) else { return }
                 context.addFilter(.blur(radius: 22))
                 cache.ensureSeeds(primary: primary, secondary: secondary)
 
@@ -128,15 +124,12 @@ private struct SignalHeartDriftLayer: View {
     let softPink: Color
     let t: Double
     @StateObject private var cache = HeartCache()
-    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         GeometryReader { proxy in
             let s = proxy.size
 
             Canvas { context, _ in
-                let now = CACurrentMediaTime()
-                guard frameGate.shouldCommit(now: now) else { return }
                 cache.ensureSeeds(hotPink: hotPink, softPink: softPink)
 
                 for seed in cache.seeds {

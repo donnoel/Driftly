@@ -10,7 +10,6 @@ struct DriftLiquidLampView: View {
     let speed: Double
     @Environment(\.driftAnimationsPaused) private var animationsPaused
     @StateObject private var cache = LampRendererCache()
-    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused) { date in
@@ -21,8 +20,6 @@ struct DriftLiquidLampView: View {
                 let interval = DebugMetrics.renderSignposter.beginInterval("render.frame")
                 defer { DebugMetrics.renderSignposter.endInterval("render.frame", interval) }
 #endif
-                let now = CACurrentMediaTime()
-                guard frameGate.shouldCommit(now: now) else { return }
                 cache.configureIfNeeded(palette: palette, blobCount: blobCount, overlayRadius: 520, blur: blur, size: size)
 
                 if let background = cache.background {

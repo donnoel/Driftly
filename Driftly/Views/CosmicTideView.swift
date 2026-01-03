@@ -6,16 +6,22 @@ struct CosmicTideView: View {
     @Environment(\.driftAnimationsPaused) private var animationsPaused
     @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
     @State private var phaseController = PhaseController()
-    @State private var didApplyPhaseAnchor = false
-    @State private var frameGate = FrameGate(maxFPS: 60)
 
     var body: some View {
-        if animationsPaused {
-            content(phase: currentPhase(for: Date()))
-        } else {
-            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
-                content(phase: currentPhase(for: context.date))
+        Group {
+            if animationsPaused {
+                content(phase: currentPhase(for: Date()))
+            } else {
+                TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
+                    content(phase: currentPhase(for: context.date))
+                }
             }
+        }
+        .onAppear {
+            phaseController.resetStart(date: phaseAnchorDate)
+        }
+        .onChange(of: phaseAnchorDate) { _, newValue in
+            phaseController.resetStart(date: newValue)
         }
     }
 
@@ -44,11 +50,7 @@ struct CosmicTideView: View {
     }
 
     private func currentPhase(for date: Date) -> Double {
-        if !didApplyPhaseAnchor {
-            phaseController.resetStart(date: phaseAnchorDate)
-            didApplyPhaseAnchor = true
-        }
-        return phaseController.phase(
+        phaseController.phase(
             for: date,
             speed: speedMultiplier,
             cycleDuration: max(config.cycleDuration, 8),
@@ -61,41 +63,36 @@ struct CosmicTideView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let base = max(size.width, size.height)
-            let now = CACurrentMediaTime()
-            if !frameGate.shouldCommit(now: now) {
-                Color.clear
-            } else {
-                let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.22
-                let verticalShift2 = CGFloat(sin(t * .pi * 4 + .pi / 3)) * base * 0.08
-                let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.12
+            let verticalShift = CGFloat(sin(t * .pi * 2)) * base * 0.22
+            let verticalShift2 = CGFloat(sin(t * .pi * 4 + .pi / 3)) * base * 0.08
+            let horizontalShift = CGFloat(cos(t * .pi * 2)) * base * 0.12
 
-                ZStack {
-                    // Top band – primary
-                    tideBand(
-                        size: size,
-                        base: base,
-                        offsetY: base * 0.20 + verticalShift + verticalShift2,
-                        color: config.palette.primary
-                    )
+            ZStack {
+                // Top band – primary
+                tideBand(
+                    size: size,
+                    base: base,
+                    offsetY: base * 0.20 + verticalShift + verticalShift2,
+                    color: config.palette.primary
+                )
 
-                    // Middle band – secondary
-                    tideBand(
-                        size: size,
-                        base: base,
-                        offsetY: base * 0.48 - verticalShift * 0.5 + verticalShift2 * 0.4,
-                        color: config.palette.secondary
-                    )
+                // Middle band – secondary
+                tideBand(
+                    size: size,
+                    base: base,
+                    offsetY: base * 0.48 - verticalShift * 0.5 + verticalShift2 * 0.4,
+                    color: config.palette.secondary
+                )
 
-                    // Lower band – tertiary
-                    tideBand(
-                        size: size,
-                        base: base,
-                        offsetY: base * 0.82 + verticalShift * 0.4 - verticalShift2 * 0.6,
-                        color: config.palette.tertiary
-                    )
-                }
-                .offset(x: horizontalShift)
+                // Lower band – tertiary
+                tideBand(
+                    size: size,
+                    base: base,
+                    offsetY: base * 0.82 + verticalShift * 0.4 - verticalShift2 * 0.6,
+                    color: config.palette.tertiary
+                )
             }
+            .offset(x: horizontalShift)
         }
     }
 

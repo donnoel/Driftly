@@ -6,15 +6,22 @@ struct StarlitMistView: View {
     @Environment(\.driftAnimationsPaused) private var animationsPaused
     @Environment(\.driftPhaseAnchorDate) private var phaseAnchorDate
     @State private var phaseController = PhaseController()
-    @State private var didApplyPhaseAnchor = false
 
     var body: some View {
-        if animationsPaused {
-            content(phase: currentPhase(for: Date()))
-        } else {
-            TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
-                content(phase: currentPhase(for: context.date))
+        Group {
+            if animationsPaused {
+                content(phase: currentPhase(for: Date()))
+            } else {
+                TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { context in
+                    content(phase: currentPhase(for: context.date))
+                }
             }
+        }
+        .onAppear {
+            phaseController.resetStart(date: phaseAnchorDate)
+        }
+        .onChange(of: phaseAnchorDate) { _, newValue in
+            phaseController.resetStart(date: newValue)
         }
     }
 
@@ -50,11 +57,7 @@ struct StarlitMistView: View {
     }
 
     private func currentPhase(for date: Date) -> Double {
-        if !didApplyPhaseAnchor {
-            phaseController.resetStart(date: phaseAnchorDate)
-            didApplyPhaseAnchor = true
-        }
-        return phaseController.phase(
+        phaseController.phase(
             for: date,
             speed: speedMultiplier,
             cycleDuration: max(config.cycleDuration, 12),
