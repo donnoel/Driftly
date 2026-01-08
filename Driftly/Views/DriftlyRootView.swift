@@ -617,7 +617,6 @@ struct DriftlyRootView: View {
         
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
         coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
-        coordinator.updatePrewarm(now: now, engine: engine)
     }
     
     private func adjustBrightness(by delta: Double) {

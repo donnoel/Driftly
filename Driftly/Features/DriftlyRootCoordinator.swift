@@ -107,29 +107,28 @@ final class DriftlyRootCoordinator: ObservableObject {
     }
 
     func updatePrewarm(now: Date, engine: DriftlyEngine) {
-        guard engine.autoDriftEnabled, !sleepState.sleepTimerHasExpired else {
-            prewarmMode = nil
-            return
-        }
+        let desired: DriftMode?
 
-        let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
-        let intervalMinutes = max(1, engine.autoDriftIntervalMinutes)
-        let intervalSeconds = Double(intervalMinutes * 60)
-        let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
-        let remaining = intervalSeconds - elapsed
-        let window: TimeInterval = 1.0
+        if engine.autoDriftEnabled && !sleepState.sleepTimerHasExpired {
+            let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
+            let intervalMinutes = max(1, engine.autoDriftIntervalMinutes)
+            let intervalSeconds = Double(intervalMinutes * 60)
+            let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
+            let remaining = intervalSeconds - elapsed
+            let window: TimeInterval = 1.0
 
-        if remaining <= window && remaining > 0 {
-            let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
-            if heavyPrewarmModes.contains(next) {
-                prewarmMode = nil
-                return
-            }
-            if prewarmMode != next {
-                prewarmMode = next
+            if remaining <= window && remaining > 0 {
+                let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
+                desired = heavyPrewarmModes.contains(next) ? nil : next
+            } else {
+                desired = nil
             }
         } else {
-            prewarmMode = nil
+            desired = nil
+        }
+
+        if prewarmMode != desired {
+            prewarmMode = desired
         }
     }
 
