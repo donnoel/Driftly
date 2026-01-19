@@ -154,16 +154,10 @@ final class DriftlyEngine: ObservableObject {
     }
 
     /// 0.2 (dim) ... 1.0 (full brightness)
-    @Published var brightness: Double {
-        didSet {
-            let clamped = Self.clampBrightness(brightness)
-            if clamped != brightness {
-                brightness = clamped
-                return
-            }
-            persistBrightness()
-            updateActiveSceneFromState()
-        }
+    @Published private var brightnessStorage: Double
+    var brightness: Double {
+        get { brightnessStorage }
+        set { applyBrightness(newValue) }
     }
 
     /// Feature gate for experimental toggles (per-device)
@@ -340,11 +334,8 @@ final class DriftlyEngine: ObservableObject {
 
         // brightness (default: 1.0)
         let storedBrightness = defaults.double(forKey: DriftlyDefaultsKey.brightness)
-        if storedBrightness == 0 {
-            brightness = 1.0
-        } else {
-            brightness = Self.clampBrightness(storedBrightness)
-        }
+        let initialBrightness = storedBrightness == 0 ? 1.0 : storedBrightness
+        brightnessStorage = Self.clampBrightness(initialBrightness)
 
         // Labs features (default: false)
         if defaults.object(forKey: DriftlyDefaultsKey.labsFeaturesEnabled) != nil {
@@ -486,6 +477,14 @@ final class DriftlyEngine: ObservableObject {
         } else {
             sleepTimerEndDate = nil
         }
+    }
+
+    private func applyBrightness(_ value: Double) {
+        let clamped = Self.clampBrightness(value)
+        guard clamped != brightnessStorage else { return }
+        brightnessStorage = clamped
+        persistBrightness()
+        updateActiveSceneFromState()
     }
 
     // MARK: - Persistence
