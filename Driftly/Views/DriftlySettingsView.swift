@@ -62,23 +62,33 @@ private var iosSettings: some View {
                 }
             }
 
-            Section("Auto Drift") {
-                Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                Picker("Drift From", selection: $engine.autoDriftSource) {
-                    Text("All Modes").tag(AutoDriftSource.all)
-                    Text("Favorites").tag(AutoDriftSource.favorites)
-                    if let sceneID = engine.activeSceneID,
-                       let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                        Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
-                    }
-                }
+            Section {
+                Toggle("Enable Labs Features", isOn: $engine.labsFeaturesEnabled)
 
-                Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                    ForEach(autoDriftOptions, id: \.self) { minutes in
-                        Text("\(minutes) minutes").tag(minutes)
+                if engine.labsFeaturesEnabled {
+                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+                    Picker("Drift From", selection: $engine.autoDriftSource) {
+                        Text("All Modes").tag(AutoDriftSource.all)
+                        Text("Favorites").tag(AutoDriftSource.favorites)
+                        if let sceneID = engine.activeSceneID,
+                           let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                            Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                        }
+                    }
+
+                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                        ForEach(autoDriftOptions, id: \.self) { minutes in
+                            Text("\(minutes) minutes").tag(minutes)
+                        }
                     }
                 }
+            } header: {
+                Text("Labs")
+            } footer: {
+                Text("Labs features may affect performance or behavior.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Screen") {
@@ -141,23 +151,22 @@ private var tvSettings: some View {
                     }
                 }
 
-                Section("Auto Drift") {
-                    Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                    Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-                    Picker("Drift From", selection: $engine.autoDriftSource) {
-                        Text("All Modes").tag(AutoDriftSource.all)
-                        Text("Favorites").tag(AutoDriftSource.favorites)
-                        if let sceneID = engine.activeSceneID,
-                           let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                            Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
-                        }
-                    }
+                Section {
+                    Toggle("Enable Labs Features", isOn: $engine.labsFeaturesEnabled)
 
-                    Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                        ForEach(autoDriftOptions, id: \.self) { minutes in
-                            Text("\(minutes) minutes").tag(minutes)
-                        }
+                    if engine.labsFeaturesEnabled {
+                        Toggle("Auto Drift Between Modes", isOn: .constant(false))
+                            .disabled(true)
+                        Text("Unavailable on Apple TV (performance).")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
+                } header: {
+                    Text("Labs")
+                } footer: {
+                    Text("Labs features may affect performance or behavior.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
             Section("Screen") {

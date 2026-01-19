@@ -205,6 +205,7 @@ struct DriftlyRootView: View {
             updateIdleTimer()
             updateClockTicking()
             coordinator.updateTicking(engine: engine, scenePhase: newPhase)
+            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: newPhase)
             #if DEBUG
             DebugMetrics.uiSignposter.emitEvent("ui.safeAreaChanged")
             DebugMetrics.uiSignposter.emitEvent("ui.appearanceChanged")
@@ -227,20 +228,26 @@ struct DriftlyRootView: View {
         }
 #endif
         .onChange(of: engine.autoDriftEnabled) { _, newValue in
-            if newValue {
+            if newValue && engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
             coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
+            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
         .onChange(of: engine.autoDriftIntervalMinutes) { _, _ in
-            if engine.autoDriftEnabled {
+            if engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
+            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
         .onChange(of: engine.currentMode) { _, _ in
-            if engine.autoDriftEnabled {
+            if engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
+            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+        }
+        .onChange(of: engine.labsFeaturesEnabled) { _, _ in
+            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
         .onChange(of: engine.clockEnabled) { _, _ in
             updateClockTicking()
@@ -280,6 +287,7 @@ struct DriftlyRootView: View {
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
+                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
                 }
                 .accessibilityIdentifier("Off")
                 Button("15 minutes") {
@@ -292,6 +300,7 @@ struct DriftlyRootView: View {
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
+                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
                 }
                 .accessibilityIdentifier("15 minutes")
                 Button("30 minutes") {
@@ -304,6 +313,7 @@ struct DriftlyRootView: View {
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
+                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
                 }
                 .accessibilityIdentifier("30 minutes")
                 Button("60 minutes") {
@@ -316,6 +326,7 @@ struct DriftlyRootView: View {
                     DriftHaptics.sleepTimerSet()
                     coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                     updateClockTicking()
+                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
                 }
                 .accessibilityIdentifier("60 minutes")
                 Button("Custom…") {
@@ -392,6 +403,7 @@ struct DriftlyRootView: View {
                                 DriftHaptics.sleepTimerSet()
                                 coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
                                 updateClockTicking()
+                                coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
                                 coordinator.isCustomSleepTimerPresented = false
                             }
                         }
@@ -587,7 +599,7 @@ struct DriftlyRootView: View {
     // MARK: - Sleep timer tick & auto drift
     
     private func handleSleepTimerTick(now: Date) {
-        let actions = coordinator.handleTick(now: now, engine: engine)
+        let actions = coordinator.handleSleepTimerTick(now: now, engine: engine)
         
         for action in actions {
             switch action {
@@ -608,15 +620,14 @@ struct DriftlyRootView: View {
                 coordinator.sleepState.sleepTimerAllowsLock = false
                 updateIdleTimer()
             case .autoDrift:
-                withAnimation(.easeInOut(duration: 0.9)) {
-                    engine.currentMode = engine.nextAutoDriftMode(after: engine.currentMode)
-                }
-                DriftHaptics.autoDriftTick()
+                // Auto-drift now uses one-shot timers; sleep ticks should not send this.
+                break
             }
         }
         
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
         coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
+        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
     
     private func adjustBrightness(by delta: Double) {
@@ -674,6 +685,7 @@ struct DriftlyRootView: View {
         updateIdleTimer()
         updateClockTicking()
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
+        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
 #if os(tvOS)
         // Restore fallback focus so remote commands still arrive when chrome is hidden.
         fallbackFocus = !engine.isChromeVisible
@@ -742,6 +754,7 @@ extension DriftlyRootView {
         DriftHaptics.sleepTimerSet()
         coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
         updateClockTicking()
+        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
     
     private struct SleepTimerScreenTV: View {

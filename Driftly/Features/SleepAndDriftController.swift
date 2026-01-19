@@ -15,7 +15,11 @@ struct SleepAndDriftController {
     }
 
     static func shouldTick(engine: DriftlyEngine, state: State) -> Bool {
-        engine.autoDriftEnabled || (engine.sleepTimerEndDate != nil && !state.sleepTimerHasExpired)
+        engine.isAutoDriftOperational || shouldSleepTick(engine: engine, state: state)
+    }
+
+    static func shouldSleepTick(engine: DriftlyEngine, state: State) -> Bool {
+        engine.sleepTimerEndDate != nil && !state.sleepTimerHasExpired
     }
 
     static func resetAutoDriftClock(state: inout State) {
@@ -23,7 +27,12 @@ struct SleepAndDriftController {
     }
 
     /// Returns actions describing what needs to happen for the given time and engine state.
-    static func handleTick(now: Date, engine: DriftlyEngine, state: inout State) -> [Action] {
+    static func handleTick(
+        now: Date,
+        engine: DriftlyEngine,
+        state: inout State,
+        includeAutoDrift: Bool = true
+    ) -> [Action] {
         var actions: [Action] = []
 
         if let end = engine.sleepTimerEndDate {
@@ -39,7 +48,7 @@ struct SleepAndDriftController {
             actions.append(.wake)
         }
 
-        if engine.shouldAutoDrift(
+        if includeAutoDrift && engine.shouldAutoDrift(
             now: now,
             lastChange: state.lastAutoDriftChange,
             sleepTimerHasExpired: state.sleepTimerHasExpired

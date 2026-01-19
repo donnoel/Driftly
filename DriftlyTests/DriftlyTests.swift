@@ -21,6 +21,7 @@ struct DriftlyTests {
         // First run: set values
         do {
             let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+            engine.labsFeaturesEnabled = true
             engine.currentMode = DriftMode.auroraVeil
             engine.animationSpeed = 1.3
             engine.preventAutoLock = true
@@ -41,6 +42,7 @@ struct DriftlyTests {
         // Second run: ensure values persisted
         do {
             let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+            engine.labsFeaturesEnabled = true
             #expect(engine.currentMode == DriftMode.auroraVeil)
             #expect(engine.animationSpeed == 1.3)
             #expect(engine.preventAutoLock == true)

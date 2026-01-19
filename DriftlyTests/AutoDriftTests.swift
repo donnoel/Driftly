@@ -12,6 +12,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 5
 
@@ -31,6 +32,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.autoDriftShuffleEnabled = true
 
         for mode in DriftMode.allCases {
@@ -48,6 +50,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.autoDriftShuffleEnabled = false
 
         for (index, mode) in DriftMode.allCases.enumerated() {
@@ -65,6 +68,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.favoriteModes = [.auroraVeil, .cosmicTide]
         engine.autoDriftSource = .favorites
         engine.autoDriftShuffleEnabled = false
@@ -87,6 +91,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 0 // below minimum clamp (should clamp to 1)
 
@@ -105,6 +110,7 @@ struct AutoDriftTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         let scene = engine.createScene(name: "Two Modes", modeIDs: [.auroraVeil, .cosmicTide])
         engine.activateScene(id: scene.id)
         #expect(engine.autoDriftSource == .scene(scene.id))

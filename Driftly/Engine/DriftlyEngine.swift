@@ -23,6 +23,7 @@ private enum DriftlyDefaultsKey {
     static let autoDriftShuffle      = "driftly.autoDriftShuffle"
     static let favoriteModes         = "driftly.favoriteModes"
     static let modeDisplayOrder      = "driftly.modeDisplayOrder"
+    static let labsFeaturesEnabled   = "driftly.labsFeaturesEnabled"
     static let clockEnabled          = "driftly.clockEnabled"
     static let autoDriftSource       = "driftly.autoDriftSource"
     static let scenes                = "driftly.scenes"
@@ -110,6 +111,13 @@ final class DriftlyEngine: ObservableObject {
     private var scenesPersistWorkItem: DispatchWorkItem?
     private var isInitializing = true
     private let persistenceQueue = DispatchQueue(label: "com.driftly.persistence", qos: .utility)
+    private static let isTvOSPlatform: Bool = {
+        #if os(tvOS)
+        return true
+        #else
+        return false
+        #endif
+    }()
 
     @Published var currentMode: DriftMode {
         didSet {
@@ -158,9 +166,22 @@ final class DriftlyEngine: ObservableObject {
         }
     }
 
+    /// Feature gate for experimental toggles (per-device)
+    @Published var labsFeaturesEnabled: Bool {
+        didSet {
+            guard !isInitializing else { return }
+            persistLabsFeaturesEnabled()
+            enforceAutoDriftConstraints()
+        }
+    }
+
     /// Auto-drift: whether Driftly should automatically change modes
     @Published var autoDriftEnabled: Bool {
         didSet {
+            if autoDriftEnabled && !isAutoDriftAllowed {
+                autoDriftEnabled = false
+                return
+            }
             persistAutoDriftEnabled()
             updateActiveSceneFromState()
         }
@@ -325,6 +346,13 @@ final class DriftlyEngine: ObservableObject {
             brightness = Self.clampBrightness(storedBrightness)
         }
 
+        // Labs features (default: false)
+        if defaults.object(forKey: DriftlyDefaultsKey.labsFeaturesEnabled) != nil {
+            labsFeaturesEnabled = defaults.bool(forKey: DriftlyDefaultsKey.labsFeaturesEnabled)
+        } else {
+            labsFeaturesEnabled = false
+        }
+
         // autoDriftEnabled (default: false)
         if defaults.object(forKey: DriftlyDefaultsKey.autoDriftEnabled) != nil {
             autoDriftEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftEnabled)
@@ -416,6 +444,7 @@ final class DriftlyEngine: ObservableObject {
             modeDisplayOrder = DriftMode.allCases
         }
 
+        enforceAutoDriftConstraints()
         isInitializing = false
 
         // Re-validate the source now that initialization is complete.
@@ -465,12 +494,26 @@ final class DriftlyEngine: ObservableObject {
         defaults.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
     }
 
+    var isAutoDriftAllowed: Bool {
+        labsFeaturesEnabled && !Self.isTvOSPlatform
+    }
+
+    var isAutoDriftOperational: Bool {
+        autoDriftEnabled && isAutoDriftAllowed
+    }
+
+    private func enforceAutoDriftConstraints() {
+        if autoDriftEnabled && !isAutoDriftAllowed {
+            autoDriftEnabled = false
+        }
+    }
+
     func shouldAutoDrift(
         now: Date,
         lastChange: Date,
         sleepTimerHasExpired: Bool
     ) -> Bool {
-        guard autoDriftEnabled, !sleepTimerHasExpired else { return false }
+        guard isAutoDriftOperational, !sleepTimerHasExpired else { return false }
 
         let intervalMinutes = max(1, autoDriftIntervalMinutes)
         let intervalSeconds = Double(intervalMinutes * 60)
@@ -701,8 +744,8 @@ final class DriftlyEngine: ObservableObject {
     private func peekShuffledMode(from candidates: [DriftMode], current: DriftMode) -> DriftMode {
         guard !candidates.isEmpty else { return current }
 
-        shuffleQueue = preparedShuffleQueue(candidates: candidates, current: current)
-        return shuffleQueue.first ?? current
+        let queue = preparedShuffleQueue(candidates: candidates, current: current)
+        return queue.first ?? current
     }
 
     private func preparedShuffleQueue(candidates: [DriftMode], current: DriftMode) -> [DriftMode] {
@@ -738,6 +781,10 @@ final class DriftlyEngine: ObservableObject {
         persistenceQueue.async { [weak defaults] in
             defaults?.set(value, forKey: DriftlyDefaultsKey.brightness)
         }
+    }
+
+    private func persistLabsFeaturesEnabled() {
+        defaults.set(labsFeaturesEnabled, forKey: DriftlyDefaultsKey.labsFeaturesEnabled)
     }
 
     private func persistAutoDriftEnabled() {

@@ -59,6 +59,7 @@ struct SleepAndDriftControllerTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.labsFeaturesEnabled = true
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 3
 

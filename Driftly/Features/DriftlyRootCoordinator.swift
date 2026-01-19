@@ -20,7 +20,11 @@ final class DriftlyRootCoordinator: ObservableObject {
     private var tickConnection: Cancellable?
     private var clockConnection: Cancellable?
     private var brightnessHUDHideWorkItem: DispatchWorkItem?
+    private var autoDriftFireTimer: Timer?
+    private var prewarmFireTimer: Timer?
     private var autoDriftPausedAt: Date?
+    private var currentScenePhase: ScenePhase = .active
+    private let prewarmLead: TimeInterval = 1.5
     private var didRunInitialSetup = false
 
     init(testOverrides: (modePicker: Bool, sleepDialog: Bool)? = nil) {
@@ -42,15 +46,18 @@ final class DriftlyRootCoordinator: ObservableObject {
         guard !didRunInitialSetup else { return }
         didRunInitialSetup = true
 
+        currentScenePhase = scenePhase
         applyUITestOverrides(engine: engine)
         updateIdleTimer()
         updateClockTicking()
         SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
         updateTicking(engine: engine, scenePhase: scenePhase)
+        updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         focusChromeIfNeeded()
     }
 
     func handleScenePhaseChange(to newPhase: ScenePhase) {
+        currentScenePhase = newPhase
         if newPhase == .active {
             if let pausedAt = autoDriftPausedAt {
                 let now = Date()
@@ -61,20 +68,24 @@ final class DriftlyRootCoordinator: ObservableObject {
             }
         } else {
             autoDriftPausedAt = Date()
+            cancelAutoDriftTimers()
         }
     }
 
-    func handleTick(now: Date, engine: DriftlyEngine) -> [SleepAndDriftController.Action] {
-        guard SleepAndDriftController.shouldTick(engine: engine, state: sleepState) else { return [] }
-        let actions = SleepAndDriftController.handleTick(now: now, engine: engine, state: &sleepState)
-        updatePrewarm(now: now, engine: engine)
-        return actions
+    func handleSleepTimerTick(now: Date, engine: DriftlyEngine) -> [SleepAndDriftController.Action] {
+        guard SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState) else { return [] }
+        return SleepAndDriftController.handleTick(
+            now: now,
+            engine: engine,
+            state: &sleepState,
+            includeAutoDrift: false
+        )
     }
 
     func updateTicking(engine: DriftlyEngine, scenePhase: ScenePhase) {
-        let shouldTick = SleepAndDriftController.shouldTick(engine: engine, state: sleepState)
-        && scenePhase == .active
-        && !sleepState.sleepTimerHasExpired
+        let shouldTick = SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState)
+            && scenePhase == .active
+            && !sleepState.sleepTimerHasExpired
         if shouldTick {
             if tickConnection == nil {
                 tickTimer = Timer.publish(every: 1, on: .main, in: .common)
@@ -104,36 +115,111 @@ final class DriftlyRootCoordinator: ObservableObject {
         tickConnection = nil
         clockConnection?.cancel()
         clockConnection = nil
-    }
-
-    func updatePrewarm(now: Date, engine: DriftlyEngine) {
-        let desired: DriftMode?
-
-        if engine.autoDriftEnabled && !sleepState.sleepTimerHasExpired {
-            let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
-            let intervalMinutes = max(1, engine.autoDriftIntervalMinutes)
-            let intervalSeconds = Double(intervalMinutes * 60)
-            let elapsed = now.timeIntervalSince(sleepState.lastAutoDriftChange)
-            let remaining = intervalSeconds - elapsed
-            let window: TimeInterval = 1.0
-
-            if remaining <= window && remaining > 0 {
-                let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
-                desired = heavyPrewarmModes.contains(next) ? nil : next
-            } else {
-                desired = nil
-            }
-        } else {
-            desired = nil
-        }
-
-        if prewarmMode != desired {
-            prewarmMode = desired
-        }
+        cancelAutoDriftTimers()
     }
 
     func resetAutoDriftClock() {
         SleepAndDriftController.resetAutoDriftClock(state: &sleepState)
+    }
+
+    func updateAutoDriftScheduling(engine: DriftlyEngine, scenePhase: ScenePhase) {
+        currentScenePhase = scenePhase
+        if engine.isAutoDriftOperational && scenePhase == .active && !sleepState.sleepTimerHasExpired {
+            scheduleAutoDriftTimers(engine: engine)
+        } else {
+            cancelAutoDriftTimers()
+        }
+    }
+
+    private func scheduleAutoDriftTimers(engine: DriftlyEngine) {
+        cancelAutoDriftTimers()
+
+        guard engine.isAutoDriftOperational, currentScenePhase == .active, !sleepState.sleepTimerHasExpired else {
+            return
+        }
+
+        let intervalSeconds = Double(max(1, engine.autoDriftIntervalMinutes) * 60)
+        let now = Date()
+        let nextDriftDate = sleepState.lastAutoDriftChange.addingTimeInterval(intervalSeconds)
+
+        if nextDriftDate <= now {
+            performAutoDrift(engine: engine)
+            return
+        }
+
+        schedulePrewarmTimer(fireDate: nextDriftDate, engine: engine)
+
+        let fireTimer = Timer(fire: nextDriftDate, interval: 0, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.performAutoDrift(engine: engine)
+        }
+        autoDriftFireTimer = fireTimer
+        RunLoop.main.add(fireTimer, forMode: .common)
+    }
+
+    private func schedulePrewarmTimer(fireDate driftDate: Date, engine: DriftlyEngine) {
+        prewarmFireTimer?.invalidate()
+        prewarmFireTimer = nil
+
+        let prewarmDate = driftDate.addingTimeInterval(-prewarmLead)
+        let now = Date()
+
+        guard engine.isAutoDriftOperational, currentScenePhase == .active, !sleepState.sleepTimerHasExpired else {
+            prewarmMode = nil
+            return
+        }
+
+        if prewarmDate <= now {
+            setPrewarmMode(engine: engine)
+            return
+        }
+
+        let timer = Timer(fire: prewarmDate, interval: 0, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.setPrewarmMode(engine: engine)
+        }
+        prewarmFireTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func setPrewarmMode(engine: DriftlyEngine) {
+        guard engine.isAutoDriftOperational, !sleepState.sleepTimerHasExpired else {
+            prewarmMode = nil
+            return
+        }
+
+        let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
+        let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
+        prewarmMode = heavyPrewarmModes.contains(next) ? nil : next
+    }
+
+    private func performAutoDrift(engine: DriftlyEngine) {
+        cancelAutoDriftTimers()
+
+        guard engine.isAutoDriftOperational, currentScenePhase == .active, !sleepState.sleepTimerHasExpired else {
+            prewarmMode = nil
+            return
+        }
+
+        let now = Date()
+        let nextMode = engine.nextAutoDriftMode(after: engine.currentMode)
+
+        withAnimation(.easeInOut(duration: 0.9)) {
+            engine.currentMode = nextMode
+        }
+        DriftHaptics.autoDriftTick()
+        sleepState.lastAutoDriftChange = now
+        prewarmMode = nil
+
+        scheduleAutoDriftTimers(engine: engine)
+    }
+
+    private func cancelAutoDriftTimers() {
+        autoDriftFireTimer?.invalidate()
+        autoDriftFireTimer = nil
+        prewarmFireTimer?.invalidate()
+        prewarmFireTimer = nil
+        prewarmMode = nil
     }
 
     func showBrightnessHUD(for value: Double) {
