@@ -5,6 +5,7 @@ struct ActiveModeHost: View {
     let currentMode: DriftMode
     let prewarmMode: DriftMode?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var previousMode: DriftMode?
     @State private var previousModeLayerID: UUID?
     @State private var currentModeLayerID = UUID()
@@ -61,6 +62,15 @@ struct ActiveModeHost: View {
         warmedMode = nil
 
         modeFadeCleanupWorkItem?.cancel()
+
+        if reduceMotion {
+            // Skip crossfade when Reduce Motion is enabled.
+            modeCrossfade = 1
+            previousMode = nil
+            previousModeLayerID = nil
+            return
+        }
+
         modeCrossfade = 0
         // Defer the animation a tick so the new layer can render once before we start fading.
         DispatchQueue.main.async {
