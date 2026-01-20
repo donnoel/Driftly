@@ -220,14 +220,9 @@ struct DriftModePickerView: View {
                     }
                 }
                 .listStyle(.plain)
+                .background(Color.black)
                 .environment(\.defaultMinListRowHeight, 72)
                 .navigationTitle("Select Mode")
-                .tint(.white)
-                .onAppear {
-                    // Keep List backgrounds consistently dark on tvOS for legibility.
-                    UITableView.appearance().backgroundColor = .black
-                    UITableViewCell.appearance().backgroundColor = .black
-                }
             }
         }
         .onPlayPauseCommand {
@@ -247,27 +242,12 @@ struct DriftModePickerView: View {
             }
             dismiss()
         } label: {
-            HStack(spacing: 14) {
-                FocusAdaptiveText(text: mode.displayName)
-                    .font(.title3.weight(.semibold))
-
-                Spacer()
-
-                if engine.favoriteModes.contains(mode) {
-                    Image(systemName: "star.fill")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.yellow.opacity(0.92))
-                        .accessibilityLabel("Favorite")
-                }
-
-                if mode == engine.currentMode {
-                    Image(systemName: "checkmark")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .accessibilityLabel("Selected")
-                }
-            }
-            .padding(.vertical, 8)
+            TVModeRowLabel(
+                title: mode.displayName,
+                isFavorite: engine.favoriteModes.contains(mode),
+                isSelected: mode == engine.currentMode,
+                isFocused: focusedMode == mode
+            )
         }
         .focused($focusedMode, equals: mode)
         // Keep favorites available without adding a second focusable control in the row.
@@ -284,15 +264,40 @@ struct DriftModePickerView: View {
         .accessibilityIdentifier("mode-\(mode.rawValue)")
     }
 
-    private struct FocusAdaptiveText: View {
-        let text: String
-        @Environment(\.isFocused) private var isFocused
+    private struct TVModeRowLabel: View {
+        let title: String
+        let isFavorite: Bool
+        let isSelected: Bool
+        let isFocused: Bool
 
         var body: some View {
-            Text(text)
-                .foregroundStyle(isFocused ? Color.black : Color.white)
+            HStack(spacing: 14) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+                    // Critical: invert under the focus pill.
+                    .foregroundStyle(isFocused ? Color.black : Color.white)
+
+                Spacer()
+
+                if isFavorite {
+                    Image(systemName: "star.fill")
+                        .font(.title3.weight(.semibold))
+                        // Yellow is fine when unfocused; use black on the white focus pill.
+                        .foregroundStyle(isFocused ? Color.black : Color.yellow.opacity(0.92))
+                        .accessibilityLabel("Favorite")
+                }
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(isFocused ? Color.black : Color.white.opacity(0.9))
+                        .accessibilityLabel("Selected")
+                }
+            }
+            .padding(.vertical, 8)
         }
     }
+
 #endif
 
     private func beginNewScene() {

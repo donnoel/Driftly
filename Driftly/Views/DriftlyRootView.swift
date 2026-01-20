@@ -762,15 +762,34 @@ extension DriftlyRootView {
         let isActive: Bool
         let onSetMinutes: (Int?) -> Void
         let onCancel: () -> Void
-        
+
         private let commonDurations: [Int] = [15, 30, 60]
         private let moreDurations: [Int] = [5, 10, 20, 45, 90, 120, 180, 240]
-        
+
+        // --- Focus enum and state ---
+        private enum FocusRow: Hashable {
+            case off
+            case common(Int)
+            case more
+        }
+
+        @FocusState private var focusedRow: FocusRow?
+
+        private func primary(_ text: String, focused: Bool) -> some View {
+            Text(text)
+                .foregroundStyle(focused ? Color.black : Color.white)
+        }
+
+        private func secondary(_ text: String, focused: Bool) -> some View {
+            Text(text)
+                .foregroundStyle(focused ? Color.black.opacity(0.70) : Color.white.opacity(0.70))
+        }
+
         var body: some View {
             ZStack {
                 // Force a stable, high-contrast backdrop regardless of the underlying mode.
                 Color.black.ignoresSafeArea()
-                
+
                 NavigationStack {
                     List {
                         Section {
@@ -778,33 +797,42 @@ extension DriftlyRootView {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .padding(.vertical, 6)
+                                .focusable(false)
+                                .listRowBackground(Color.black)
                         }
-                        
+
                         Section {
+                            // Off row with explicit focus and color
                             Button {
                                 onSetMinutes(nil)
                             } label: {
-                                Text("Off")
+                                primary("Off", focused: focusedRow == .off)
                                     .font(.headline)
                                     .padding(.vertical, 6)
-                                    .foregroundStyle(.primary)
                             }
-                            
+                            .buttonStyle(.plain)
+                            .focused($focusedRow, equals: .off)
+                            .listRowBackground(Color.black)
+
+                            // Common durations with explicit focus and color
                             ForEach(commonDurations, id: \.self) { minutes in
                                 Button {
                                     onSetMinutes(minutes)
                                 } label: {
-                                    Text("\(minutes) minutes")
+                                    primary("\(minutes) minutes", focused: focusedRow == .common(minutes))
                                         .font(.headline)
                                         .padding(.vertical, 6)
-                                        .foregroundStyle(.primary)
                                 }
+                                .buttonStyle(.plain)
+                                .focused($focusedRow, equals: .common(minutes))
+                                .listRowBackground(Color.black)
                             }
                         } header: {
                             Text("Common")
                         }
-                        
+
                         Section {
+                            // More durations nav link with explicit focus and color
                             NavigationLink {
                                 MoreDurationsView(
                                     durations: moreDurations,
@@ -812,24 +840,23 @@ extension DriftlyRootView {
                                 )
                             } label: {
                                 HStack {
-                                    Text("More durations")
-                                        .foregroundStyle(.primary)
+                                    primary("More durations", focused: focusedRow == .more)
                                     Spacer()
-                                    Text("5–240 min")
-                                        .foregroundStyle(.secondary)
+                                    secondary("5–240 min", focused: focusedRow == .more)
                                 }
                                 .font(.headline)
                                 .padding(.vertical, 6)
                             }
+                            .buttonStyle(.plain)
+                            .focused($focusedRow, equals: .more)
+                            .listRowBackground(Color.black)
                         } header: {
                             Text("More")
                         }
                     }
                     .listStyle(.plain)
-                    // Prevent system list backgrounds from switching to light/gray.
-                    .modifier(HideListBackground())
+                    .background(Color.black)
                     .navigationTitle("Sleep Timer")
-                    .tint(.white)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             Image(systemName: isActive ? "moon.zzz.fill" : "moon.zzz")
@@ -844,11 +871,18 @@ extension DriftlyRootView {
             }
             .preferredColorScheme(.dark)
         }
-        
+
         private struct MoreDurationsView: View {
             let durations: [Int]
             let onSetMinutes: (Int?) -> Void
-            
+
+            @FocusState private var focusedMinutes: Int?
+
+            private func primary(_ text: String, focused: Bool) -> some View {
+                Text(text)
+                    .foregroundStyle(focused ? Color.black : Color.white)
+            }
+
             var body: some View {
                 List {
                     Section {
@@ -856,29 +890,19 @@ extension DriftlyRootView {
                             Button {
                                 onSetMinutes(minutes)
                             } label: {
-                                Text("\(minutes) minutes")
+                                primary("\(minutes) minutes", focused: focusedMinutes == minutes)
                                     .font(.headline)
                                     .padding(.vertical, 6)
                             }
+                            .buttonStyle(.plain)
+                            .focused($focusedMinutes, equals: minutes)
+                            .listRowBackground(Color.black)
                         }
                     }
                 }
                 .listStyle(.plain)
-                .modifier(HideListBackground())
-                .tint(.white)
+                .background(Color.black)
                 .navigationTitle("More Durations")
-            }
-        }
-        
-        private struct HideListBackground: ViewModifier {
-            func body(content: Content) -> some View {
-                content
-                    .background(Color.black)
-                    .onAppear {
-                        // Keep List backgrounds consistently dark on tvOS.
-                        UITableView.appearance().backgroundColor = .black
-                        UITableViewCell.appearance().backgroundColor = .black
-                    }
             }
         }
     }

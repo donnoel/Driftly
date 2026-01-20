@@ -494,7 +494,7 @@ final class DriftlyEngine: ObservableObject {
     }
 
     var isAutoDriftAllowed: Bool {
-        labsFeaturesEnabled && !Self.isTvOSPlatform
+        labsFeaturesEnabled
     }
 
     var isAutoDriftOperational: Bool {
