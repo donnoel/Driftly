@@ -151,7 +151,9 @@ final class DriftlyRootCoordinator: ObservableObject {
 
         let fireTimer = Timer(fire: nextDriftDate, interval: 0, repeats: false) { [weak self] _ in
             guard let self else { return }
-            self.performAutoDrift(engine: engine)
+            Task { @MainActor in
+                self.performAutoDrift(engine: engine)
+            }
         }
         autoDriftFireTimer = fireTimer
         RunLoop.main.add(fireTimer, forMode: .common)
@@ -176,7 +178,9 @@ final class DriftlyRootCoordinator: ObservableObject {
 
         let timer = Timer(fire: prewarmDate, interval: 0, repeats: false) { [weak self] _ in
             guard let self else { return }
-            self.setPrewarmMode(engine: engine)
+            Task { @MainActor in
+                self.setPrewarmMode(engine: engine)
+            }
         }
         prewarmFireTimer = timer
         RunLoop.main.add(timer, forMode: .common)

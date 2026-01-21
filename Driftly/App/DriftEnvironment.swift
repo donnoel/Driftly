@@ -44,7 +44,8 @@ struct PausableTimelineView<Content: View>: View {
     #if os(tvOS)
     private static var defaultFPS: Double { Double(min(UIScreen.main.maximumFramesPerSecond, 60)) }
     #else
-    private static var defaultFPS: Double { Double(UIScreen.main.maximumFramesPerSecond) }
+    // iOS 26+: `UIScreen.main` is deprecated; callers can override `fps:` if they have a scene-backed screen.
+    private static var defaultFPS: Double { 60 }
     #endif
 #else
     private static var defaultFPS: Double { 60 }
