@@ -314,9 +314,11 @@ final class DriftlyEngine: ObservableObject {
             isChromeVisible = true
         }
 
-        // animationSpeed (default: 1.0)
+        // animationSpeed (default: 0.6 = Gentle)
         let storedSpeed = defaults.double(forKey: DriftlyDefaultsKey.animationSpeed)
-        animationSpeed = storedSpeed == 0 ? 1.0 : storedSpeed
+        let rawSpeed = storedSpeed == 0 ? 0.6 : storedSpeed
+        // Clamp in case of legacy/corrupted values.
+        animationSpeed = min(1.8, max(0.5, rawSpeed))
 
         // respectSystemReduceMotion (default: true)
         if defaults.object(forKey: DriftlyDefaultsKey.respectReduceMotion) != nil {
