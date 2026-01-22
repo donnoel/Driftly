@@ -4,6 +4,7 @@ struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("requestShowOnboarding") private var requestShowOnboarding: Bool = false
 
 #if os(tvOS)
     private enum TVFocus: Hashable {
@@ -13,6 +14,7 @@ struct DriftlySettingsView: View {
         case autoDriftShuffle
         case stayAwake
         case showClock
+        case showHowTo
     }
 
     @FocusState private var tvFocus: TVFocus?
@@ -37,6 +39,48 @@ struct DriftlySettingsView: View {
                         Image(systemName: "checkmark")
                             .font(.headline.weight(.semibold))
                     }
+                }
+                .font(.headline)
+                .padding(.vertical, 6)
+                // Critical: invert text under the focus pill
+                .foregroundStyle(isFocused ? Color.black : Color.white)
+                .animation(.easeInOut(duration: 0.12), value: isFocused)
+            }
+            .buttonStyle(.plain)
+            .focused(focus, equals: id)
+        }
+
+        var body: some View {
+            Group {
+                if let accessibilityID {
+                    baseButton.accessibilityIdentifier(accessibilityID)
+                } else {
+                    baseButton
+                }
+            }
+        }
+    }
+    private struct TVActionRow: View {
+        let title: String
+        let systemImage: String?
+        let id: TVFocus
+        let focus: FocusState<TVFocus?>.Binding
+        var accessibilityID: String? = nil
+        let action: () -> Void
+
+        private var isFocused: Bool { focus.wrappedValue == id }
+
+        private var baseButton: some View {
+            Button {
+                action()
+            } label: {
+                HStack(spacing: 14) {
+                    if let systemImage {
+                        Image(systemName: systemImage)
+                            .font(.headline.weight(.semibold))
+                    }
+                    Text(title)
+                    Spacer()
                 }
                 .font(.headline)
                 .padding(.vertical, 6)
@@ -149,6 +193,15 @@ struct DriftlySettingsView: View {
 
                 Section("About") {
                     LabeledContent("Version", value: versionString)
+                }
+                Section("Help") {
+                    Button {
+                        requestShowOnboarding = true
+                        dismiss()
+                    } label: {
+                        Label("Show How To", systemImage: "questionmark.circle")
+                    }
+                    .accessibilityIdentifier("showHowToButton")
                 }
             }
             .navigationTitle("Settings")
@@ -283,6 +336,18 @@ struct DriftlySettingsView: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                         .focusable(true)
+                    }
+                    Section("Help") {
+                        TVActionRow(
+                            title: "Show How To",
+                            systemImage: "questionmark.circle",
+                            id: .showHowTo,
+                            focus: $tvFocus,
+                            accessibilityID: "showHowToButton"
+                        ) {
+                            requestShowOnboarding = true
+                            dismiss()
+                        }
                     }
                 }
                 .background(Color.black)

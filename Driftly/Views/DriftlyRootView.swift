@@ -8,6 +8,11 @@ struct DriftlyRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
+    @AppStorage("didShowOnboarding") private var didShowOnboarding: Bool = false
+    @AppStorage("requestShowOnboarding") private var requestShowOnboarding: Bool = false
+    @State private var isOnboardingPresented: Bool = false
+    @State private var onboardingShouldOpenModePicker: Bool = false
+    
     @StateObject private var coordinator: DriftlyRootCoordinator
     @State private var motionUnavailable = false
     @State private var brightnessDragLastTranslation: CGFloat = 0
@@ -195,6 +200,12 @@ struct DriftlyRootView: View {
                     updateClockTicking: updateClockTicking
                 )
 #endif
+
+                // First-launch onboarding
+                if !didShowOnboarding && !isOnboardingPresented {
+                    onboardingShouldOpenModePicker = true
+                    isOnboardingPresented = true
+                }
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -211,8 +222,22 @@ struct DriftlyRootView: View {
             DebugMetrics.uiSignposter.emitEvent("ui.appearanceChanged")
             #endif
         }
+#if os(tvOS)
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
+        }
+#else
+        .onChange(of: engine.preventAutoLock) { _, _ in
+            updateIdleTimer()
+        }
+#endif
+        .onChange(of: requestShowOnboarding) { _, newValue in
+            guard newValue else { return }
+            DispatchQueue.main.async {
+                onboardingShouldOpenModePicker = false
+                isOnboardingPresented = true
+                requestShowOnboarding = false
+            }
         }
 #if os(tvOS)
         .onChange(of: engine.isChromeVisible) { _, isVisible in
@@ -258,6 +283,26 @@ struct DriftlyRootView: View {
         .onReceive(coordinator.clockTimer) { now in
             coordinator.clockNow = now
         }
+#if true
+            // Onboarding (first launch + restore from Settings)
+            .fullScreenCover(isPresented: $isOnboardingPresented) {
+                DriftlyOnboardingView {
+                    didShowOnboarding = true
+                    isOnboardingPresented = false
+
+                    if onboardingShouldOpenModePicker {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            coordinator.isModePickerPresented = true
+#if os(tvOS)
+                            focusedButton = .modePicker
+                            fallbackFocus = false
+#endif
+                        }
+                    }
+                }
+                .environmentObject(engine)
+            }
+#endif
             // Mode picker (sparkles)
 #if os(tvOS)
             .fullScreenCover(isPresented: $coordinator.isModePickerPresented) {
