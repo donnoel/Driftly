@@ -117,6 +117,7 @@ struct DriftlyOnboardingView: View {
                 }
             } label: {
                 Text(index < pages.count - 1 ? "Continue" : "Get Started")
+                    .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
