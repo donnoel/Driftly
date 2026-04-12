@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 /// Hosts the active Drift mode with crossfade and optional prewarm layer.
 struct ActiveModeHost: View {
@@ -13,6 +14,7 @@ struct ActiveModeHost: View {
     @State private var warmedMode: DriftMode?
     @State private var modeCrossfade: Double = 1.0
     @State private var modeFadeCleanupWorkItem: DispatchWorkItem?
+    @State private var modeTransitionInterval: OSSignpostIntervalState?
 
     private let crossfadeDuration: TimeInterval = 1.1
     private let cleanupDelay: TimeInterval = 1.0
@@ -46,11 +48,47 @@ struct ActiveModeHost: View {
             updatePrewarmLayer(for: newValue)
         }
         .onAppear {
+            DriftProfiling.event(
+                DriftProfiling.Signpost.rendererSetup,
+                message: "activeModeHost current=\(currentMode.rawValue)"
+            )
             updatePrewarmLayer(for: prewarmMode)
+        }
+        .onDisappear {
+            modeFadeCleanupWorkItem?.cancel()
+            if let interval = modeTransitionInterval {
+                DriftProfiling.end(
+                    DriftProfiling.Signpost.modeTransition,
+                    interval,
+                    message: "status=teardown to=\(currentMode.rawValue)"
+                )
+                modeTransitionInterval = nil
+            }
+            DriftProfiling.event(
+                DriftProfiling.Signpost.rendererTeardown,
+                message: "activeModeHost current=\(currentMode.rawValue)"
+            )
         }
     }
 
     private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
+        if let interval = modeTransitionInterval {
+            DriftProfiling.end(
+                DriftProfiling.Signpost.modeTransition,
+                interval,
+                message: "status=interrupted from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+            )
+            modeTransitionInterval = nil
+        }
+        modeTransitionInterval = DriftProfiling.begin(
+            DriftProfiling.Signpost.modeTransition,
+            message: "source=renderer from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+        )
+        DriftProfiling.event(
+            DriftProfiling.Signpost.rendererReconfigure,
+            message: "crossfade prepare from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+        )
+
         previousMode = oldMode
         previousModeLayerID = currentModeLayerID
         if warmedMode == newMode, let prewarmLayerID {
@@ -68,6 +106,14 @@ struct ActiveModeHost: View {
             modeCrossfade = 1
             previousMode = nil
             previousModeLayerID = nil
+            if let interval = modeTransitionInterval {
+                DriftProfiling.end(
+                    DriftProfiling.Signpost.modeTransition,
+                    interval,
+                    message: "source=renderer reduceMotion from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+                )
+                modeTransitionInterval = nil
+            }
             return
         }
 
@@ -83,6 +129,14 @@ struct ActiveModeHost: View {
             guard currentMode == newMode else { return }
             previousMode = nil
             previousModeLayerID = nil
+            if let interval = modeTransitionInterval {
+                DriftProfiling.end(
+                    DriftProfiling.Signpost.modeTransition,
+                    interval,
+                    message: "source=renderer complete from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+                )
+                modeTransitionInterval = nil
+            }
         }
         modeFadeCleanupWorkItem = cleanup
         DispatchQueue.main.asyncAfter(deadline: .now() + cleanupDelay, execute: cleanup)
@@ -90,6 +144,12 @@ struct ActiveModeHost: View {
 
     private func updatePrewarmLayer(for mode: DriftMode?) {
         guard let mode, mode != currentMode else {
+            if warmedMode != nil || prewarmLayerID != nil {
+                DriftProfiling.event(
+                    DriftProfiling.Signpost.rendererReconfigure,
+                    message: "prewarm clear current=\(currentMode.rawValue)"
+                )
+            }
             prewarmLayerID = nil
             warmedMode = nil
             return
@@ -99,5 +159,9 @@ struct ActiveModeHost: View {
         }
         warmedMode = mode
         prewarmLayerID = prewarmLayerID ?? UUID()
+        DriftProfiling.event(
+            DriftProfiling.Signpost.rendererReconfigure,
+            message: "prewarm set mode=\(mode.rawValue)"
+        )
     }
 }

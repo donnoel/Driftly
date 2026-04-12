@@ -13,13 +13,26 @@ struct DriftSceneRendererView: View {
 
     @StateObject private var motionManager = DriftMotionManager()
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @State private var lastAllowMotion: Bool?
 
     var body: some View {
         ActiveModeHost(currentMode: currentMode, prewarmMode: prewarmMode)
             .offset(effectiveOffset)
             .scaleEffect(effectiveScale)
             .ignoresSafeArea()
-            .onAppear { syncMotion() }
+            .onAppear {
+                DriftProfiling.event(
+                    DriftProfiling.Signpost.rendererSetup,
+                    message: "sceneRenderer mode=\(currentMode.rawValue)"
+                )
+                syncMotion()
+            }
+            .onDisappear {
+                DriftProfiling.event(
+                    DriftProfiling.Signpost.rendererTeardown,
+                    message: "sceneRenderer mode=\(currentMode.rawValue)"
+                )
+            }
             .onChange(of: scenePhase) { _, _ in syncMotion() }
             .onChange(of: reduceMotion) { _, _ in syncMotion() }
             .onChange(of: sleepTimerHasExpired) { _, _ in syncMotion() }
@@ -48,6 +61,13 @@ struct DriftSceneRendererView: View {
     }
 
     private func syncMotion() {
+        if lastAllowMotion != allowMotion {
+            DriftProfiling.event(
+                DriftProfiling.Signpost.rendererReconfigure,
+                message: "motion \(allowMotion ? "enabled" : "disabled") mode=\(currentMode.rawValue) phase=\(scenePhaseName(scenePhase))"
+            )
+            lastAllowMotion = allowMotion
+        }
         motionUnavailable = motionManager.motionUnavailable
         guard allowMotion else {
             motionManager.stopUpdates()
@@ -66,5 +86,18 @@ struct DriftSceneRendererView: View {
             isChromeVisible: isChromeVisible
         )
 #endif
+    }
+
+    private func scenePhaseName(_ phase: ScenePhase) -> String {
+        switch phase {
+        case .active:
+            return "active"
+        case .inactive:
+            return "inactive"
+        case .background:
+            return "background"
+        @unknown default:
+            return "unknown"
+        }
     }
 }

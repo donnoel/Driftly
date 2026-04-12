@@ -16,6 +16,10 @@ struct DriftlyRootView: View {
     @StateObject private var coordinator: DriftlyRootCoordinator
     @State private var motionUnavailable = false
     @State private var brightnessDragLastTranslation: CGFloat = 0
+    @State private var profilingSessionStart: Date?
+    @State private var profilingPreviousMode: DriftMode?
+    @State private var profilingTransitionCount: Int = 0
+    @State private var profilingImmediateAutoDriftTriggered = false
 #if DEBUG
     private let testInitialModePickerPresented: Bool
     private let testInitialSleepTimerDialogPresented: Bool
@@ -95,6 +99,13 @@ struct DriftlyRootView: View {
                         .padding(.top, 18)
                         .padding(.leading, 16)
                     }
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if DriftProfiling.profilingOverlayEnabled {
+                    profilingOverlay
+                        .padding(.top, profilingOverlayTopPadding)
+                        .padding(.trailing, 16)
                 }
             }
             // Global animation speed for all lamp views
@@ -201,14 +212,36 @@ struct DriftlyRootView: View {
                 )
 #endif
 
+                if DriftProfiling.profilingSessionEnabled {
+                    if profilingSessionStart == nil {
+                        profilingSessionStart = Date()
+                    }
+                    if DriftProfiling.profilingImmediateAutoDriftEnabled, !profilingImmediateAutoDriftTriggered {
+                        profilingImmediateAutoDriftTriggered = true
+                        coordinator.triggerImmediateAutoDriftIfPossible(engine: engine, scenePhase: scenePhase)
+                    }
+                }
+
                 // First-launch onboarding
-                if !didShowOnboarding && !isOnboardingPresented {
+                if !DriftProfiling.profilingQuickEntryEnabled, !didShowOnboarding && !isOnboardingPresented {
                     onboardingShouldOpenModePicker = true
                     isOnboardingPresented = true
                 }
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
+            let interval = DriftProfiling.begin(
+                DriftProfiling.Signpost.scenePhaseChange,
+                message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
+            )
+            defer {
+                DriftProfiling.end(
+                    DriftProfiling.Signpost.scenePhaseChange,
+                    interval,
+                    message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
+                )
+            }
+
             if newPhase == .background {
                 engine.flushPendingScenePersistence()
             }
@@ -233,6 +266,10 @@ struct DriftlyRootView: View {
 #endif
         .onChange(of: requestShowOnboarding) { _, newValue in
             guard newValue else { return }
+            if DriftProfiling.profilingQuickEntryEnabled {
+                requestShowOnboarding = false
+                return
+            }
             DispatchQueue.main.async {
                 onboardingShouldOpenModePicker = false
                 isOnboardingPresented = true
@@ -265,7 +302,12 @@ struct DriftlyRootView: View {
             }
             coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
-        .onChange(of: engine.currentMode) { _, _ in
+        .onChange(of: engine.currentMode) { oldMode, newMode in
+            guard oldMode != newMode else { return }
+            if DriftProfiling.profilingOverlayEnabled {
+                profilingPreviousMode = oldMode
+                profilingTransitionCount &+= 1
+            }
             if engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
@@ -773,6 +815,44 @@ struct DriftlyRootView: View {
         engine.currentMode.config.palette.primary
     }
 
+    private var profilingOverlayTopPadding: CGFloat {
+        coordinator.brightnessHUDVisible && !coordinator.sleepState.sleepTimerHasExpired ? 62 : 18
+    }
+
+    @ViewBuilder
+    private var profilingOverlay: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            profilingLine("Mode", engine.currentMode.rawValue)
+            profilingLine("Prev", profilingPreviousMode?.rawValue ?? "none")
+            profilingLine("Transitions", "\(profilingTransitionCount)")
+            HStack(spacing: 6) {
+                Text("Elapsed")
+                if let profilingSessionStart {
+                    Text(profilingSessionStart, style: .timer)
+                } else {
+                    Text("0:00")
+                }
+            }
+            profilingLine("AutoDrift", engine.autoDriftEnabled ? "enabled" : "disabled")
+            profilingLine("Operational", engine.isAutoDriftOperational ? "yes" : "no")
+        }
+        .font(.caption2.monospaced())
+        .foregroundStyle(.white.opacity(0.92))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func profilingLine(_ label: String, _ value: String) -> some View {
+        HStack(spacing: 6) {
+            Text(label)
+            Text(value)
+        }
+    }
+
 #if DEBUG
     private static func initialPresentationFlags(testOverrides: (modePicker: Bool, sleepDialog: Bool)?) -> (modePicker: Bool, sleepDialog: Bool) {
         let args = ProcessInfo.processInfo.arguments
@@ -784,6 +864,19 @@ struct DriftlyRootView: View {
         )
     }
 #endif
+
+    private func scenePhaseName(_ phase: ScenePhase) -> String {
+        switch phase {
+        case .active:
+            return "active"
+        case .inactive:
+            return "inactive"
+        case .background:
+            return "background"
+        @unknown default:
+            return "unknown"
+        }
+    }
 }
 
 // MARK: - tvOS Sleep Timer (Apple-style screens)

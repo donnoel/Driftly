@@ -524,16 +524,34 @@ final class DriftlyEngine: ObservableObject {
     }
 
     func nextAutoDriftMode(after current: DriftMode) -> DriftMode {
+        let interval = DriftProfiling.begin(
+            DriftProfiling.Signpost.autoDriftSelect,
+            message: "source=\(autoDriftSourceName(autoDriftSource)) current=\(current.rawValue) shuffle=\(autoDriftShuffleEnabled)"
+        )
+        var selectedMode = current
+        defer {
+            DriftProfiling.end(
+                DriftProfiling.Signpost.autoDriftSelect,
+                interval,
+                message: "source=\(autoDriftSourceName(autoDriftSource)) current=\(current.rawValue) selected=\(selectedMode.rawValue) shuffle=\(autoDriftShuffleEnabled)"
+            )
+        }
+
         if autoDriftShuffleEnabled {
             let pool = shuffleCandidatePool(current: current)
-            return nextShuffledMode(from: pool, current: current)
+            selectedMode = nextShuffledMode(from: pool, current: current)
+            return selectedMode
         }
 
         let modes = autoDriftCandidates(startingAt: current)
-        guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
+        guard let idx = modes.firstIndex(of: current) else {
+            selectedMode = modes.first ?? .nebulaLake
+            return selectedMode
+        }
 
         let nextIndex = modes.index(after: idx)
-        return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        selectedMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        return selectedMode
     }
 
     /// Returns the next auto-drift mode without advancing the shuffle queue.
@@ -631,6 +649,18 @@ final class DriftlyEngine: ObservableObject {
             }
             return currentMode
         }()
+        let previousMode = currentMode
+        let interval = DriftProfiling.begin(
+            DriftProfiling.Signpost.sceneApply,
+            message: "sceneID=\(scene.id.uuidString) from=\(previousMode.rawValue) target=\(targetMode.rawValue)"
+        )
+        defer {
+            DriftProfiling.end(
+                DriftProfiling.Signpost.sceneApply,
+                interval,
+                message: "sceneID=\(scene.id.uuidString) from=\(previousMode.rawValue) to=\(currentMode.rawValue)"
+            )
+        }
 
         applyingScene = true
         activeSceneID = scene.id
@@ -652,6 +682,11 @@ final class DriftlyEngine: ObservableObject {
         if setAutoDriftSource {
             autoDriftSource = .scene(scene.id)
         }
+
+        DriftProfiling.event(
+            DriftProfiling.Signpost.modeTransition,
+            message: "source=sceneActivation sceneID=\(scene.id.uuidString) from=\(previousMode.rawValue) to=\(currentMode.rawValue)"
+        )
     }
 
     private func scene(withID id: UUID, includeDeleted: Bool = false) -> DriftScene? {
@@ -1042,5 +1077,16 @@ final class DriftlyEngine: ObservableObject {
 
     static func clampBrightness(_ value: Double) -> Double {
         max(0.2, min(1.0, value))
+    }
+
+    private func autoDriftSourceName(_ source: AutoDriftSource) -> String {
+        switch source {
+        case .all:
+            return "all"
+        case .favorites:
+            return "favorites"
+        case .scene(let id):
+            return "scene:\(id.uuidString)"
+        }
     }
 }
