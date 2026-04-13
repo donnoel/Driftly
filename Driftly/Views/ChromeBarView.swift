@@ -6,6 +6,7 @@ enum ChromeFocusTarget: Hashable {
 
 struct ChromeBarView: View {
     let modeName: String
+    let modeDescriptor: String
     let chromeTint: Color
     let isTvOS: Bool
     let sleepTimerActive: Bool
@@ -25,12 +26,7 @@ struct ChromeBarView: View {
     var body: some View {
         HStack(spacing: 12) {
 #if os(tvOS)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(modeName)
-                    .accessibilityIdentifier("currentModeLabel")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-            }
+            nowPlayingLabelTvOS
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -44,22 +40,21 @@ struct ChromeBarView: View {
                     onModePicker()
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Text(modeName)
-                        .accessibilityIdentifier("currentModeLabel")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.primary)
-
+                HStack(spacing: 10) {
+                    nowPlayingLabelIOS
                     Image(systemName: "chevron.down")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.72))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(.thinMaterial, in: Capsule(style: .continuous))
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                        )
                 )
             }
             .buttonStyle(.plain)
@@ -91,6 +86,16 @@ struct ChromeBarView: View {
                 .applyFocus(focusedButton, target: .settings)
 #endif
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.black.opacity(isTvOS ? 0.14 : 0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
         }
         .padding(.vertical, chromePaddingV)
         .padding(.horizontal, chromePaddingH)
@@ -138,6 +143,38 @@ struct ChromeBarView: View {
             // Lift off the background (tuned per platform)
             .shadow(color: Color.black.opacity(isTvOS ? 0.22 : 0.16), radius: isTvOS ? 10 : 8, x: 0, y: isTvOS ? 8 : 6)
             .shadow(color: tint.opacity(isTvOS ? 0.12 : 0.08), radius: isTvOS ? 12 : 10, x: 0, y: 8)
+    }
+
+    private var nowPlayingLabelIOS: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Now Playing")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.white.opacity(0.64))
+            Text(modeName)
+                .accessibilityIdentifier("currentModeLabel")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white)
+            Text(modeDescriptor)
+                .font(.caption2)
+                .foregroundStyle(Color.white.opacity(0.68))
+                .lineLimit(1)
+        }
+    }
+
+    private var nowPlayingLabelTvOS: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Now Playing")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.white.opacity(0.62))
+            Text(modeName)
+                .accessibilityIdentifier("currentModeLabel")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.94))
+            Text(modeDescriptor)
+                .font(.caption2)
+                .foregroundStyle(Color.white.opacity(0.72))
+                .lineLimit(1)
+        }
     }
 }
 

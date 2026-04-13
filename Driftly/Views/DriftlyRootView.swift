@@ -566,6 +566,7 @@ struct DriftlyRootView: View {
 #if os(tvOS)
         ChromeBarView(
             modeName: engine.currentMode.displayName,
+            modeDescriptor: DriftModePresentationCatalog.descriptor(for: engine.currentMode),
             chromeTint: chromeTint,
             isTvOS: isTvOSDevice,
             sleepTimerActive: sleepTimerActive,
@@ -578,6 +579,7 @@ struct DriftlyRootView: View {
 #else
         ChromeBarView(
             modeName: engine.currentMode.displayName,
+            modeDescriptor: DriftModePresentationCatalog.descriptor(for: engine.currentMode),
             chromeTint: chromeTint,
             isTvOS: isTvOSDevice,
             sleepTimerActive: sleepTimerActive,
