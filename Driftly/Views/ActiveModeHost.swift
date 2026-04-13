@@ -25,6 +25,7 @@ struct ActiveModeHost: View {
                 ModeViewRegistry.view(for: previousMode)
                     .id(previousModeLayerID)
                     .opacity(1 - modeCrossfade)
+                    .environment(\.driftAnimationsPaused, true)
             }
 
             ModeViewRegistry.view(for: currentMode)
@@ -72,6 +73,9 @@ struct ActiveModeHost: View {
     }
 
     private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
+#if DEBUG
+        debugValidateSinglePreviousLayer(context: "begin.before")
+#endif
         if let interval = modeTransitionInterval {
             DriftProfiling.end(
                 DriftProfiling.Signpost.modeTransition,
@@ -99,6 +103,13 @@ struct ActiveModeHost: View {
         prewarmLayerID = nil
         warmedMode = nil
 
+#if DEBUG
+        debugTransitionEvent(
+            "start from=\(oldMode.rawValue) to=\(newMode.rawValue) previousTracked=\(previousMode?.rawValue ?? "none")"
+        )
+        debugValidateSinglePreviousLayer(context: "begin.afterAssign")
+#endif
+
         modeFadeCleanupWorkItem?.cancel()
 
         if reduceMotion {
@@ -106,6 +117,10 @@ struct ActiveModeHost: View {
             modeCrossfade = 1
             previousMode = nil
             previousModeLayerID = nil
+#if DEBUG
+            debugTransitionEvent("cleanup.reduceMotion from=\(oldMode.rawValue) to=\(newMode.rawValue)")
+            debugValidateSinglePreviousLayer(context: "cleanup.reduceMotion")
+#endif
             if let interval = modeTransitionInterval {
                 DriftProfiling.end(
                     DriftProfiling.Signpost.modeTransition,
@@ -126,9 +141,24 @@ struct ActiveModeHost: View {
         }
 
         let cleanup = DispatchWorkItem {
-            guard currentMode == newMode else { return }
+            guard previousMode == oldMode else {
+#if DEBUG
+                debugTransitionEvent(
+                    "cleanup.skip expected=\(oldMode.rawValue) actual=\(previousMode?.rawValue ?? "none") to=\(newMode.rawValue)"
+                )
+                debugValidateSinglePreviousLayer(context: "cleanup.skip")
+#endif
+                return
+            }
+#if DEBUG
+            debugValidateSinglePreviousLayer(context: "cleanup.before")
+#endif
             previousMode = nil
             previousModeLayerID = nil
+#if DEBUG
+            debugTransitionEvent("cleanup.complete from=\(oldMode.rawValue) to=\(newMode.rawValue)")
+            debugValidateSinglePreviousLayer(context: "cleanup.after")
+#endif
             if let interval = modeTransitionInterval {
                 DriftProfiling.end(
                     DriftProfiling.Signpost.modeTransition,
@@ -165,3 +195,26 @@ struct ActiveModeHost: View {
         )
     }
 }
+
+#if DEBUG
+private extension ActiveModeHost {
+    func debugValidateSinglePreviousLayer(context: StaticString) {
+        let hasMode = previousMode != nil
+        let hasLayerID = previousModeLayerID != nil
+        if hasMode != hasLayerID {
+            assertionFailure("ActiveModeHost previous-layer state mismatch at \(context)")
+            DriftProfiling.event(
+                DriftProfiling.Signpost.rendererReconfigure,
+                message: "debug invariantFailure context=\(context) hasMode=\(hasMode) hasLayerID=\(hasLayerID)"
+            )
+        }
+    }
+
+    func debugTransitionEvent(_ message: String) {
+        DriftProfiling.event(
+            DriftProfiling.Signpost.rendererReconfigure,
+            message: "debug transition \(message)"
+        )
+    }
+}
+#endif

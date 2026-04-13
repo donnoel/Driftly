@@ -70,9 +70,7 @@ struct DriftModePickerView: View {
                             isSelected: mode == engine.currentMode,
                             isFavorite: isFavorite,
                             onTap: {
-                                withAnimation(.easeInOut(duration: 0.45)) {
-                                    engine.currentMode = mode
-                                }
+                                engine.currentMode = mode
                                 dismiss()
                             },
                             favoriteAction: {
@@ -237,9 +235,7 @@ struct DriftModePickerView: View {
 
     private func tvModeRow(_ mode: DriftMode) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.45)) {
-                engine.currentMode = mode
-            }
+            engine.currentMode = mode
             dismiss()
         } label: {
             TVModeRowLabel(

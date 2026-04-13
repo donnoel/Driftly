@@ -343,9 +343,7 @@ final class DriftlyRootCoordinator: ObservableObject {
             message: "from=\(engine.currentMode.rawValue) to=\(nextMode.rawValue)"
         )
 
-        withAnimation(.easeInOut(duration: 0.9)) {
-            engine.currentMode = nextMode
-        }
+        engine.currentMode = nextMode
         DriftProfiling.event(
             DriftProfiling.Signpost.modeTransition,
             message: "source=autoDrift from=\(currentMode.rawValue) to=\(nextMode.rawValue)"

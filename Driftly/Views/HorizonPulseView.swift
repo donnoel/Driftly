@@ -20,7 +20,6 @@ struct HorizonPulseView: View {
                 endPoint: UnitPoint(x: 0.5, y: 1.0)
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 12), value: t)
         }
     }
 }
