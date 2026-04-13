@@ -101,21 +101,21 @@ struct ChromeBarView: View {
     }
 
     private var nowPlayingLabelIOS: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 1.5) {
             Text("Now Playing")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.white.opacity(0.58))
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(Color.white.opacity(0.50))
             Text(modeName)
                 .accessibilityIdentifier("currentModeLabel")
                 .font(.footnote.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.96))
             Text(modeDescriptor)
                 .font(.caption2)
-                .foregroundStyle(Color.white.opacity(0.66))
+                .foregroundStyle(Color.white.opacity(0.62))
                 .lineLimit(1)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
     }
 
     private var nowPlayingLabelIOSPad: some View {
@@ -169,11 +169,27 @@ struct ChromeBarView: View {
                 } else {
                     nowPlayingLabelIOS
                 }
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.white.opacity(0.72))
+                if isPadLayout {
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.72))
+                } else {
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.70))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.white.opacity(0.06))
+                                .overlay(
+                                    Capsule(style: .continuous)
+                                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                                )
+                        )
+                }
             }
-            .padding(.horizontal, isPadLayout ? 4 : 2)
+            .padding(.horizontal, isPadLayout ? 4 : 1)
             .padding(.vertical, isPadLayout ? 0 : 1)
         }
         .buttonStyle(.plain)
@@ -198,19 +214,19 @@ struct ChromeBarView: View {
     }
 
     private var iPhoneLayout: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             modePickerButtonIOS
 
             Rectangle()
-                .fill(Color.white.opacity(0.09))
-                .frame(width: 1, height: 24)
+                .fill(Color.white.opacity(0.07))
+                .frame(width: 1, height: 22)
 
             Spacer(minLength: 8)
 
             actionButtonsIOS
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background(iPhoneShellBackground)
         .padding(.vertical, 1)
     }
