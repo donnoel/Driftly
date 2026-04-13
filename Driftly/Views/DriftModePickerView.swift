@@ -14,6 +14,9 @@ struct DriftModePickerView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 #if os(tvOS)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+#endif
+#if os(tvOS)
     @FocusState private var focusedMode: DriftMode?
 #endif
 
@@ -33,11 +36,11 @@ struct DriftModePickerView: View {
         if horizontalSizeClass == .regular {
             switch section {
             case .signature:
-                return 278
+                return 344
             case .secondary:
-                return 258
+                return 320
             case .labs:
-                return 238
+                return 296
             }
         }
 
@@ -55,11 +58,11 @@ struct DriftModePickerView: View {
         if horizontalSizeClass == .regular {
             switch section {
             case .signature:
-                return 170
+                return 212
             case .secondary:
-                return 162
+                return 204
             case .labs:
-                return 154
+                return 196
             }
         }
 
@@ -305,7 +308,7 @@ struct DriftModePickerView: View {
 
     private func modeRail(for group: ModeBrowseGroup) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 12) {
+            LazyHStack(spacing: horizontalSizeClass == .regular ? 16 : 12) {
                 ForEach(group.modes) { presentation in
                     modeCard(for: presentation)
                         .frame(
@@ -506,9 +509,11 @@ struct DriftModePickerView: View {
                 isFocused: isFocused
             )
             .frame(width: width, height: 232)
-            .scaleEffect(isFocused ? 1.03 : 1.0)
+            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.045) : 1.0)
+            .brightness(isFocused ? 0.05 : 0.0)
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
         .focused($focusedMode, equals: mode)
         .accessibilityIdentifier("mode-\(mode.rawValue)")
         .contextMenu {
@@ -624,7 +629,7 @@ private struct ModeBrowserCard: View {
 
     private var borderColor: Color {
         if isFocused {
-            return .white
+            return palette.primary.opacity(0.86)
         }
         if isSelected {
             return Color.white.opacity(0.84)
@@ -634,7 +639,7 @@ private struct ModeBrowserCard: View {
 
     private var borderWidth: CGFloat {
         if isFocused {
-            return 2.4
+            return 2.8
         }
         if isSelected {
             return 1.7
@@ -644,7 +649,7 @@ private struct ModeBrowserCard: View {
 
     private var shadowColor: Color {
         if isFocused {
-            return palette.primary.opacity(0.34)
+            return palette.primary.opacity(0.52)
         }
         return palette.primary.opacity(section == .labs ? 0.12 : 0.20)
     }

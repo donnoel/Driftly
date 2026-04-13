@@ -18,22 +18,18 @@ struct ChromeBarView: View {
     var focusedButton: FocusState<ChromeFocusTarget?>.Binding?
     #endif
 
-    private var chromeOpacity: Double { isTvOS ? 0.45 : 0.38 }
-    private var chromeCornerRadius: CGFloat { isTvOS ? 18 : 14 }
-    private var chromePaddingV: CGFloat { isTvOS ? 8 : 6 }
-    private var chromePaddingH: CGFloat { isTvOS ? 14 : 10 }
-
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: isTvOS ? 16 : 12) {
 #if os(tvOS)
-            nowPlayingLabelTvOS
-            .contentShape(Rectangle())
-            .onTapGesture {
+            Button {
                 withAnimation(.easeInOut(duration: 0.35)) {
                     onNextMode()
                 }
                 DriftHaptics.modeChanged()
+            } label: {
+                nowPlayingLabelTvOS
             }
+            .buttonStyle(.plain)
 #else
             Button {
                 withAnimation(.easeInOut(duration: 0.35)) {
@@ -48,14 +44,6 @@ struct ChromeBarView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
-                .background(
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                        )
-                )
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("modePickerButton")
@@ -86,63 +74,35 @@ struct ChromeBarView: View {
                 .applyFocus(focusedButton, target: .settings)
 #endif
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, isTvOS ? 10 : 6)
             .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.black.opacity(isTvOS ? 0.14 : 0.12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-            )
+            .background(actionsBackground)
         }
-        .padding(.vertical, chromePaddingV)
-        .padding(.horizontal, chromePaddingH)
-        .background(chromeBackground)
-        .opacity(chromeOpacity)
+        .padding(.vertical, isTvOS ? 2 : 1)
     }
 
-    @ViewBuilder
-    private var chromeBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: chromeCornerRadius, style: .continuous)
-        let tint = chromeTint
-
-        shape
+    private var nowPlayingBackground: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(.ultraThinMaterial)
-            // Soft, mode-tinted base wash
-            .overlay(shape.fill(tint.opacity(isTvOS ? 0.07 : 0.06)))
-            // Specular highlight (top edge) + gentle falloff
             .overlay(
-                shape
-                    .fill(
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color.white.opacity(isTvOS ? 0.16 : 0.12), location: 0.0),
-                                .init(color: Color.white.opacity(0.04), location: 0.22),
-                                .init(color: Color.clear, location: 0.75)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .blendMode(.screen)
-                    .allowsHitTesting(false)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(chromeTint.opacity(isTvOS ? 0.07 : 0.05))
             )
-            // Crisp glass edge + subtle inner depth
-            .overlay(shape.stroke(Color.white.opacity(isTvOS ? 0.14 : 0.10), lineWidth: 1).allowsHitTesting(false))
-            .overlay(shape.stroke(tint.opacity(isTvOS ? 0.24 : 0.20), lineWidth: 1).allowsHitTesting(false))
             .overlay(
-                shape
-                    .stroke(Color.black.opacity(0.18), lineWidth: 1)
-                    .blur(radius: 0.8)
-                    .offset(y: 1)
-                    .mask(shape)
-                    .allowsHitTesting(false)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(isTvOS ? 0.16 : 0.12), lineWidth: 1)
             )
-            // Lift off the background (tuned per platform)
-            .shadow(color: Color.black.opacity(isTvOS ? 0.22 : 0.16), radius: isTvOS ? 10 : 8, x: 0, y: isTvOS ? 8 : 6)
-            .shadow(color: tint.opacity(isTvOS ? 0.12 : 0.08), radius: isTvOS ? 12 : 10, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(isTvOS ? 0.22 : 0.16), radius: isTvOS ? 10 : 7, x: 0, y: isTvOS ? 8 : 5)
+    }
+
+    private var actionsBackground: some View {
+        RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(isTvOS ? 0.82 : 0.72))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(Color.white.opacity(isTvOS ? 0.14 : 0.10), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(isTvOS ? 0.20 : 0.14), radius: isTvOS ? 9 : 6, x: 0, y: isTvOS ? 7 : 5)
     }
 
     private var nowPlayingLabelIOS: some View {
@@ -159,6 +119,9 @@ struct ChromeBarView: View {
                 .foregroundStyle(Color.white.opacity(0.68))
                 .lineLimit(1)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(nowPlayingBackground)
     }
 
     private var nowPlayingLabelTvOS: some View {
@@ -175,6 +138,9 @@ struct ChromeBarView: View {
                 .foregroundStyle(Color.white.opacity(0.72))
                 .lineLimit(1)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(nowPlayingBackground)
     }
 }
 
