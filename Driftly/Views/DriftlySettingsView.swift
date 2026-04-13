@@ -8,7 +8,6 @@ struct DriftlySettingsView: View {
 
 #if os(tvOS)
     private enum TVFocus: Hashable {
-        case respectReduceMotion
         case labsEnabled
         case autoDriftEnabled
         case autoDriftShuffle
@@ -118,91 +117,95 @@ struct DriftlySettingsView: View {
 #if !os(tvOS)
     private var iosSettings: some View {
         NavigationStack {
-            Form {
-                Section("Animation") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Animation Speed")
-                            .font(.subheadline.weight(.semibold))
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.07, blue: 0.14),
+                        Color(red: 0.09, green: 0.08, blue: 0.16)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-                        HStack(spacing: 12) {
-                            Text("Slower")
-                                .font(.caption2)
+                Form {
+                    Section("Animation") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Animation Speed")
+                                .font(.subheadline.weight(.semibold))
+
+                            HStack(spacing: 12) {
+                                Text("Slower")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+
+                                Slider(value: $engine.animationSpeed, in: 0.5...1.8, step: 0.05)
+                                    .accessibilityIdentifier("animationSpeedSlider")
+                                    .accessibilityLabel("Animation Speed")
+
+                                Text("Faster")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Text(speedLabel)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-
-                            Slider(value: $engine.animationSpeed, in: 0.5...1.8, step: 0.05)
-                                .accessibilityIdentifier("animationSpeedSlider")
-                                .accessibilityLabel("Animation Speed")
-
-                            Text("Faster")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .accessibilityIdentifier("animationSpeedLabel")
+                                .accessibilityValue(speedLabel)
                         }
 
-                        Text(speedLabel)
+                    }
+
+                    Section {
+                        Toggle("Enable More Modes", isOn: $engine.labsFeaturesEnabled)
+
+                        if engine.labsFeaturesEnabled {
+                            Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                            Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+
+                            Picker("Drift From", selection: $engine.autoDriftSource) {
+                                Text("All Modes").tag(AutoDriftSource.all)
+                                Text("Favorites").tag(AutoDriftSource.favorites)
+                                if let sceneID = engine.activeSceneID,
+                                   let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                                    Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                                }
+                            }
+
+                            Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                                ForEach(autoDriftOptions, id: \.self) { minutes in
+                                    Text("\(minutes) minutes").tag(minutes)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("More Modes")
+                    } footer: {
+                        Text("Additional modes may affect performance or behavior.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("animationSpeedLabel")
-                            .accessibilityValue(speedLabel)
                     }
 
-                    Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
-                        .accessibilityIdentifier("respectReduceMotionToggle")
-
-                    if let notice = reduceMotionNotice {
-                        Text(notice)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("reduceMotionNotice")
+                    Section("Screen") {
+                        Toggle("Stay Awake", isOn: $engine.preventAutoLock)
+                        Toggle("Show Clock", isOn: $engine.clockEnabled)
                     }
-                }
 
-                Section {
-                    Toggle("Enable Labs Features", isOn: $engine.labsFeaturesEnabled)
-
-                    if engine.labsFeaturesEnabled {
-                        Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                        Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-
-                        Picker("Drift From", selection: $engine.autoDriftSource) {
-                            Text("All Modes").tag(AutoDriftSource.all)
-                            Text("Favorites").tag(AutoDriftSource.favorites)
-                            if let sceneID = engine.activeSceneID,
-                               let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                                Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
-                            }
+                    Section("About") {
+                        LabeledContent("Version", value: versionString)
+                    }
+                    Section("Help") {
+                        Button {
+                            requestShowOnboarding = true
+                            dismiss()
+                        } label: {
+                            Label("Show How To", systemImage: "questionmark.circle")
                         }
-
-                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                            ForEach(autoDriftOptions, id: \.self) { minutes in
-                                Text("\(minutes) minutes").tag(minutes)
-                            }
-                        }
+                        .accessibilityIdentifier("showHowToButton")
                     }
-                } header: {
-                    Text("Labs")
-                } footer: {
-                    Text("Labs features may affect performance or behavior.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-
-                Section("Screen") {
-                    Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                    Toggle("Show Clock", isOn: $engine.clockEnabled)
-                }
-
-                Section("About") {
-                    LabeledContent("Version", value: versionString)
-                }
-                Section("Help") {
-                    Button {
-                        requestShowOnboarding = true
-                        dismiss()
-                    } label: {
-                        Label("Show How To", systemImage: "questionmark.circle")
-                    }
-                    .accessibilityIdentifier("showHowToButton")
-                }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -244,26 +247,11 @@ struct DriftlySettingsView: View {
                         }
                         .padding(.vertical, 8)
 
-                        TVBoolRow(
-                            title: "Use System Reduce Motion",
-                            isOn: $engine.respectSystemReduceMotion,
-                            id: .respectReduceMotion,
-                            focus: $tvFocus,
-                            accessibilityID: "respectReduceMotionToggle"
-                        )
-
-                        if let notice = reduceMotionNotice {
-                            Text(notice)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .accessibilityIdentifier("reduceMotionNotice")
-                                .focusable(false)
-                        }
                     }
 
                     Section {
                         TVBoolRow(
-                            title: "Enable Labs Features",
+                            title: "Enable More Modes",
                             isOn: $engine.labsFeaturesEnabled,
                             id: .labsEnabled,
                             focus: $tvFocus
@@ -299,9 +287,9 @@ struct DriftlySettingsView: View {
                             }
                         }
                     } header: {
-                        Text("Labs")
+                        Text("More Modes")
                     } footer: {
-                        Text("Labs features may affect performance or behavior.")
+                        Text("Additional modes may affect performance or behavior.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .focusable(false)
@@ -361,15 +349,6 @@ struct DriftlySettingsView: View {
 
     private var speedLabel: String {
         speedDescriptor(for: effectiveAnimationSpeed)
-    }
-
-    private var reduceMotionNotice: String? {
-        guard reduceMotion else { return nil }
-        if engine.respectSystemReduceMotion {
-            return "System Reduce Motion is on; animations are softened."
-        } else {
-            return "System Reduce Motion is on, but Driftly will keep full animation speed."
-        }
     }
 
     private var effectiveAnimationSpeed: Double {

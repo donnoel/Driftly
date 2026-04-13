@@ -6,46 +6,84 @@ import UIKit
 struct DriftModePickerView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
-    @State private var editMode: EditMode = .inactive
     @State private var isSceneEditorPresented = false
     @State private var sceneEditorSelection: Set<DriftMode> = []
     @State private var sceneEditorName: String = ""
     @State private var editingSceneID: UUID?
+#if !os(tvOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
 #if os(tvOS)
-    @State private var showFavoritesOnly: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+#endif
+#if os(tvOS)
     @FocusState private var focusedMode: DriftMode?
 #endif
 
-    #if !os(tvOS)
-    @ViewBuilder
-    private var scenesSection: some View {
-        Section("Scenes") {
-            if engine.availableScenes.isEmpty {
-                Text("Capture a set of modes and settings as a Scene.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 4)
-            } else {
-                ForEach(engine.availableScenes) { scene in
-                    SceneRow(
-                        scene: scene,
-                        isActive: engine.activeSceneID == scene.id,
-                        onActivate: { engine.activateScene(id: scene.id) },
-                        onEdit: { beginEditing(scene) },
-                        onDelete: { engine.deleteScene(id: scene.id) }
-                    )
-                }
-            }
-
-            Button {
-                beginNewScene()
-            } label: {
-                Label("New Scene", systemImage: "plus")
-            }
-            .accessibilityIdentifier("newSceneButton")
+    private var modeGroups: [ModeBrowseGroup] {
+        DriftModeBrowseSection.allCases.compactMap { section in
+            let modes = DriftModePresentationCatalog.presentations(
+                from: engine.modePickerModes,
+                section: section
+            )
+            guard !modes.isEmpty else { return nil }
+            return ModeBrowseGroup(section: section, modes: modes)
         }
     }
-    #endif
+
+#if !os(tvOS)
+    private func modeCardWidth(for section: DriftModeBrowseSection) -> CGFloat {
+        if horizontalSizeClass == .regular {
+            switch section {
+            case .signature:
+                return 344
+            case .secondary:
+                return 320
+            case .labs:
+                return 296
+            }
+        }
+
+        switch section {
+        case .signature:
+            return 212
+        case .secondary:
+            return 196
+        case .labs:
+            return 182
+        }
+    }
+
+    private func modeCardHeight(for section: DriftModeBrowseSection) -> CGFloat {
+        if horizontalSizeClass == .regular {
+            switch section {
+            case .signature:
+                return 212
+            case .secondary:
+                return 204
+            case .labs:
+                return 196
+            }
+        }
+
+        switch section {
+        case .signature:
+            return 148
+        case .secondary:
+            return 142
+        case .labs:
+            return 136
+        }
+    }
+
+    private var sceneCardWidth: CGFloat {
+        horizontalSizeClass == .regular ? 264 : 214
+    }
+
+    private var sceneCardHeight: CGFloat {
+        horizontalSizeClass == .regular ? 156 : 146
+    }
+#endif
 
     var body: some View {
 #if os(tvOS)
@@ -55,57 +93,146 @@ struct DriftModePickerView: View {
 #endif
     }
 
-    // MARK: - iOS (unchanged behavior)
 #if !os(tvOS)
+    @ViewBuilder
+    private var scenesSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 10) {
+                scenesHeader
+
+                if engine.availableScenes.isEmpty {
+                    sceneEmptyCard
+                        .frame(maxWidth: .infinity, minHeight: 106)
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(engine.availableScenes) { scene in
+                            sceneCard(for: scene)
+                                .frame(width: sceneCardWidth, height: sceneCardHeight)
+                        }
+                        newSceneCard
+                            .frame(width: sceneCardWidth, height: sceneCardHeight)
+                    }
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 1)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .listRowInsets(.init(top: 2, leading: 16, bottom: 6, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    private var scenesHeader: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Scenes")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+            Text("Save ambient rituals for quick recall.")
+                .font(.caption)
+                .foregroundStyle(Color.white.opacity(0.68))
+        }
+    }
+
+    private var sceneEmptyCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("No Scenes Yet", systemImage: "sparkles.rectangle.stack")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+            Text("Create a scene to capture your current mood, favorites, and drift setup.")
+                .font(.caption)
+                .foregroundStyle(Color.white.opacity(0.74))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                )
+        )
+    }
+
+    private var newSceneCard: some View {
+        Button {
+            beginNewScene()
+        } label: {
+            SceneCreateCard()
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("newSceneButton")
+    }
+
+    private func sceneCard(for scene: DriftScene) -> some View {
+        let isActive = engine.activeSceneID == scene.id
+
+        return Button {
+            engine.activateScene(id: scene.id)
+        } label: {
+            SceneBrowseCard(
+                name: scene.name,
+                modeCount: scene.modeIDs.count,
+                isActive: isActive
+            )
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Menu {
+                Button {
+                    beginEditing(scene)
+                } label: {
+                    Label("Edit Scene", systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    engine.deleteScene(id: scene.id)
+                } label: {
+                    Label("Delete Scene", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.88))
+                    .padding(8)
+                    .background(
+                        Circle()
+                            .fill(Color.black.opacity(0.38))
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(10)
+            .accessibilityLabel("Scene options")
+        }
+    }
+
     private var iosPicker: some View {
         NavigationStack {
-            List {
-                scenesSection
+            ZStack {
+                pickerBackdrop
 
-                Section {
-                    ForEach(engine.modePickerModes) { mode in
-                        let isFavorite = engine.favoriteModes.contains(mode)
-                        ModeRow(
-                            mode: mode,
-                            isSelected: mode == engine.currentMode,
-                            isFavorite: isFavorite,
-                            onTap: {
-                                engine.currentMode = mode
-                                dismiss()
-                            },
-                            favoriteAction: {
-                                engine.toggleFavorite(mode)
-                            }
-                        )
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(.init(top: 8, leading: 20, bottom: 8, trailing: 20))
-                        .listRowBackground(Color.black)
-                    }
-                    .onMove { indices, newOffset in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            engine.reorderModes(fromOffsets: indices, toOffset: newOffset)
+                List {
+                    scenesSection
+
+                    ForEach(modeGroups) { group in
+                        Section {
+                            modeRail(for: group)
+                        } header: {
+                            sectionHeader(for: group.section)
                         }
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .accessibilityIdentifier("modePickerSheet")
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .accessibilityIdentifier("modePickerSheet")
-            .background(Color.black.ignoresSafeArea())
             .navigationTitle("Select Mode")
             .navigationBarTitleDisplayMode(.inline)
-            .environment(\.editMode, $editMode)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    EditButton()
-                        .accessibilityIdentifier("modePickerEditButton")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: AppShare.appStoreURL) {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .accessibilityIdentifier("modePickerShareButton")
-                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
@@ -140,161 +267,266 @@ struct DriftModePickerView: View {
             .presentationDragIndicator(.visible)
         }
     }
+
+    private var pickerBackdrop: some View {
+        ZStack {
+            Color.black
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.04),
+                    Color.clear,
+                    Color.white.opacity(0.02)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blur(radius: 22)
+            Rectangle()
+                .fill(.ultraThinMaterial.opacity(0.08))
+        }
+        .ignoresSafeArea()
+    }
+
+    private func sectionHeader(for section: DriftModeBrowseSection) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(section.title)
+                .font(section == .signature ? .title3.weight(.bold) : .title3.weight(.semibold))
+                .foregroundStyle(section == .labs ? Color.white.opacity(0.64) : Color.white)
+            Text(section.subtitle)
+                .font(.caption)
+                .foregroundStyle(section == .labs ? Color.white.opacity(0.46) : Color.white.opacity(0.68))
+        }
+        .padding(.top, section == .signature ? 8 : 4)
+        .textCase(nil)
+    }
+
+    private func modeRail(for group: ModeBrowseGroup) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: horizontalSizeClass == .regular ? 16 : 12) {
+                ForEach(group.modes) { presentation in
+                    modeCard(for: presentation)
+                        .frame(
+                            width: modeCardWidth(for: presentation.section),
+                            height: modeCardHeight(for: presentation.section)
+                        )
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 1)
+        }
+        .listRowInsets(.init(top: 2, leading: 16, bottom: 14, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    private func modeCard(for presentation: DriftModePresentation) -> some View {
+        let mode = presentation.mode
+        let isFavorite = engine.favoriteModes.contains(mode)
+
+        return Button {
+            selectMode(mode)
+        } label: {
+            ModeBrowserCard(
+                modeName: mode.displayName,
+                descriptor: presentation.descriptor,
+                palette: mode.config.palette,
+                section: presentation.section,
+                isSelected: mode == engine.currentMode,
+                isFavorite: isFavorite,
+                isFocused: false
+            )
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            favoriteBadgeButton(mode: mode, isFavorite: isFavorite)
+        }
+        .accessibilityIdentifier("modeRow-\(mode.rawValue)")
+    }
+
+    private func favoriteBadgeButton(mode: DriftMode, isFavorite: Bool) -> some View {
+        Button {
+            engine.toggleFavorite(mode)
+        } label: {
+            Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(isFavorite ? Color.yellow : Color.white.opacity(0.84))
+                .padding(8)
+                .background(
+                    Circle()
+                        .fill(Color.black.opacity(0.42))
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(10)
+        .accessibilityIdentifier("favorite-\(mode.rawValue)")
+        .accessibilityLabel(isFavorite ? "Unfavorite" : "Favorite")
+    }
 #endif
 
 #if os(tvOS)
-    // MARK: - tvOS (Apple-style screen)
-
     private var tvWindow: some View {
-        let favorites = engine.modePickerModes.filter { engine.favoriteModes.contains($0) }
-        let nonFavorites = engine.modePickerModes.filter { !engine.favoriteModes.contains($0) }
-
-        return ZStack {
+        ZStack {
             Color.black.ignoresSafeArea()
 
             NavigationStack {
-                List {
-                    if !engine.availableScenes.isEmpty {
-                        Section("Scenes") {
-                            ForEach(engine.availableScenes) { scene in
-                                Button {
-                                    engine.activateScene(id: scene.id)
-                                } label: {
-                                    HStack {
-                                        Text(scene.name)
-                                            .font(.title3.weight(.semibold))
-                                        Spacer()
-                                        if engine.activeSceneID == scene.id {
-                                            Image(systemName: "checkmark")
-                                                .font(.title3.weight(.semibold))
-                                        }
-                                    }
-                                    .padding(.vertical, 6)
-                                }
-                            }
-                        }
-                    }
-
-                    // Filter row
-                    Section {
-                        Picker("Filter", selection: $showFavoritesOnly) {
-                            Text("All").tag(false)
-                            Text("Favorites").tag(true)
-                        }
-                        .pickerStyle(.segmented)
-                        .padding(.vertical, 6)
-                    }
-
-                    if showFavoritesOnly {
-                        Section {
-                            ForEach(favorites) { mode in
-                                tvModeRow(mode)
-                            }
-                        } header: {
-                            Text("Favorites")
-                        } footer: {
-                            Text("Tip: Press Play/Pause to add or remove a favorite.")
-                        }
-                    } else {
-                        if !favorites.isEmpty {
-                            Section {
-                                ForEach(favorites) { mode in
-                                    tvModeRow(mode)
-                                }
-                            } header: {
-                                Text("Favorites")
-                            } footer: {
-                                Text("Tip: Press Play/Pause to add or remove a favorite.")
-                            }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 40) {
+                        if !engine.availableScenes.isEmpty {
+                            tvScenesSection
                         }
 
-                        Section {
-                            ForEach(nonFavorites) { mode in
-                                tvModeRow(mode)
-                            }
-                        } header: {
-                            Text("All Modes")
+                        ForEach(modeGroups) { group in
+                            tvModeRail(for: group)
                         }
+
+                        Text("Tip: Press Play/Pause to add or remove a favorite.")
+                            .font(.footnote)
+                            .foregroundStyle(Color.white.opacity(0.7))
+                            .padding(.horizontal, 64)
                     }
+                    .padding(.vertical, 44)
                 }
-                .listStyle(.plain)
-                .background(Color.black)
-                .environment(\.defaultMinListRowHeight, 72)
                 .navigationTitle("Select Mode")
             }
         }
+        .onAppear {
+            if focusedMode == nil {
+                focusedMode = modeGroups
+                    .first(where: { $0.section == .signature })?
+                    .modes
+                    .first?
+                    .mode
+                    ?? modeGroups.first?.modes.first?.mode
+            }
+        }
         .onPlayPauseCommand {
-            // tvOS-native secondary action: toggle favorite on the currently focused row.
             if let focusedMode {
                 engine.toggleFavorite(focusedMode)
             }
         }
-        .onExitCommand { dismiss() }
+        .onExitCommand {
+            dismiss()
+        }
         .preferredColorScheme(.dark)
     }
 
-    private func tvModeRow(_ mode: DriftMode) -> some View {
-        Button {
-            engine.currentMode = mode
-            dismiss()
-        } label: {
-            TVModeRowLabel(
-                title: mode.displayName,
-                isFavorite: engine.favoriteModes.contains(mode),
-                isSelected: mode == engine.currentMode,
-                isFocused: focusedMode == mode
-            )
+    private var tvScenesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Scenes")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                Text("Saved ambient rituals.")
+                    .font(.caption)
+                    .foregroundStyle(Color.white.opacity(0.68))
+            }
+            .padding(.horizontal, 64)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 18) {
+                    ForEach(engine.availableScenes) { scene in
+                        Button {
+                            engine.activateScene(id: scene.id)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(scene.name)
+                                    .font(.headline)
+                                if engine.activeSceneID == scene.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.headline)
+                                }
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(Color.white.opacity(engine.activeSceneID == scene.id ? 0.18 : 0.10))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 64)
+            }
         }
+    }
+
+    private func tvModeRail(for group: ModeBrowseGroup) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(group.section.title)
+                    .font(group.section == .signature ? .title2.weight(.bold) : .title3.weight(.semibold))
+                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.68) : Color.white)
+                Text(group.section.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.44) : Color.white.opacity(0.68))
+            }
+            .padding(.horizontal, 64)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 20) {
+                    ForEach(group.modes) { presentation in
+                        tvModeCard(for: presentation)
+                    }
+                }
+                .padding(.horizontal, 64)
+                .padding(.vertical, 6)
+            }
+        }
+    }
+
+    private func tvModeCard(for presentation: DriftModePresentation) -> some View {
+        let mode = presentation.mode
+        let isFocused = focusedMode == mode
+        let isFavorite = engine.favoriteModes.contains(mode)
+
+        let width: CGFloat
+        switch presentation.section {
+        case .signature:
+            width = 430
+        case .secondary:
+            width = 390
+        case .labs:
+            width = 360
+        }
+
+        return Button {
+            selectMode(mode)
+        } label: {
+            ModeBrowserCard(
+                modeName: mode.displayName,
+                descriptor: presentation.descriptor,
+                palette: mode.config.palette,
+                section: presentation.section,
+                isSelected: mode == engine.currentMode,
+                isFavorite: isFavorite,
+                isFocused: isFocused
+            )
+            .frame(width: width, height: 232)
+            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.045) : 1.0)
+            .brightness(isFocused ? 0.05 : 0.0)
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
         .focused($focusedMode, equals: mode)
-        // Keep favorites available without adding a second focusable control in the row.
+        .accessibilityIdentifier("mode-\(mode.rawValue)")
         .contextMenu {
             Button {
                 engine.toggleFavorite(mode)
             } label: {
                 Label(
-                    engine.favoriteModes.contains(mode) ? "Remove Favorite" : "Add Favorite",
-                    systemImage: engine.favoriteModes.contains(mode) ? "star.slash" : "star"
+                    isFavorite ? "Remove Favorite" : "Add Favorite",
+                    systemImage: isFavorite ? "star.slash" : "star"
                 )
             }
         }
-        .accessibilityIdentifier("mode-\(mode.rawValue)")
     }
-
-    private struct TVModeRowLabel: View {
-        let title: String
-        let isFavorite: Bool
-        let isSelected: Bool
-        let isFocused: Bool
-
-        var body: some View {
-            HStack(spacing: 14) {
-                Text(title)
-                    .font(.title3.weight(.semibold))
-                    // Critical: invert under the focus pill.
-                    .foregroundStyle(isFocused ? Color.black : Color.white)
-
-                Spacer()
-
-                if isFavorite {
-                    Image(systemName: "star.fill")
-                        .font(.title3.weight(.semibold))
-                        // Yellow is fine when unfocused; use black on the white focus pill.
-                        .foregroundStyle(isFocused ? Color.black : Color.yellow.opacity(0.92))
-                        .accessibilityLabel("Favorite")
-                }
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(isFocused ? Color.black : Color.white.opacity(0.9))
-                        .accessibilityLabel("Selected")
-                }
-            }
-            .padding(.vertical, 8)
-        }
-    }
-
 #endif
+
+    private func selectMode(_ mode: DriftMode) {
+        engine.currentMode = mode
+        dismiss()
+    }
 
     private func beginNewScene() {
         sceneEditorName = "Scene \(engine.availableScenes.count + 1)"
@@ -311,7 +543,112 @@ struct DriftModePickerView: View {
     }
 }
 
-// MARK: - Existing row view (as in your codebase)
+private struct ModeBrowseGroup: Identifiable {
+    let section: DriftModeBrowseSection
+    let modes: [DriftModePresentation]
+
+    var id: DriftModeBrowseSection { section }
+}
+
+private struct ModeBrowserCard: View {
+    let modeName: String
+    let descriptor: String
+    let palette: DriftPalette
+    let section: DriftModeBrowseSection
+    let isSelected: Bool
+    let isFavorite: Bool
+    let isFocused: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        palette.backgroundTop.opacity(section == .labs ? 0.70 : 0.90),
+                        palette.backgroundBottom.opacity(0.96)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                palette.primary.opacity(section == .signature ? 0.38 : 0.28),
+                                palette.secondary.opacity(section == .labs ? 0.18 : 0.24),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .blendMode(.screen)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: borderWidth)
+            }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(modeName)
+                        .font(section == .signature ? .headline.weight(.bold) : .headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text(descriptor)
+                        .font(.caption)
+                        .foregroundStyle(section == .labs ? Color.white.opacity(0.62) : Color.white.opacity(0.78))
+                        .lineLimit(2)
+
+                    HStack(spacing: 8) {
+                        if isSelected {
+                            Label("Now Playing", systemImage: "checkmark.circle.fill")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.white)
+                        }
+                        if isFavorite {
+                            Label("Favorite", systemImage: "star.fill")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.yellow.opacity(0.95))
+                        }
+                    }
+                }
+                .padding(14)
+            }
+            .shadow(color: shadowColor, radius: 14, x: 0, y: 8)
+            .opacity(section == .labs ? 0.74 : 1.0)
+    }
+
+    private var borderColor: Color {
+        if isFocused {
+            return palette.primary.opacity(0.86)
+        }
+        if isSelected {
+            return Color.white.opacity(0.84)
+        }
+        return Color.white.opacity(section == .labs ? 0.18 : 0.28)
+    }
+
+    private var borderWidth: CGFloat {
+        if isFocused {
+            return 2.8
+        }
+        if isSelected {
+            return 1.7
+        }
+        return 1.0
+    }
+
+    private var shadowColor: Color {
+        if isFocused {
+            return palette.primary.opacity(0.52)
+        }
+        return palette.primary.opacity(section == .labs ? 0.12 : 0.20)
+    }
+}
+
 #if !os(tvOS)
 private struct SceneEditorView: View {
     @Binding var name: String
@@ -362,90 +699,91 @@ private struct SceneEditorView: View {
     }
 }
 
-private struct SceneRow: View {
-    let scene: DriftScene
+private struct SceneBrowseCard: View {
+    let name: String
+    let modeCount: Int
     let isActive: Bool
-    let onActivate: () -> Void
-    let onEdit: () -> Void
-    let onDelete: () -> Void
 
     var body: some View {
-        Button {
-            onActivate()
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(scene.name)
-                        .font(.headline)
-                    Text("\(scene.modeIDs.count) modes")
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(isActive ? 0.24 : 0.14),
+                        Color.white.opacity(0.06)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.white.opacity(isActive ? 0.46 : 0.22), lineWidth: isActive ? 1.6 : 1)
+            }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(name)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("\(modeCount) \(modeCount == 1 ? "mode" : "modes")")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.white.opacity(0.74))
+
+                    if isActive {
+                        Label("Active", systemImage: "checkmark.circle.fill")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.94))
+                    }
                 }
-                Spacer()
-                if isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                }
+                .padding(14)
             }
-            .padding(.vertical, 4)
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            Button {
-                onEdit()
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-        }
+            .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 6)
     }
 }
 
-private struct ModeRow: View {
-    let mode: DriftMode
-    let isSelected: Bool
-    let isFavorite: Bool
-    let onTap: () -> Void
-    let favoriteAction: () -> Void
-
+private struct SceneCreateCard: View {
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(mode.displayName)
-                    .font(.headline)
-                    .foregroundStyle(.white)
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.16),
+                        Color.white.opacity(0.08),
+                        Color.white.opacity(0.05)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.26), lineWidth: 1.1)
             }
-
-            Spacer()
-
-            Button(action: favoriteAction) {
-                Image(systemName: isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isFavorite ? .yellow : .white.opacity(0.6))
+            .overlay(alignment: .topTrailing) {
+                Circle()
+                    .fill(Color.white.opacity(0.20))
+                    .frame(width: 54, height: 54)
+                    .blur(radius: 14)
+                    .padding(10)
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(isFavorite ? "Unfavorite" : "Favorite")
-            .accessibilityIdentifier("favorite-\(mode.rawValue)")
+            .overlay {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("New Scene", systemImage: "plus.circle.fill")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
 
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
+                    Text("Capture this setup as a reusable ambient ritual.")
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.74))
+                        .lineLimit(3)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(14)
             }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(isSelected ? 0.10 : 0.06))
-        )
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
-        .accessibilityIdentifier("modeRow-\(mode.rawValue)")
+            .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 5)
     }
 }
 #endif
