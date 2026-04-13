@@ -72,6 +72,14 @@ struct DriftModePickerView: View {
             return 136
         }
     }
+
+    private var sceneCardWidth: CGFloat {
+        horizontalSizeClass == .regular ? 264 : 214
+    }
+
+    private var sceneCardHeight: CGFloat {
+        horizontalSizeClass == .regular ? 156 : 146
+    }
 #endif
 
     var body: some View {
@@ -85,30 +93,117 @@ struct DriftModePickerView: View {
 #if !os(tvOS)
     @ViewBuilder
     private var scenesSection: some View {
-        Section("Scenes") {
-            if engine.availableScenes.isEmpty {
-                Text("Capture a set of modes and settings as a Scene.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        Section {
+            VStack(alignment: .leading, spacing: 12) {
+                scenesHeader
+
+                if engine.availableScenes.isEmpty {
+                    sceneEmptyCard
+                        .frame(maxWidth: .infinity, minHeight: 112)
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(engine.availableScenes) { scene in
+                            sceneCard(for: scene)
+                                .frame(width: sceneCardWidth, height: sceneCardHeight)
+                        }
+                        newSceneCard
+                            .frame(width: sceneCardWidth, height: sceneCardHeight)
+                    }
                     .padding(.vertical, 4)
-            } else {
-                ForEach(engine.availableScenes) { scene in
-                    SceneRow(
-                        scene: scene,
-                        isActive: engine.activeSceneID == scene.id,
-                        onActivate: { engine.activateScene(id: scene.id) },
-                        onEdit: { beginEditing(scene) },
-                        onDelete: { engine.deleteScene(id: scene.id) }
-                    )
+                    .padding(.horizontal, 1)
                 }
             }
+            .padding(.top, 6)
+        }
+        .listRowInsets(.init(top: 2, leading: 16, bottom: 8, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
 
-            Button {
-                beginNewScene()
+    private var scenesHeader: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Scenes")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+            Text("Save ambient rituals for quick recall.")
+                .font(.caption)
+                .foregroundStyle(Color.white.opacity(0.68))
+        }
+    }
+
+    private var sceneEmptyCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("No Scenes Yet", systemImage: "sparkles.rectangle.stack")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+            Text("Create a scene to capture your current mood, favorites, and drift setup.")
+                .font(.caption)
+                .foregroundStyle(Color.white.opacity(0.74))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                )
+        )
+    }
+
+    private var newSceneCard: some View {
+        Button {
+            beginNewScene()
+        } label: {
+            SceneCreateCard()
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("newSceneButton")
+    }
+
+    private func sceneCard(for scene: DriftScene) -> some View {
+        let isActive = engine.activeSceneID == scene.id
+
+        return Button {
+            engine.activateScene(id: scene.id)
+        } label: {
+            SceneBrowseCard(
+                name: scene.name,
+                modeCount: scene.modeIDs.count,
+                isActive: isActive
+            )
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Menu {
+                Button {
+                    beginEditing(scene)
+                } label: {
+                    Label("Edit Scene", systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    engine.deleteScene(id: scene.id)
+                } label: {
+                    Label("Delete Scene", systemImage: "trash")
+                }
             } label: {
-                Label("New Scene", systemImage: "plus")
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.88))
+                    .padding(8)
+                    .background(
+                        Circle()
+                            .fill(Color.black.opacity(0.38))
+                    )
             }
-            .accessibilityIdentifier("newSceneButton")
+            .buttonStyle(.plain)
+            .padding(10)
+            .accessibilityLabel("Scene options")
         }
     }
 
@@ -319,10 +414,15 @@ struct DriftModePickerView: View {
 
     private var tvScenesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Scenes")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 64)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Scenes")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                Text("Saved ambient rituals.")
+                    .font(.caption)
+                    .foregroundStyle(Color.white.opacity(0.68))
+            }
+            .padding(.horizontal, 64)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 18) {
@@ -600,56 +700,77 @@ private struct SceneEditorView: View {
     }
 }
 
-private struct SceneRow: View {
-    let scene: DriftScene
+private struct SceneBrowseCard: View {
+    let name: String
+    let modeCount: Int
     let isActive: Bool
-    let onActivate: () -> Void
-    let onEdit: () -> Void
-    let onDelete: () -> Void
 
     var body: some View {
-        Button {
-            onActivate()
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(scene.name)
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(isActive ? 0.24 : 0.14),
+                        Color.white.opacity(0.06)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.white.opacity(isActive ? 0.46 : 0.22), lineWidth: isActive ? 1.6 : 1)
+            }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(name)
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.white)
-                    Text("\(scene.modeIDs.count) modes")
-                        .font(.caption2)
-                        .foregroundStyle(Color.white.opacity(0.66))
+                        .lineLimit(1)
+
+                    Text("\(modeCount) \(modeCount == 1 ? "mode" : "modes")")
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.74))
+
+                    if isActive {
+                        Label("Active", systemImage: "checkmark.circle.fill")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.94))
+                    }
                 }
-                Spacer()
-                if isActive {
-                    Label("Active", systemImage: "checkmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.9))
-                }
+                .padding(14)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(isActive ? 0.16 : 0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color.white.opacity(isActive ? 0.40 : 0.14), lineWidth: 1)
+            .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 6)
+    }
+}
+
+private struct SceneCreateCard: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(Color.white.opacity(0.06))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(
+                        style: StrokeStyle(lineWidth: 1.2, dash: [5, 4], dashPhase: 0)
                     )
-            )
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Delete", systemImage: "trash")
+                    .foregroundStyle(Color.white.opacity(0.32))
             }
-            Button {
-                onEdit()
-            } label: {
-                Label("Edit", systemImage: "pencil")
+            .overlay {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("New Scene", systemImage: "plus.circle.fill")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("Capture this setup as a reusable ambient ritual.")
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.74))
+                        .lineLimit(3)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(14)
             }
-        }
+            .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 5)
     }
 }
 #endif
