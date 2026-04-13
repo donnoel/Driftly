@@ -157,7 +157,7 @@ struct DriftlySettingsView: View {
                 }
 
                 Section {
-                    Toggle("Enable Labs Features", isOn: $engine.labsFeaturesEnabled)
+                    Toggle("Enable More Modes", isOn: $engine.labsFeaturesEnabled)
 
                     if engine.labsFeaturesEnabled {
                         Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
@@ -179,9 +179,9 @@ struct DriftlySettingsView: View {
                         }
                     }
                 } header: {
-                    Text("Labs")
+                    Text("More Modes")
                 } footer: {
-                    Text("Labs features may affect performance or behavior.")
+                    Text("Additional modes may affect performance or behavior.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -263,7 +263,7 @@ struct DriftlySettingsView: View {
 
                     Section {
                         TVBoolRow(
-                            title: "Enable Labs Features",
+                            title: "Enable More Modes",
                             isOn: $engine.labsFeaturesEnabled,
                             id: .labsEnabled,
                             focus: $tvFocus
@@ -299,9 +299,9 @@ struct DriftlySettingsView: View {
                             }
                         }
                     } header: {
-                        Text("Labs")
+                        Text("More Modes")
                     } footer: {
-                        Text("Labs features may affect performance or behavior.")
+                        Text("Additional modes may affect performance or behavior.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .focusable(false)

@@ -14,7 +14,7 @@ enum DriftModeBrowseSection: String, CaseIterable, Identifiable {
         case .secondary:
             return "Secondary"
         case .labs:
-            return "Labs"
+            return "More Modes"
         }
     }
 
@@ -25,7 +25,7 @@ enum DriftModeBrowseSection: String, CaseIterable, Identifiable {
         case .secondary:
             return "Polished alternates."
         case .labs:
-            return "Experimental and extra modes."
+            return "Explore the full Driftly collection."
         }
     }
 }
@@ -102,37 +102,37 @@ enum DriftModePresentationCatalog {
         case .photonRain:
             return "Luminous streak rainfall."
         case .abyssGlow:
-            return "Experimental depth glow."
+            return "Deep ambient glow."
         case .plasmaReef:
-            return "Experimental plasma reef."
+            return "Layered plasma reef."
         case .neonKelp:
-            return "Experimental kelp motion."
+            return "Neon kelp motion."
         case .vitalWave:
-            return "Experimental energy wave."
+            return "Flowing energy wave."
         case .echoBloom:
-            return "Experimental bloom echoes."
+            return "Blooming echo trails."
         case .cosmicHeart:
-            return "Experimental heart pulse."
+            return "Celestial heart pulse."
         case .signalDrift:
-            return "Experimental signal weave."
+            return "Signal weave drift."
         case .horizonPulse:
-            return "Experimental horizon pulse."
+            return "Horizon pulse glow."
         case .driftGrid:
-            return "Experimental grid drift."
+            return "Drifting grid shimmer."
         case .chromaticSpine:
-            return "Experimental chroma spine."
+            return "Chromatic spine flow."
         case .inkTopography:
-            return "Experimental fluid contours."
+            return "Fluid contour layers."
         case .prismShards:
-            return "Experimental prism shards."
+            return "Prismatic shard field."
         case .lissajousBloom:
-            return "Experimental harmonic bloom."
+            return "Harmonic bloom curves."
         case .spectralLoom:
-            return "Experimental spectral weave."
+            return "Spectral woven light."
         case .voxelMirage:
-            return "Experimental voxel mirage."
+            return "Voxel mirage depth."
         case .haloInterference:
-            return "Experimental halo field."
+            return "Halo interference field."
         }
     }
 
