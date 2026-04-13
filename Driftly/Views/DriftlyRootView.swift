@@ -352,6 +352,7 @@ struct DriftlyRootView: View {
             .sheet(isPresented: $coordinator.isModePickerPresented) {
                 DriftModePickerView()
                     .environmentObject(engine)
+                    .modifier(IPadModePickerSheetModifier())
             }
 #endif
             // Sleep timer picker (moon)
@@ -925,6 +926,30 @@ struct DriftlyRootView: View {
         }
     }
 }
+
+#if os(iOS)
+private struct IPadModePickerSheetModifier: ViewModifier {
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isPad {
+            if #available(iOS 17.0, *) {
+                content
+                    .presentationDetents([.large])
+                    .presentationSizing(.page)
+                    .presentationDragIndicator(.visible)
+            } else {
+                content
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 // MARK: - tvOS Sleep Timer (Apple-style screens)
 #if os(tvOS)

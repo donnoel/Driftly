@@ -32,15 +32,23 @@ struct DriftModePickerView: View {
     }
 
 #if !os(tvOS)
+    private var isPadLayout: Bool {
+        horizontalSizeClass == .regular && UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    private var sectionHorizontalInset: CGFloat {
+        isPadLayout ? 24 : 16
+    }
+
     private func modeCardWidth(for section: DriftModeBrowseSection) -> CGFloat {
         if horizontalSizeClass == .regular {
             switch section {
             case .signature:
-                return 344
+                return 388
             case .secondary:
-                return 320
+                return 360
             case .labs:
-                return 296
+                return 332
             }
         }
 
@@ -58,11 +66,11 @@ struct DriftModePickerView: View {
         if horizontalSizeClass == .regular {
             switch section {
             case .signature:
-                return 212
+                return 232
             case .secondary:
-                return 204
+                return 224
             case .labs:
-                return 196
+                return 216
             }
         }
 
@@ -77,11 +85,11 @@ struct DriftModePickerView: View {
     }
 
     private var sceneCardWidth: CGFloat {
-        horizontalSizeClass == .regular ? 264 : 214
+        horizontalSizeClass == .regular ? 304 : 214
     }
 
     private var sceneCardHeight: CGFloat {
-        horizontalSizeClass == .regular ? 156 : 146
+        horizontalSizeClass == .regular ? 174 : 146
     }
 #endif
 
@@ -97,7 +105,7 @@ struct DriftModePickerView: View {
     @ViewBuilder
     private var scenesSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: isPadLayout ? 14 : 10) {
                 scenesHeader
 
                 if engine.availableScenes.isEmpty {
@@ -118,9 +126,9 @@ struct DriftModePickerView: View {
                     .padding(.horizontal, 1)
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, isPadLayout ? 8 : 4)
         }
-        .listRowInsets(.init(top: 2, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(.init(top: isPadLayout ? 8 : 2, leading: sectionHorizontalInset, bottom: isPadLayout ? 10 : 6, trailing: sectionHorizontalInset))
         .listRowBackground(Color.clear)
     }
 
@@ -296,13 +304,13 @@ struct DriftModePickerView: View {
                 .font(.caption)
                 .foregroundStyle(section == .labs ? Color.white.opacity(0.46) : Color.white.opacity(0.68))
         }
-        .padding(.top, section == .signature ? 8 : 4)
+        .padding(.top, section == .signature ? (isPadLayout ? 12 : 8) : (isPadLayout ? 6 : 4))
         .textCase(nil)
     }
 
     private func modeRail(for group: ModeBrowseGroup) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: horizontalSizeClass == .regular ? 16 : 12) {
+            LazyHStack(spacing: isPadLayout ? 18 : (horizontalSizeClass == .regular ? 16 : 12)) {
                 ForEach(group.modes) { presentation in
                     modeCard(for: presentation)
                         .frame(
@@ -311,10 +319,10 @@ struct DriftModePickerView: View {
                         )
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, isPadLayout ? 6 : 4)
             .padding(.horizontal, 1)
         }
-        .listRowInsets(.init(top: 2, leading: 16, bottom: 14, trailing: 16))
+        .listRowInsets(.init(top: isPadLayout ? 6 : 2, leading: sectionHorizontalInset, bottom: isPadLayout ? 18 : 14, trailing: sectionHorizontalInset))
         .listRowBackground(Color.clear)
     }
 
