@@ -94,12 +94,12 @@ struct DriftModePickerView: View {
     @ViewBuilder
     private var scenesSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 scenesHeader
 
                 if engine.availableScenes.isEmpty {
                     sceneEmptyCard
-                        .frame(maxWidth: .infinity, minHeight: 112)
+                        .frame(maxWidth: .infinity, minHeight: 106)
                 }
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -111,13 +111,13 @@ struct DriftModePickerView: View {
                         newSceneCard
                             .frame(width: sceneCardWidth, height: sceneCardHeight)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 2)
                     .padding(.horizontal, 1)
                 }
             }
-            .padding(.top, 6)
+            .padding(.top, 4)
         }
-        .listRowInsets(.init(top: 2, leading: 16, bottom: 8, trailing: 16))
+        .listRowInsets(.init(top: 2, leading: 16, bottom: 6, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
@@ -747,13 +747,27 @@ private struct SceneBrowseCard: View {
 private struct SceneCreateCard: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(Color.white.opacity(0.06))
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.16),
+                        Color.white.opacity(0.08),
+                        Color.white.opacity(0.05)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(
-                        style: StrokeStyle(lineWidth: 1.2, dash: [5, 4], dashPhase: 0)
-                    )
-                    .foregroundStyle(Color.white.opacity(0.32))
+                    .strokeBorder(Color.white.opacity(0.26), lineWidth: 1.1)
+            }
+            .overlay(alignment: .topTrailing) {
+                Circle()
+                    .fill(Color.white.opacity(0.20))
+                    .frame(width: 54, height: 54)
+                    .blur(radius: 14)
+                    .padding(10)
             }
             .overlay {
                 VStack(alignment: .leading, spacing: 8) {
