@@ -165,17 +165,12 @@ final class DriftlyEngine: ObservableObject {
         didSet {
             guard !isInitializing else { return }
             persistLabsFeaturesEnabled()
-            enforceAutoDriftConstraints()
         }
     }
 
     /// Auto-drift: whether Driftly should automatically change modes
     @Published var autoDriftEnabled: Bool {
         didSet {
-            if autoDriftEnabled && !isAutoDriftAllowed {
-                autoDriftEnabled = false
-                return
-            }
             persistAutoDriftEnabled()
             updateActiveSceneFromState()
         }
@@ -448,7 +443,6 @@ final class DriftlyEngine: ObservableObject {
             currentMode = userFacingModes.first ?? .nebulaLake
         }
 
-        enforceAutoDriftConstraints()
         isInitializing = false
 
         // Re-validate the source now that initialization is complete.
@@ -507,17 +501,11 @@ final class DriftlyEngine: ObservableObject {
     }
 
     var isAutoDriftAllowed: Bool {
-        labsFeaturesEnabled
+        true
     }
 
     var isAutoDriftOperational: Bool {
         autoDriftEnabled && isAutoDriftAllowed
-    }
-
-    private func enforceAutoDriftConstraints() {
-        if autoDriftEnabled && !isAutoDriftAllowed {
-            autoDriftEnabled = false
-        }
     }
 
     func shouldAutoDrift(

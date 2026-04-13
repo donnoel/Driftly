@@ -8,7 +8,6 @@ struct DriftlySettingsView: View {
 
 #if os(tvOS)
     private enum TVFocus: Hashable {
-        case labsEnabled
         case autoDriftEnabled
         case autoDriftShuffle
         case stayAwake
@@ -158,31 +157,27 @@ struct DriftlySettingsView: View {
                     }
 
                     Section {
-                        Toggle("Enable More Modes", isOn: $engine.labsFeaturesEnabled)
+                        Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
+                        Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
 
-                        if engine.labsFeaturesEnabled {
-                            Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                            Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
-
-                            Picker("Drift From", selection: $engine.autoDriftSource) {
-                                Text("All Modes").tag(AutoDriftSource.all)
-                                Text("Favorites").tag(AutoDriftSource.favorites)
-                                if let sceneID = engine.activeSceneID,
-                                   let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                                    Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
-                                }
+                        Picker("Drift From", selection: $engine.autoDriftSource) {
+                            Text("All Modes").tag(AutoDriftSource.all)
+                            Text("Favorites").tag(AutoDriftSource.favorites)
+                            if let sceneID = engine.activeSceneID,
+                               let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                                Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                             }
+                        }
 
-                            Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                                ForEach(autoDriftOptions, id: \.self) { minutes in
-                                    Text("\(minutes) minutes").tag(minutes)
-                                }
+                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                            ForEach(autoDriftOptions, id: \.self) { minutes in
+                                Text("\(minutes) minutes").tag(minutes)
                             }
                         }
                     } header: {
-                        Text("More Modes")
+                        Text("Drifting")
                     } footer: {
-                        Text("Additional modes may affect performance or behavior.")
+                        Text("Configure how Driftly transitions between modes.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -251,45 +246,36 @@ struct DriftlySettingsView: View {
 
                     Section {
                         TVBoolRow(
-                            title: "Enable More Modes",
-                            isOn: $engine.labsFeaturesEnabled,
-                            id: .labsEnabled,
+                            title: "Auto Drift Between Modes",
+                            isOn: $engine.autoDriftEnabled,
+                            id: .autoDriftEnabled,
+                            focus: $tvFocus
+                        )
+                        TVBoolRow(
+                            title: "Shuffle Order",
+                            isOn: $engine.autoDriftShuffleEnabled,
+                            id: .autoDriftShuffle,
                             focus: $tvFocus
                         )
 
-                        if engine.labsFeaturesEnabled {
-                            TVBoolRow(
-                                title: "Auto Drift Between Modes",
-                                isOn: $engine.autoDriftEnabled,
-                                id: .autoDriftEnabled,
-                                focus: $tvFocus
-                            )
-                            TVBoolRow(
-                                title: "Shuffle Order",
-                                isOn: $engine.autoDriftShuffleEnabled,
-                                id: .autoDriftShuffle,
-                                focus: $tvFocus
-                            )
-
-                            Picker("Drift From", selection: $engine.autoDriftSource) {
-                                Text("All Modes").tag(AutoDriftSource.all)
-                                Text("Favorites").tag(AutoDriftSource.favorites)
-                                if let sceneID = engine.activeSceneID,
-                                   let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                                    Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
-                                }
+                        Picker("Drift From", selection: $engine.autoDriftSource) {
+                            Text("All Modes").tag(AutoDriftSource.all)
+                            Text("Favorites").tag(AutoDriftSource.favorites)
+                            if let sceneID = engine.activeSceneID,
+                               let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                                Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                             }
+                        }
 
-                            Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                                ForEach(autoDriftOptions, id: \.self) { minutes in
-                                    Text("\(minutes) minutes").tag(minutes)
-                                }
+                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                            ForEach(autoDriftOptions, id: \.self) { minutes in
+                                Text("\(minutes) minutes").tag(minutes)
                             }
                         }
                     } header: {
-                        Text("More Modes")
+                        Text("Drifting")
                     } footer: {
-                        Text("Additional modes may affect performance or behavior.")
+                        Text("Configure how Driftly transitions between modes.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .focusable(false)

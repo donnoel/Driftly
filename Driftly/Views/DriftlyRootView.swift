@@ -313,9 +313,6 @@ struct DriftlyRootView: View {
             }
             coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
-        .onChange(of: engine.labsFeaturesEnabled) { _, _ in
-            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
-        }
         .onChange(of: engine.clockEnabled) { _, _ in
             updateClockTicking()
         }
