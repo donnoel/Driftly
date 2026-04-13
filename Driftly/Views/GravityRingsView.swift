@@ -21,11 +21,11 @@ struct GravityRingsView: View {
                 let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
 
                 ZStack {
-                    // Brighter "daytime TV" backdrop with a soft glow bloom
+                    // Soft backdrop with restrained depth for long viewing sessions.
                     LinearGradient(
                         colors: [
-                            config.palette.backgroundTop.opacity(0.95),
-                            config.palette.backgroundBottom.opacity(0.92)
+                            config.palette.backgroundTop.opacity(0.93),
+                            config.palette.backgroundBottom.opacity(0.95)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -33,16 +33,16 @@ struct GravityRingsView: View {
                     .overlay(
                         RadialGradient(
                             colors: [
-                                config.palette.primary.opacity(0.18),
-                                config.palette.secondary.opacity(0.10),
+                                config.palette.primary.opacity(0.11),
+                                config.palette.secondary.opacity(0.07),
                                 Color.clear
                             ],
                             center: UnitPoint(
-                                x: 0.52 + 0.08 * sin(t * 0.05),
-                                y: 0.48 + 0.08 * cos(t * 0.04)
+                                x: 0.52 + 0.06 * sin(t * 0.04),
+                                y: 0.48 + 0.06 * cos(t * 0.035)
                             ),
                             startRadius: 0,
-                            endRadius: max(size.width, size.height) * 0.85
+                            endRadius: max(size.width, size.height) * 0.90
                         )
                         .blendMode(.screen)
                     )
@@ -57,7 +57,6 @@ struct GravityRingsView: View {
                     .ignoresSafeArea()
                 }
                 .onAppear { timelineStart = Date().timeIntervalSinceReferenceDate }
-                .compositingGroup()
             }
         }
     }
@@ -65,7 +64,7 @@ struct GravityRingsView: View {
     // MARK: - Ring Renderer
 
     private func renderRings(in context: inout GraphicsContext, size: CGSize, center: CGPoint, t: Double, seconds: Double) {
-        let ringCount = 7
+        let ringCount = 6
         // Keep the outermost strokes fully inside the screen bounds
         let minDim = min(size.width, size.height)
         let baseMaxRadius = (minDim * 0.5) - 28.0 // padding for thick glow strokes
@@ -73,7 +72,7 @@ struct GravityRingsView: View {
         // Global drift for the whole ring system (slow, bouncing within safe bounds)
         // We keep enough margin so even the outer ring + glow stays inside the screen.
         let safeOuter = baseMaxRadius * 0.98
-        let wobblePad: CGFloat = 18.0
+        let wobblePad: CGFloat = 16.0
         let extraPad: CGFloat = 10.0
 
         let marginX = min(size.width * 0.5 - 2.0, safeOuter + wobblePad + extraPad)
@@ -83,8 +82,8 @@ struct GravityRingsView: View {
         let rangeY = max(0.0, size.height - 2.0 * marginY)
 
         // Triangle waves act like slow “bounces” (reflecting at edges) without needing state.
-        let bx = triangle01((seconds / 42.0) + 0.17)
-        let by = triangle01((seconds / 49.0) + 0.53)
+        let bx = triangle01((seconds / 60.0) + 0.17)
+        let by = triangle01((seconds / 68.0) + 0.53)
 
         let driftCenter = CGPoint(
             x: marginX + CGFloat(bx) * rangeX,
@@ -92,10 +91,10 @@ struct GravityRingsView: View {
         )
 
         // Global spacing drift: sometimes compresses rings so they overlap slightly
-        let spacingDrift = CGFloat(1.0 - 0.10 * (0.5 + 0.5 * sin(t * 0.12)))
+        let spacingDrift = CGFloat(1.0 - 0.05 * (0.5 + 0.5 * sin(t * 0.08)))
 
-        // Switch which rings ripple (every ~6 seconds, crossfaded)
-        let window = 6.0
+        // Switch which rings ripple slowly so the field feels hypnotic, not busy.
+        let window = 9.0
         let k0 = Int(floor(t / window))
         let u = fract(t / window)
         let s = smoothstep(u)
@@ -109,17 +108,17 @@ struct GravityRingsView: View {
             let scaleBase = baseScale * spacingDrift
 
             // Pulse envelope
-            let pulse = 0.5 + 0.5 * sin(t * 0.9 + phase)
-            let pulse2 = 0.5 + 0.5 * cos(t * 0.55 + phase * 1.3)
+            let pulse = 0.5 + 0.5 * sin(t * 0.62 + phase)
+            let pulse2 = 0.5 + 0.5 * cos(t * 0.40 + phase * 1.3)
 
             // Wiggle: tiny orbital drift around center
-            let wobX = CGFloat(10 * sin(t * 0.22 + phase) + 6 * sin(t * 0.41 + phase * 0.7))
-            let wobY = CGFloat(10 * cos(t * 0.20 + phase) + 6 * cos(t * 0.38 + phase * 0.8))
-            let wobScale = (0.35 + 0.10 * CGFloat(i))
+            let wobX = CGFloat(7 * sin(t * 0.17 + phase) + 4 * sin(t * 0.30 + phase * 0.7))
+            let wobY = CGFloat(7 * cos(t * 0.15 + phase) + 4 * cos(t * 0.28 + phase * 0.8))
+            let wobScale = (0.28 + 0.08 * CGFloat(i))
             let ringCenter = CGPoint(x: driftCenter.x + wobX * wobScale, y: driftCenter.y + wobY * wobScale)
 
             // Slight additional per-ring convergence so adjacent rings can occasionally nudge into each other
-            let converge = CGFloat(0.018 * sin(t * 0.18 + phase * 1.7))
+            let converge = CGFloat(0.010 * sin(t * 0.12 + phase * 1.7))
 
             // Rotation shimmer
             let rot = CGFloat(t * 0.08 + phase * 0.25)
@@ -128,14 +127,14 @@ struct GravityRingsView: View {
             let radiusRaw = baseMaxRadius * (scaleBase + 0.05 * CGFloat(pulse2) + converge)
 
             // Stroke weights (pulse affects width) — compute early so we can pad correctly
-            let lw = 1.4 + CGFloat(1.6 * pulse)
+            let lw = 1.25 + CGFloat(1.05 * pulse)
             let maxStroke = (lw * 6.0) // widest glow stroke used below
 
             // Ripple parameters depend on radius; compute a provisional amplitude for padding
             let sel0 = rippleSelection(index: i, key: k0)
             let sel1 = rippleSelection(index: i, key: k0 + 1)
             let rippleMix = lerp(sel0, sel1, s) // 0..1
-            let ampRaw = radiusRaw * CGFloat(0.020 + 0.018 * pulse) * CGFloat(rippleMix)
+            let ampRaw = radiusRaw * CGFloat(0.012 + 0.010 * pulse) * CGFloat(rippleMix)
 
             // Edge-aware clamp: leave room for stroke + ripple peak
             let edge = min(ringCenter.x, size.width - ringCenter.x, ringCenter.y, size.height - ringCenter.y)
@@ -143,16 +142,16 @@ struct GravityRingsView: View {
             let radius = min(radiusRaw, max(0.0, edge - pad))
 
             // Final ripple amplitude (based on clamped radius)
-            let amp = radius * CGFloat(0.020 + 0.018 * pulse) * CGFloat(rippleMix)
+            let amp = radius * CGFloat(0.012 + 0.010 * pulse) * CGFloat(rippleMix)
 
             // Ripple parameters: only some rings, but smoothly blended
-            let lobes = 8 + (i % 4) * 2
-            let ripplePhase = t * (0.95 + 0.10 * Double(i)) + phase * 0.8
+            let lobes = 6 + (i % 3) * 2
+            let ripplePhase = t * (0.66 + 0.06 * Double(i)) + phase * 0.8
 
             // Color gradient around the ring (approx by layered strokes)
-            let c1 = config.palette.secondary.opacity(0.22 + 0.10 * pulse)
-            let c2 = config.palette.tertiary.opacity(0.18 + 0.08 * pulse2)
-            let c3 = config.palette.primary.opacity(0.16 + 0.06 * pulse)
+            let c1 = config.palette.secondary.opacity(0.17 + 0.07 * pulse)
+            let c2 = config.palette.tertiary.opacity(0.14 + 0.06 * pulse2)
+            let c3 = config.palette.primary.opacity(0.12 + 0.05 * pulse)
 
             // Build path: circle when no ripple, rippled ring when selected
             let path = (rippleMix > 0.001)
@@ -167,8 +166,8 @@ struct GravityRingsView: View {
 
             // Center glow (only the innermost ring)
             if i == 0 {
-                let glowPulse = 0.5 + 0.5 * sin(t * 1.25 + phase * 0.6)
-                let glowRadius = radius * (0.42 + 0.12 * CGFloat(glowPulse))
+                let glowPulse = 0.5 + 0.5 * sin(t * 0.95 + phase * 0.6)
+                let glowRadius = radius * (0.38 + 0.08 * CGFloat(glowPulse))
 
                 let glowCenter = ringCenter
 
@@ -179,11 +178,11 @@ struct GravityRingsView: View {
                     height: glowRadius * 2
                 )
 
-                let yellow = Color(red: 1.00, green: 0.92, blue: 0.35)
+                let core = config.palette.tertiary
                 let glow = GraphicsContext.Shading.radialGradient(
                     Gradient(colors: [
-                        yellow.opacity(0.22 + 0.16 * glowPulse),
-                        yellow.opacity(0.10 + 0.08 * glowPulse),
+                        core.opacity(0.17 + 0.10 * glowPulse),
+                        core.opacity(0.08 + 0.06 * glowPulse),
                         Color.clear
                     ]),
                     center: glowCenter,
@@ -195,20 +194,18 @@ struct GravityRingsView: View {
             }
 
             // Shadows (premium glow)
-            context.stroke(path, with: .color(c1.opacity(0.10)), lineWidth: lw * 6.0)
-            context.stroke(path, with: .color(c2.opacity(0.12)), lineWidth: lw * 3.0)
+            context.stroke(path, with: .color(c1.opacity(0.07)), lineWidth: lw * 5.0)
+            context.stroke(path, with: .color(c2.opacity(0.09)), lineWidth: lw * 2.4)
             context.stroke(path, with: .color(c1), lineWidth: lw)
             context.stroke(path, with: .color(c3.opacity(0.65)), lineWidth: max(0.8, lw * 0.55))
-            context.stroke(path, with: .color(Color.white.opacity(0.07)), lineWidth: 0.8)
+            context.stroke(path, with: .color(Color.white.opacity(0.05)), lineWidth: 0.75)
         }
     }
 
     private func rippleSelection(index: Int, key: Int) -> Double {
-        // Select ~3 rings to ripple per window, but rotate which rings over time.
-        // Returns 1.0 if selected, 0.0 otherwise.
-        let a = (index + key * 2) % 7
-        // Three-of-seven selection pattern
-        return (a == 0 || a == 3 || a == 5) ? 1.0 : 0.0
+        // Select two rings to ripple per window; rotate selection over time.
+        let a = (index + key * 2) % 6
+        return (a == 1 || a == 4) ? 1.0 : 0.0
     }
 
     private func circlePath(center: CGPoint, radius: CGFloat) -> Path {
