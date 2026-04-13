@@ -52,6 +52,17 @@ struct StarlitMistView: View {
             sweepLayer(phase: t)
                 .blendMode(.screen)
                 .opacity(0.55)
+
+            // Subtle vignette keeps edges calmer for long-duration viewing.
+            RadialGradient(
+                colors: [
+                    Color.clear,
+                    Color.black.opacity(0.22)
+                ],
+                center: .center,
+                startRadius: 80,
+                endRadius: 760
+            )
         }
         // Avoid forcing an offscreen group; layers already blend via gradients.
     }
@@ -73,7 +84,7 @@ struct StarlitMistView: View {
             let size = proxy.size
 
             Canvas { context, canvasSize in
-                let starCount = 180
+                let starCount = 150
                 let phase = t * .pi * 2
 
                 for index in 0..<starCount {
@@ -85,14 +96,14 @@ struct StarlitMistView: View {
                     let x = abs(xBase) * canvasSize.width
                     let y = abs(yBase) * canvasSize.height
 
-                    // Real-ish twinkle: each star has its own cadence + amplitude + rare micro-sparkles
+                    // Calm twinkle: each star has its own cadence and gentle variation.
                     let r1 = hash01(index, 11)
                     let r2 = hash01(index, 97)
                     let r3 = hash01(index, 211)
 
-                    // Most stars vary slowly; some twinkle a bit faster
-                    let speed1 = 0.25 + 1.10 * r1
-                    let speed2 = 0.10 + 0.70 * r2
+                    // Slower cadence biases toward ambient, premium motion.
+                    let speed1 = 0.16 + 0.72 * r1
+                    let speed2 = 0.08 + 0.42 * r2
                     let off1 = 6.283185307179586 * r2
                     let off2 = 6.283185307179586 * r3
 
@@ -102,19 +113,19 @@ struct StarlitMistView: View {
                     var scint = 0.58 + 0.28 * s1 + 0.14 * s2
                     scint = min(1.0, max(0.0, scint))
 
-                    // Nonlinear response: lots of subtle twinkle, fewer big flashes
-                    let gamma = 1.6 + 1.4 * (1.0 - r1)
+                    // Nonlinear response: strong bias toward subtle twinkle.
+                    let gamma = 2.1 + 1.0 * (1.0 - r1)
                     let tw = pow(scint, gamma)
 
-                    // Rare micro-sparkle: a small spike that comes and goes smoothly
-                    let sparkleWave = 0.5 + 0.5 * sin(phase * (1.8 + 1.2 * r2) + off2)
-                    let sparkle = (r3 > 0.86) ? smoothstep((sparkleWave - 0.78) / 0.22) : 0.0
+                    // Rare, restrained sparkle spikes.
+                    let sparkleWave = 0.5 + 0.5 * sin(phase * (1.1 + 0.8 * r2) + off2)
+                    let sparkle = (r3 > 0.92) ? smoothstep((sparkleWave - 0.86) / 0.14) : 0.0
 
                     // Star "magnitude" distribution: many faint, few bright
                     let mag = 0.18 + 0.82 * pow(r1, 1.7)
 
-                    let radius = 0.85 + 1.55 * tw + 0.55 * sparkle
-                    let baseOpacity: CGFloat = CGFloat((0.10 + 0.70 * tw + 0.35 * sparkle) * mag)
+                    let radius = 0.80 + 1.28 * tw + 0.26 * sparkle
+                    let baseOpacity: CGFloat = CGFloat((0.09 + 0.66 * tw + 0.20 * sparkle) * mag)
 
                     var star = Path()
                     star.addEllipse(in: CGRect(
@@ -126,13 +137,9 @@ struct StarlitMistView: View {
 
                     // Slight temperature variation (warm/cool) like real stars
                     let temp = r2
-                    let warm = Color(red: 1.00, green: 0.94, blue: 0.84)
-                    let cool = Color(red: 0.86, green: 0.92, blue: 1.00)
-                    let tint = interpolateColor(warm, cool, t: temp)
+                    let tint = starTintColor(temperature: temp, opacity: Double(baseOpacity))
 
-                    let starColor = tint.opacity(Double(baseOpacity))
-
-                    context.fill(star, with: .color(starColor))
+                    context.fill(star, with: .color(tint))
                 }
             }
             .frame(width: size.width, height: size.height)
@@ -143,42 +150,44 @@ struct StarlitMistView: View {
 
     @ViewBuilder
     private func mistLayer(phase t: Double) -> some View {
-        let shift = 0.18 * sin(t * .pi * 2)
+        let phase = t * .pi * 2
+        let shiftA = 0.10 * sin(phase * 0.55)
+        let shiftB = 0.07 * cos(phase * 0.42)
 
         ZStack {
             RadialGradient(
                 colors: [
-                    config.palette.secondary.opacity(0.38),
+                    config.palette.secondary.opacity(0.34),
                     Color.clear
                 ],
-                center: UnitPoint(x: 0.3, y: 0.25 + shift),
+                center: UnitPoint(x: 0.30 + shiftB, y: 0.28 + shiftA),
                 startRadius: 0,
-                endRadius: 280
+                endRadius: 320
             )
 
             RadialGradient(
                 colors: [
-                    config.palette.tertiary.opacity(0.35),
+                    config.palette.tertiary.opacity(0.30),
                     Color.clear
                 ],
-                center: UnitPoint(x: 0.7, y: 0.35 - shift),
+                center: UnitPoint(x: 0.72 - shiftA, y: 0.40 - shiftB),
                 startRadius: 0,
-                endRadius: 300
+                endRadius: 340
             )
 
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.10),
+                    Color.white.opacity(0.08),
                     Color.clear,
-                    Color.white.opacity(0.06)
+                    Color.white.opacity(0.05)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .opacity(0.55)
+            .opacity(0.50)
         }
-        // Lighter softness without a full-scene blur
-        .blur(radius: 1.2)
+        // Keep haze soft without creating a heavy offscreen blur.
+        .blur(radius: 1.0)
     }
 
     // MARK: - Sweep
@@ -189,29 +198,31 @@ struct StarlitMistView: View {
             let size = proxy.size
             let base = max(size.width, size.height)
 
-            let sweepX = 0.5 + 0.45 * CGFloat(sin(t * .pi * 2))
-            let sweepAngle = Angle.degrees(Double(18 * sin(t * .pi * 2)))
+            let phase = t * .pi * 2
+            let sweepX = 0.5 + 0.26 * CGFloat(sin(phase * 0.45))
+            let sweepY = 0.44 + 0.05 * CGFloat(cos(phase * 0.32))
+            let sweepAngle = Angle.degrees(Double(7 * sin(phase * 0.35)))
 
             RoundedRectangle(cornerRadius: base * 0.5, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.0),
-                            Color.white.opacity(0.28),
+                            config.palette.secondary.opacity(0.18),
                             Color.white.opacity(0.0)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .frame(width: size.width * 0.95, height: base * 0.55)
+                .frame(width: size.width * 0.84, height: base * 0.42)
                 .position(
                     x: size.width * sweepX,
-                    y: size.height * 0.40
+                    y: size.height * sweepY
                 )
                 .rotationEffect(sweepAngle)
                 // Reduced blur to limit offscreen rendering cost
-                .blur(radius: base * 0.08)
+                .blur(radius: base * 0.055)
         }
     }
 // MARK: - Helpers
@@ -227,21 +238,13 @@ struct StarlitMistView: View {
         return t * t * (3.0 - 2.0 * t)
     }
 
-    private func interpolateColor(_ a: Color, _ b: Color, t: Double) -> Color {
+    private func starTintColor(temperature t: Double, opacity: Double) -> Color {
         let tt = max(0.0, min(1.0, t))
-        #if canImport(UIKit)
-        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
-        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
-        UIColor(a).getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
-        UIColor(b).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
-        return Color(
-            red: Double(r1 + (r2 - r1) * CGFloat(tt)),
-            green: Double(g1 + (g2 - g1) * CGFloat(tt)),
-            blue: Double(b1 + (b2 - b1) * CGFloat(tt)),
-            opacity: Double(a1 + (a2 - a1) * CGFloat(tt))
-        )
-        #else
-        return a
-        #endif
+        let warm = (r: 1.00, g: 0.94, b: 0.84)
+        let cool = (r: 0.86, g: 0.92, b: 1.00)
+        let red = warm.r + (cool.r - warm.r) * tt
+        let green = warm.g + (cool.g - warm.g) * tt
+        let blue = warm.b + (cool.b - warm.b) * tt
+        return Color(red: red, green: green, blue: blue, opacity: opacity)
     }
 }
