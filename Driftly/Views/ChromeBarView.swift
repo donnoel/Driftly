@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 enum ChromeFocusTarget: Hashable {
     case modePicker, sleepTimer, settings
@@ -14,114 +17,125 @@ struct ChromeBarView: View {
     let onSleepTimer: () -> Void
     let onSettings: () -> Void
     let onNextMode: () -> Void
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
     #if os(tvOS)
     var focusedButton: FocusState<ChromeFocusTarget?>.Binding?
     #endif
 
     var body: some View {
-        HStack(spacing: isTvOS ? 16 : 12) {
 #if os(tvOS)
-            Button {
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    onNextMode()
-                }
-                DriftHaptics.modeChanged()
-            } label: {
-                nowPlayingLabelTvOS
-            }
-            .buttonStyle(.plain)
+        tvOSLayout
 #else
-            Button {
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    onModePicker()
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    nowPlayingLabelIOS
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.72))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
+        Group {
+            if isPadLayout {
+                iPadLayout
+            } else {
+                iPhoneLayout
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("modePickerButton")
-            .accessibilityLabel("Choose mode")
-            .accessibilityHint("Opens the mode picker")
-#endif
-
-            Spacer()
-
-            HStack(spacing: isTvOS ? 40 : 12) {
-#if os(tvOS)
-                CircleButton(systemName: "sparkles", action: {
-                    onModePicker()
-                }, accessibilityIdentifier: "modePickerButton", isTvOS: isTvOS, tintColor: chromeTint)
-                .applyFocus(focusedButton, target: .modePicker)
-#endif
-                CircleButton(systemName: "moon.zzz", action: {
-                    onSleepTimer()
-                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: isTvOS, tintColor: chromeTint)
-#if os(tvOS)
-                .applyFocus(focusedButton, target: .sleepTimer)
-#endif
-
-                CircleButton(systemName: "gearshape", action: {
-                    onSettings()
-                }, accessibilityIdentifier: "settingsButton", isTvOS: isTvOS, tintColor: chromeTint)
-#if os(tvOS)
-                .applyFocus(focusedButton, target: .settings)
-#endif
-            }
-            .padding(.horizontal, isTvOS ? 10 : 6)
-            .padding(.vertical, 4)
-            .background(actionsBackground)
         }
-        .padding(.vertical, isTvOS ? 2 : 1)
+#endif
     }
 
-    private var nowPlayingBackground: some View {
+    private var nowPlayingBackgroundTvOS: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(.ultraThinMaterial)
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(chromeTint.opacity(isTvOS ? 0.07 : 0.05))
+                    .fill(chromeTint.opacity(0.07))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(isTvOS ? 0.16 : 0.12), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(isTvOS ? 0.22 : 0.16), radius: isTvOS ? 10 : 7, x: 0, y: isTvOS ? 8 : 5)
+            .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 8)
     }
 
-    private var actionsBackground: some View {
+    private var actionsBackgroundTvOS: some View {
         RoundedRectangle(cornerRadius: 13, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(isTvOS ? 0.82 : 0.72))
+            .fill(.ultraThinMaterial.opacity(0.82))
             .overlay(
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(Color.white.opacity(isTvOS ? 0.14 : 0.10), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(isTvOS ? 0.20 : 0.14), radius: isTvOS ? 9 : 6, x: 0, y: isTvOS ? 7 : 5)
+            .shadow(color: Color.black.opacity(0.20), radius: 9, x: 0, y: 7)
+    }
+
+    private var iPhoneShellBackground: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.72))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(chromeTint.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.16), radius: 8, x: 0, y: 6)
+    }
+
+    private var iPadNowPlayingBackground: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.74))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(chromeTint.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 9, x: 0, y: 6)
+    }
+
+    private var actionsBackgroundIOS: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.68))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.14), radius: 6, x: 0, y: 4)
     }
 
     private var nowPlayingLabelIOS: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text("Now Playing")
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.white.opacity(0.64))
+                .foregroundStyle(Color.white.opacity(0.62))
             Text(modeName)
                 .accessibilityIdentifier("currentModeLabel")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.white)
             Text(modeDescriptor)
                 .font(.caption2)
-                .foregroundStyle(Color.white.opacity(0.68))
+                .foregroundStyle(Color.white.opacity(0.70))
                 .lineLimit(1)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(nowPlayingBackground)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+    }
+
+    private var nowPlayingLabelIOSPad: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Now Playing")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.white.opacity(0.64))
+            Text(modeName)
+                .accessibilityIdentifier("currentModeLabel")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.95))
+            Text(modeDescriptor)
+                .font(.footnote)
+                .foregroundStyle(Color.white.opacity(0.72))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(minWidth: 320, alignment: .leading)
+        .background(iPadNowPlayingBackground)
     }
 
     private var nowPlayingLabelTvOS: some View {
@@ -140,7 +154,117 @@ struct ChromeBarView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(nowPlayingBackground)
+        .background(nowPlayingBackgroundTvOS)
+    }
+
+    private var modePickerButtonIOS: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                onModePicker()
+            }
+        } label: {
+            HStack(spacing: isPadLayout ? 12 : 10) {
+                if isPadLayout {
+                    nowPlayingLabelIOSPad
+                } else {
+                    nowPlayingLabelIOS
+                }
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.72))
+            }
+            .padding(.horizontal, isPadLayout ? 4 : 2)
+            .padding(.vertical, isPadLayout ? 0 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("modePickerButton")
+        .accessibilityLabel("Choose mode")
+        .accessibilityHint("Opens the mode picker")
+    }
+
+    private var actionButtonsIOS: some View {
+        HStack(spacing: isPadLayout ? 10 : 8) {
+            CircleButton(systemName: "moon.zzz", action: {
+                onSleepTimer()
+            }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: false, isPadOS: isPadLayout, tintColor: chromeTint)
+
+            CircleButton(systemName: "gearshape", action: {
+                onSettings()
+            }, accessibilityIdentifier: "settingsButton", isTvOS: false, isPadOS: isPadLayout, tintColor: chromeTint)
+        }
+        .padding(.horizontal, isPadLayout ? 10 : 8)
+        .padding(.vertical, isPadLayout ? 8 : 6)
+        .background(actionsBackgroundIOS)
+    }
+
+    private var iPhoneLayout: some View {
+        HStack(spacing: 12) {
+            modePickerButtonIOS
+
+            Spacer(minLength: 8)
+
+            actionButtonsIOS
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(iPhoneShellBackground)
+        .padding(.vertical, 1)
+    }
+
+    private var iPadLayout: some View {
+        HStack(spacing: 16) {
+            modePickerButtonIOS
+            Spacer(minLength: 16)
+            actionButtonsIOS
+        }
+        .padding(.vertical, 2)
+    }
+
+    #if os(tvOS)
+    private var tvOSLayout: some View {
+        HStack(spacing: 16) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    onNextMode()
+                }
+                DriftHaptics.modeChanged()
+            } label: {
+                nowPlayingLabelTvOS
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            HStack(spacing: 40) {
+                CircleButton(systemName: "sparkles", action: {
+                    onModePicker()
+                }, accessibilityIdentifier: "modePickerButton", isTvOS: true, tintColor: chromeTint)
+                .applyFocus(focusedButton, target: .modePicker)
+
+                CircleButton(systemName: "moon.zzz", action: {
+                    onSleepTimer()
+                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: true, tintColor: chromeTint)
+                .applyFocus(focusedButton, target: .sleepTimer)
+
+                CircleButton(systemName: "gearshape", action: {
+                    onSettings()
+                }, accessibilityIdentifier: "settingsButton", isTvOS: true, tintColor: chromeTint)
+                .applyFocus(focusedButton, target: .settings)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(actionsBackgroundTvOS)
+        }
+        .padding(.vertical, 2)
+    }
+    #endif
+
+    private var isPadLayout: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+        #else
+        false
+        #endif
     }
 }
 
@@ -150,15 +274,16 @@ private struct CircleButton: View {
     var accessibilityIdentifier: String? = nil
     var isActive: Bool = false
     var isTvOS: Bool = false
+    var isPadOS: Bool = false
     var tintColor: Color? = nil
 
     var body: some View {
         Button(action: action) {
             let baseTint = tintColor ?? Color.white
             let tint = isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86)
-            let visualSize: CGFloat = isTvOS ? 34 : 28
-            let hitSize: CGFloat = isTvOS ? 40 : 40
-            let fontSize: CGFloat = isTvOS ? 15 : 14
+            let visualSize: CGFloat = isTvOS ? 34 : (isPadOS ? 31 : 28)
+            let hitSize: CGFloat = isTvOS ? 40 : (isPadOS ? 42 : 40)
+            let fontSize: CGFloat = isTvOS ? 15 : (isPadOS ? 15 : 14)
 
             ZStack {
                 Circle()
