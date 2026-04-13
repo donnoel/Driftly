@@ -40,26 +40,37 @@ struct DriftModePresentation: Identifiable, Equatable {
 
 enum DriftModePresentationCatalog {
     static let signatureModes: [DriftMode] = [
-        .auroraVeil,
-        .lunarDrift,
         .velvetEclipse,
-        .nebulaLake,
-        .starlitMist,
-        .cosmicTide,
-        .gravityRings,
-        .ribbonOrbit,
-        .meridianArcs,
-        .quietSignal
+        .emberDrift,
+        .photonRain,
+        .prismShards
     ]
 
     static let secondaryModes: [DriftMode] = [
-        .solarBloom,
-        .emberDrift,
+        .auroraVeil,
+        .abyssGlow,
         .pulseAurora,
-        .photonRain
+        .echoBloom,
+        .horizonPulse,
+        .chromaticSpine,
+        .ribbonOrbit,
+        .inkTopography,
+        .meridianArcs
     ]
 
-    private static let curatedModes = Set(signatureModes + secondaryModes)
+    static let collectionModes: [DriftMode] = [
+        .starlitMist,
+        .plasmaReef,
+        .neonKelp,
+        .vitalWave,
+        .gravityRings,
+        .driftGrid,
+        .quietSignal,
+        .nebulaLake,
+        .signalDrift
+    ]
+
+    static let userFacingModes: [DriftMode] = signatureModes + secondaryModes + collectionModes
 
     static func section(for mode: DriftMode) -> DriftModeBrowseSection {
         if signatureModes.contains(mode) {
@@ -68,7 +79,7 @@ enum DriftModePresentationCatalog {
         if secondaryModes.contains(mode) {
             return .secondary
         }
-        return .labs
+        return collectionModes.contains(mode) ? .labs : .secondary
     }
 
     static func descriptor(for mode: DriftMode) -> String {
@@ -110,7 +121,7 @@ enum DriftModePresentationCatalog {
         case .vitalWave:
             return "Flowing energy wave."
         case .echoBloom:
-            return "Blooming echo trails."
+            return "Glow bloom trails."
         case .cosmicHeart:
             return "Celestial heart pulse."
         case .signalDrift:
@@ -153,14 +164,14 @@ enum DriftModePresentationCatalog {
         in orderedModes: [DriftMode],
         section: DriftModeBrowseSection
     ) -> [DriftMode] {
-        let available = Set(orderedModes)
+        let available = Set(orderedModes).intersection(userFacingModes)
         switch section {
         case .signature:
             return signatureModes.filter { available.contains($0) }
         case .secondary:
             return secondaryModes.filter { available.contains($0) }
         case .labs:
-            return orderedModes.filter { !curatedModes.contains($0) }
+            return collectionModes.filter { available.contains($0) }
         }
     }
 }

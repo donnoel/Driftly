@@ -60,7 +60,7 @@ struct SignalDriftView: View {
 }
 
 
-// MARK: - Cosmic Heart (Whimsical Pink)
+// MARK: - Signal Drift
 
 private struct SignalPillowCloudLayer: View {
     let primary: Color

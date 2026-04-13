@@ -62,7 +62,7 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
         case .emberDrift:     return "Ember Drift"
         case .pulseAurora:    return "Pulse Aurora"
         case .vitalWave:      return "Vital Wave"
-        case .echoBloom:      return "Echo Bloom"
+        case .echoBloom:      return "Glow Bloom"
         case .cosmicHeart:    return "Cosmic Heart"
         case .signalDrift:    return "Signal Drift"
         case .horizonPulse:   return "Horizon Pulse"

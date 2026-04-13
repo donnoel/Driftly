@@ -227,7 +227,7 @@ final class DriftlyEngine: ObservableObject {
     }
 
     var allModes: [DriftMode] {
-        DriftMode.allCases
+        DriftModePresentationCatalog.userFacingModes
     }
 
     /// User-selected ordering for the mode picker UI (does not affect core mode list)
@@ -261,7 +261,10 @@ final class DriftlyEngine: ObservableObject {
     private var shuffleQueue: [DriftMode] = []
 
     var modePickerModes: [DriftMode] {
-        modeDisplayOrder
+        let userModes = Set(allModes)
+        let ordered = modeDisplayOrder.filter { userModes.contains($0) }
+        let missing = allModes.filter { !ordered.contains($0) }
+        return ordered + missing
     }
 
     // MARK: - Ubiquitous store helpers
@@ -427,14 +430,22 @@ final class DriftlyEngine: ObservableObject {
             clockEnabled = false
         }
 
-        // mode display order (default: all modes in their defined order)
+        let userFacingModes = DriftModePresentationCatalog.userFacingModes
+
+        // mode display order (default: curated user-facing modes)
         if let stored = defaults.array(forKey: DriftlyDefaultsKey.modeDisplayOrder) as? [String] {
             let storedModes = stored.compactMap(DriftMode.init(rawValue:))
-            // Keep any new modes that shipped after the stored list
-            let missing = DriftMode.allCases.filter { !storedModes.contains($0) }
-            modeDisplayOrder = storedModes + missing
+            let allowedModes = Set(userFacingModes)
+            let filtered = storedModes.filter { allowedModes.contains($0) }
+            let missing = userFacingModes.filter { !filtered.contains($0) }
+            modeDisplayOrder = filtered + missing
         } else {
-            modeDisplayOrder = DriftMode.allCases
+            modeDisplayOrder = userFacingModes
+        }
+
+        // Migrate off retired modes if an older persisted mode is still active.
+        if !userFacingModes.contains(currentMode) {
+            currentMode = userFacingModes.first ?? .nebulaLake
         }
 
         enforceAutoDriftConstraints()
@@ -463,7 +474,7 @@ final class DriftlyEngine: ObservableObject {
     // MARK: - Public API
 
     func goToNextMode() {
-        let modes = allModes
+        let modes = modePickerModes
         guard let index = modes.firstIndex(of: currentMode) else {
             currentMode = modes.first ?? .nebulaLake
             return
@@ -751,18 +762,19 @@ final class DriftlyEngine: ObservableObject {
     private func autoDriftCandidates(startingAt current: DriftMode) -> [DriftMode] {
         switch autoDriftSource {
         case .all:
-            return allModes
+            return modePickerModes
         case .favorites:
             let favoritesList = favoriteModes.sorted {
                 $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
             }
-            return favoritesList.isEmpty ? allModes : favoritesList
+            let filteredFavorites = favoritesList.filter { allModes.contains($0) }
+            return filteredFavorites.isEmpty ? modePickerModes : filteredFavorites
         case .scene(let id):
             guard let scene = scene(withID: id), scene.deletedAt == nil else {
-                return allModes
+                return modePickerModes
             }
-            let modes = scene.modeIDs.filter { mode in DriftMode.allCases.contains(mode) }
-            return modes.isEmpty ? allModes : modes
+            let modes = scene.modeIDs.filter { mode in allModes.contains(mode) }
+            return modes.isEmpty ? modePickerModes : modes
         }
     }
 
