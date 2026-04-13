@@ -64,16 +64,16 @@ struct ChromeBarView: View {
 
     private var iPhoneShellBackground: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.72))
+            .fill(.ultraThinMaterial.opacity(0.64))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(chromeTint.opacity(0.05))
+                    .fill(chromeTint.opacity(0.035))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.16), radius: 8, x: 0, y: 6)
+            .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 4)
     }
 
     private var iPadNowPlayingBackground: some View {
@@ -92,30 +92,30 @@ struct ChromeBarView: View {
 
     private var actionsBackgroundIOS: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.68))
+            .fill(.ultraThinMaterial.opacity(0.60))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.085), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.14), radius: 6, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.11), radius: 5, x: 0, y: 3)
     }
 
     private var nowPlayingLabelIOS: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("Now Playing")
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.white.opacity(0.62))
+                .foregroundStyle(Color.white.opacity(0.58))
             Text(modeName)
                 .accessibilityIdentifier("currentModeLabel")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.white)
             Text(modeDescriptor)
                 .font(.caption2)
-                .foregroundStyle(Color.white.opacity(0.70))
+                .foregroundStyle(Color.white.opacity(0.66))
                 .lineLimit(1)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.vertical, 7)
     }
 
     private var nowPlayingLabelIOSPad: some View {
@@ -193,7 +193,7 @@ struct ChromeBarView: View {
             }, accessibilityIdentifier: "settingsButton", isTvOS: false, isPadOS: isPadLayout, tintColor: chromeTint)
         }
         .padding(.horizontal, isPadLayout ? 10 : 8)
-        .padding(.vertical, isPadLayout ? 8 : 6)
+        .padding(.vertical, isPadLayout ? 8 : 5)
         .background(actionsBackgroundIOS)
     }
 
@@ -201,12 +201,16 @@ struct ChromeBarView: View {
         HStack(spacing: 12) {
             modePickerButtonIOS
 
+            Rectangle()
+                .fill(Color.white.opacity(0.09))
+                .frame(width: 1, height: 24)
+
             Spacer(minLength: 8)
 
             actionButtonsIOS
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
         .background(iPhoneShellBackground)
         .padding(.vertical, 1)
     }

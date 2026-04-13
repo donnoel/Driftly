@@ -595,7 +595,7 @@ struct DriftlyRootView: View {
         VStack(spacing: 14) {
             Text("Sleep timer ended")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white.opacity(0.96))
             
 #if os(tvOS)
             Text("Press Home to exit Driftly, or wake to continue.")
@@ -604,7 +604,7 @@ struct DriftlyRootView: View {
 #else
             Text("Tap to wake Driftly, or press Home to exit.")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.72))
 #endif
             
             Button {
@@ -616,8 +616,16 @@ struct DriftlyRootView: View {
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.accentColor)
+            .buttonStyle(.plain)
+            .foregroundStyle(.white.opacity(0.95))
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                    )
+            )
             .controlSize(.large)
         }
         .padding(.horizontal, 26)
@@ -625,11 +633,15 @@ struct DriftlyRootView: View {
         .frame(maxWidth: 520)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.ultraThickMaterial)
-                .shadow(color: .black.opacity(0.45), radius: 24, x: 0, y: 14)
+                .fill(.ultraThinMaterial.opacity(0.82))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                        .fill(chromeTint.opacity(0.08))
+                )
+                .shadow(color: .black.opacity(0.38), radius: 22, x: 0, y: 12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
                 )
         )
         .transition(.opacity)
