@@ -29,12 +29,48 @@ struct DriftModePickerView: View {
     }
 
 #if !os(tvOS)
-    private var modeCardWidth: CGFloat {
-        horizontalSizeClass == .regular ? 296 : 236
+    private func modeCardWidth(for section: DriftModeBrowseSection) -> CGFloat {
+        if horizontalSizeClass == .regular {
+            switch section {
+            case .signature:
+                return 278
+            case .secondary:
+                return 258
+            case .labs:
+                return 238
+            }
+        }
+
+        switch section {
+        case .signature:
+            return 212
+        case .secondary:
+            return 196
+        case .labs:
+            return 182
+        }
     }
 
-    private var modeCardHeight: CGFloat {
-        horizontalSizeClass == .regular ? 182 : 162
+    private func modeCardHeight(for section: DriftModeBrowseSection) -> CGFloat {
+        if horizontalSizeClass == .regular {
+            switch section {
+            case .signature:
+                return 170
+            case .secondary:
+                return 162
+            case .labs:
+                return 154
+            }
+        }
+
+        switch section {
+        case .signature:
+            return 148
+        case .secondary:
+            return 142
+        case .labs:
+            return 136
+        }
     }
 #endif
 
@@ -78,21 +114,24 @@ struct DriftModePickerView: View {
 
     private var iosPicker: some View {
         NavigationStack {
-            List {
-                scenesSection
+            ZStack {
+                pickerBackdrop
 
-                ForEach(modeGroups) { group in
-                    Section {
-                        modeRail(for: group)
-                    } header: {
-                        sectionHeader(for: group.section)
+                List {
+                    scenesSection
+
+                    ForEach(modeGroups) { group in
+                        Section {
+                            modeRail(for: group)
+                        } header: {
+                            sectionHeader(for: group.section)
+                        }
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .accessibilityIdentifier("modePickerSheet")
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .accessibilityIdentifier("modePickerSheet")
-            .background(Color.black.ignoresSafeArea())
             .navigationTitle("Select Mode")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -137,31 +176,54 @@ struct DriftModePickerView: View {
         }
     }
 
+    private var pickerBackdrop: some View {
+        ZStack {
+            Color.black
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.04),
+                    Color.clear,
+                    Color.white.opacity(0.02)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blur(radius: 22)
+            Rectangle()
+                .fill(.ultraThinMaterial.opacity(0.08))
+        }
+        .ignoresSafeArea()
+    }
+
     private func sectionHeader(for section: DriftModeBrowseSection) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(section.title)
                 .font(section == .signature ? .title3.weight(.bold) : .title3.weight(.semibold))
-                .foregroundStyle(section == .labs ? Color.white.opacity(0.74) : Color.white)
+                .foregroundStyle(section == .labs ? Color.white.opacity(0.64) : Color.white)
             Text(section.subtitle)
                 .font(.caption)
-                .foregroundStyle(section == .labs ? Color.white.opacity(0.55) : Color.white.opacity(0.68))
+                .foregroundStyle(section == .labs ? Color.white.opacity(0.46) : Color.white.opacity(0.68))
         }
+        .padding(.top, section == .signature ? 8 : 4)
         .textCase(nil)
     }
 
     private func modeRail(for group: ModeBrowseGroup) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 14) {
+            LazyHStack(spacing: 12) {
                 ForEach(group.modes) { presentation in
                     modeCard(for: presentation)
-                        .frame(width: modeCardWidth, height: modeCardHeight)
+                        .frame(
+                            width: modeCardWidth(for: presentation.section),
+                            height: modeCardHeight(for: presentation.section)
+                        )
                 }
             }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 2)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 1)
         }
-        .listRowInsets(.init(top: 4, leading: 18, bottom: 10, trailing: 18))
-        .listRowBackground(Color.black)
+        .listRowInsets(.init(top: 2, leading: 16, bottom: 14, trailing: 16))
+        .listRowBackground(Color.clear)
     }
 
     private func modeCard(for presentation: DriftModePresentation) -> some View {
@@ -297,10 +359,10 @@ struct DriftModePickerView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.section.title)
                     .font(group.section == .signature ? .title2.weight(.bold) : .title3.weight(.semibold))
-                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.74) : Color.white)
+                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.68) : Color.white)
                 Text(group.section.subtitle)
                     .font(.caption)
-                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.54) : Color.white.opacity(0.68))
+                    .foregroundStyle(group.section == .labs ? Color.white.opacity(0.44) : Color.white.opacity(0.68))
             }
             .padding(.horizontal, 64)
 
@@ -457,7 +519,7 @@ private struct ModeBrowserCard: View {
                 .padding(14)
             }
             .shadow(color: shadowColor, radius: 14, x: 0, y: 8)
-            .opacity(section == .labs ? 0.86 : 1.0)
+            .opacity(section == .labs ? 0.74 : 1.0)
     }
 
     private var borderColor: Color {
@@ -549,22 +611,32 @@ private struct SceneRow: View {
         Button {
             onActivate()
         } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(scene.name)
-                        .font(.headline)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
                     Text("\(scene.modeIDs.count) modes")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(Color.white.opacity(0.66))
                 }
                 Spacer()
                 if isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
+                    Label("Active", systemImage: "checkmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.9))
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(isActive ? 0.16 : 0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.white.opacity(isActive ? 0.40 : 0.14), lineWidth: 1)
+                    )
+            )
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
