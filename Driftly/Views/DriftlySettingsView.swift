@@ -8,7 +8,6 @@ struct DriftlySettingsView: View {
 
 #if os(tvOS)
     private enum TVFocus: Hashable {
-        case respectReduceMotion
         case labsEnabled
         case autoDriftEnabled
         case autoDriftShuffle
@@ -156,15 +155,6 @@ struct DriftlySettingsView: View {
                                 .accessibilityValue(speedLabel)
                         }
 
-                        Toggle("Use System Reduce Motion", isOn: $engine.respectSystemReduceMotion)
-                            .accessibilityIdentifier("respectReduceMotionToggle")
-
-                        if let notice = reduceMotionNotice {
-                            Text(notice)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .accessibilityIdentifier("reduceMotionNotice")
-                        }
                     }
 
                     Section {
@@ -257,21 +247,6 @@ struct DriftlySettingsView: View {
                         }
                         .padding(.vertical, 8)
 
-                        TVBoolRow(
-                            title: "Use System Reduce Motion",
-                            isOn: $engine.respectSystemReduceMotion,
-                            id: .respectReduceMotion,
-                            focus: $tvFocus,
-                            accessibilityID: "respectReduceMotionToggle"
-                        )
-
-                        if let notice = reduceMotionNotice {
-                            Text(notice)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .accessibilityIdentifier("reduceMotionNotice")
-                                .focusable(false)
-                        }
                     }
 
                     Section {
@@ -374,15 +349,6 @@ struct DriftlySettingsView: View {
 
     private var speedLabel: String {
         speedDescriptor(for: effectiveAnimationSpeed)
-    }
-
-    private var reduceMotionNotice: String? {
-        guard reduceMotion else { return nil }
-        if engine.respectSystemReduceMotion {
-            return "System Reduce Motion is on; animations are softened."
-        } else {
-            return "System Reduce Motion is on, but Driftly will keep full animation speed."
-        }
     }
 
     private var effectiveAnimationSpeed: Double {

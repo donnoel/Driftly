@@ -233,12 +233,6 @@ struct DriftModePickerView: View {
             .navigationTitle("Select Mode")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: AppShare.appStoreURL) {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .accessibilityIdentifier("modePickerShareButton")
-                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }

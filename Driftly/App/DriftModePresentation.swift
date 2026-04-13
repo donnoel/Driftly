@@ -10,20 +10,20 @@ enum DriftModeBrowseSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .signature:
-            return "Signature"
+            return "Featured"
         case .secondary:
-            return "Secondary"
+            return "Atmospheres"
         case .labs:
-            return "More Modes"
+            return "Collection"
         }
     }
 
     var subtitle: String {
         switch self {
         case .signature:
-            return "Core Driftly experiences."
+            return "Curated Driftly essentials."
         case .secondary:
-            return "Polished alternates."
+            return "Refined ambient variations."
         case .labs:
             return "Explore the full Driftly collection."
         }

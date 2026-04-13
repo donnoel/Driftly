@@ -618,33 +618,69 @@ struct DriftlyRootView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.95))
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.10))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.20), lineWidth: 1)
-                    )
-            )
+            .background(sleepOverlayButtonBackground)
             .controlSize(.large)
         }
         .padding(.horizontal, 26)
-        .padding(.vertical, 24)
-        .frame(maxWidth: 520)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.82))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(chromeTint.opacity(0.08))
-                )
-                .shadow(color: .black.opacity(0.38), radius: 22, x: 0, y: 12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                )
-        )
+        .padding(.vertical, 22)
+        .frame(maxWidth: 500)
+        .background(sleepOverlayBackground)
         .transition(.opacity)
+    }
+
+    private var sleepOverlayBackground: some View {
+#if os(iOS)
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.76))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                chromeTint.opacity(0.09),
+                                Color.black.opacity(0.24)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .shadow(color: .black.opacity(0.42), radius: 24, x: 0, y: 14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+#else
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.82))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(chromeTint.opacity(0.08))
+            )
+            .shadow(color: .black.opacity(0.38), radius: 22, x: 0, y: 12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+            )
+#endif
+    }
+
+    private var sleepOverlayButtonBackground: some View {
+#if os(iOS)
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.white.opacity(0.09))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            )
+#else
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.white.opacity(0.10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(0.20), lineWidth: 1)
+            )
+#endif
     }
     
     // MARK: - Brightness edges
