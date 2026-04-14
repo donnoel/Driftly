@@ -200,7 +200,7 @@ Also included:
 
 ## ❤️ Credits
 
-Built with care by **Don Noel** and **Bella**, my AI collaborator ✨
+Built with care by **Don Noel** and my AI collaborator.
 
 ---
 
