@@ -17,6 +17,77 @@ struct DriftlySettingsView: View {
 
     @FocusState private var tvFocus: TVFocus?
 
+    private struct TVRowSurface: View {
+        let isFocused: Bool
+
+        var body: some View {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(baseFill)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(glossFill)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(edgeColor, lineWidth: isFocused ? 1.35 : 1)
+                }
+                .shadow(color: shadowColor, radius: isFocused ? 10 : 0, x: 0, y: isFocused ? 3 : 0)
+        }
+
+        private var baseFill: LinearGradient {
+            if isFocused {
+                return LinearGradient(
+                    colors: [
+                        Color(red: 0.16, green: 0.18, blue: 0.24).opacity(0.94),
+                        Color(red: 0.10, green: 0.11, blue: 0.16).opacity(0.94)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            return LinearGradient(
+                colors: [
+                    Color.white.opacity(0.10),
+                    Color.white.opacity(0.06)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        private var glossFill: LinearGradient {
+            if isFocused {
+                return LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.08),
+                        Color.white.opacity(0.02),
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            return LinearGradient(
+                colors: [
+                    Color.white.opacity(0.03),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        private var edgeColor: Color {
+            isFocused ? Color(red: 0.70, green: 0.78, blue: 0.90).opacity(0.28) : Color.white.opacity(0.14)
+        }
+
+        private var shadowColor: Color {
+            Color(red: 0.62, green: 0.72, blue: 0.90).opacity(0.10)
+        }
+    }
+
     private struct TVBoolRow: View {
         let title: String
         @Binding var isOn: Bool
@@ -42,18 +113,13 @@ struct DriftlySettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
-                .foregroundStyle(isFocused ? Color.black : Color.white)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(isFocused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(isFocused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
-                        }
-                )
-                .animation(.easeInOut(duration: 0.12), value: isFocused)
+                .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
+                .background(TVRowSurface(isFocused: isFocused))
+                .scaleEffect(isFocused ? 1.01 : 1.0)
+                .animation(.easeOut(duration: 0.14), value: isFocused)
             }
             .buttonStyle(.plain)
+            .focusEffectDisabled()
             .focused(focus, equals: id)
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
             .listRowBackground(Color.clear)
@@ -95,18 +161,13 @@ struct DriftlySettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
-                .foregroundStyle(isFocused ? Color.black : Color.white)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(isFocused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(isFocused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
-                        }
-                )
-                .animation(.easeInOut(duration: 0.12), value: isFocused)
+                .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
+                .background(TVRowSurface(isFocused: isFocused))
+                .scaleEffect(isFocused ? 1.01 : 1.0)
+                .animation(.easeOut(duration: 0.14), value: isFocused)
             }
             .buttonStyle(.plain)
+            .focusEffectDisabled()
             .focused(focus, equals: id)
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
             .listRowBackground(Color.clear)

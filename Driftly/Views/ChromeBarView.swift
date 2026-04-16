@@ -256,19 +256,23 @@ struct ChromeBarView: View {
             Spacer()
 
             HStack(spacing: 40) {
+                let modePickerFocused = focusedButton?.wrappedValue == .modePicker
+                let sleepTimerFocused = focusedButton?.wrappedValue == .sleepTimer
+                let settingsFocused = focusedButton?.wrappedValue == .settings
+
                 CircleButton(systemName: "sparkles", action: {
                     onModePicker()
-                }, accessibilityIdentifier: "modePickerButton", isTvOS: true, tintColor: chromeTint)
+                }, accessibilityIdentifier: "modePickerButton", isTvOS: true, isFocused: modePickerFocused, tintColor: chromeTint)
                 .applyFocus(focusedButton, target: .modePicker)
 
                 CircleButton(systemName: "moon.zzz", action: {
                     onSleepTimer()
-                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: true, tintColor: chromeTint)
+                }, accessibilityIdentifier: "sleepTimerButton", isActive: sleepTimerActive, isTvOS: true, isFocused: sleepTimerFocused, tintColor: chromeTint)
                 .applyFocus(focusedButton, target: .sleepTimer)
 
                 CircleButton(systemName: "gearshape", action: {
                     onSettings()
-                }, accessibilityIdentifier: "settingsButton", isTvOS: true, tintColor: chromeTint)
+                }, accessibilityIdentifier: "settingsButton", isTvOS: true, isFocused: settingsFocused, tintColor: chromeTint)
                 .applyFocus(focusedButton, target: .settings)
             }
             .padding(.horizontal, 10)
@@ -295,24 +299,25 @@ private struct CircleButton: View {
     var isActive: Bool = false
     var isTvOS: Bool = false
     var isPadOS: Bool = false
+    var isFocused: Bool = false
     var tintColor: Color? = nil
 
     var body: some View {
         Button(action: action) {
             let baseTint = tintColor ?? Color.white
-            let tint = isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86)
+            let tint = isFocused ? baseTint.opacity(0.98) : (isActive ? baseTint.opacity(0.92) : baseTint.opacity(0.86))
             let visualSize: CGFloat = isTvOS ? 34 : (isPadOS ? 31 : 28)
             let hitSize: CGFloat = isTvOS ? 40 : (isPadOS ? 42 : 40)
             let fontSize: CGFloat = isTvOS ? 15 : (isPadOS ? 15 : 14)
 
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.05))
+                    .fill(buttonFill(isFocused: isFocused, isTvOS: isTvOS))
                     .frame(width: visualSize, height: visualSize)
-                    .background(.ultraThinMaterial.opacity(0.5), in: Circle())
+                    .background(buttonMaterial(isFocused: isFocused, isTvOS: isTvOS), in: Circle())
                     .overlay(
                         Circle()
-                            .stroke(tint.opacity(isActive ? 0.9 : 0.55), lineWidth: 1)
+                            .stroke(buttonStroke(tint: tint, isFocused: isFocused, isActive: isActive, isTvOS: isTvOS), lineWidth: isFocused && isTvOS ? 1.15 : 1)
                     )
 
                 Image(systemName: systemName)
@@ -320,9 +325,13 @@ private struct CircleButton: View {
                     .foregroundStyle(tint)
             }
             .frame(width: hitSize, height: hitSize)
+            .scaleEffect(isTvOS ? (isFocused ? 1.05 : 1.0) : 1.0)
+            .shadow(color: isTvOS && isFocused ? tint.opacity(0.14) : .clear, radius: 10, x: 0, y: 4)
+            .animation(.easeOut(duration: 0.16), value: isFocused)
 #if os(tvOS)
             // tvOS: make the system focus effect follow the circular control, not a big rectangle.
             .contentShape(Circle())
+            .focusEffectDisabled()
 #else
             .contentShape(Rectangle())
 #endif
@@ -331,6 +340,26 @@ private struct CircleButton: View {
 #if !os(tvOS)
         .buttonStyle(.plain)
 #endif
+    }
+
+    private func buttonFill(isFocused: Bool, isTvOS: Bool) -> Color {
+        guard isTvOS else { return Color.white.opacity(0.05) }
+        return isFocused ? Color(red: 0.16, green: 0.18, blue: 0.24).opacity(0.92) : Color.white.opacity(0.05)
+    }
+
+    private func buttonMaterial(isFocused: Bool, isTvOS: Bool) -> some ShapeStyle {
+        if isTvOS && isFocused {
+            return .ultraThinMaterial.opacity(0.36)
+        }
+        return .ultraThinMaterial.opacity(0.5)
+    }
+
+    private func buttonStroke(tint: Color, isFocused: Bool, isActive: Bool, isTvOS: Bool) -> Color {
+        guard isTvOS else { return tint.opacity(isActive ? 0.9 : 0.55) }
+        if isFocused {
+            return tint.opacity(0.42)
+        }
+        return tint.opacity(isActive ? 0.82 : 0.5)
     }
 }
 

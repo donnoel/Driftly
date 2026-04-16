@@ -997,30 +997,61 @@ extension DriftlyRootView {
 
         private func rowBackground(focused: Bool) -> some View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(
-                    focused
-                    ? LinearGradient(
-                        colors: [
-                            Color(red: 0.18, green: 0.21, blue: 0.28).opacity(0.96),
-                            Color(red: 0.10, green: 0.12, blue: 0.17).opacity(0.96)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    : LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.09),
-                            Color.white.opacity(0.06)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(baseFill(focused: focused))
                 .overlay {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(focused ? Color.white.opacity(0.22) : Color.white.opacity(0.14), lineWidth: 1)
+                        .fill(glossFill(focused: focused))
                 }
-                .shadow(color: focused ? Color.white.opacity(0.08) : .clear, radius: 12, x: 0, y: 0)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(focused ? Color(red: 0.68, green: 0.76, blue: 0.90).opacity(0.34) : Color.white.opacity(0.14), lineWidth: focused ? 1.35 : 1)
+                }
+                .shadow(color: focused ? Color(red: 0.62, green: 0.72, blue: 0.90).opacity(0.10) : .clear, radius: focused ? 10 : 0, x: 0, y: focused ? 3 : 0)
+        }
+
+        private func baseFill(focused: Bool) -> LinearGradient {
+            if focused {
+                return LinearGradient(
+                    colors: [
+                        Color(red: 0.16, green: 0.18, blue: 0.24).opacity(0.94),
+                        Color(red: 0.10, green: 0.11, blue: 0.16).opacity(0.94)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            return LinearGradient(
+                colors: [
+                    Color.white.opacity(0.10),
+                    Color.white.opacity(0.06)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        private func glossFill(focused: Bool) -> LinearGradient {
+            if focused {
+                return LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.08),
+                        Color.white.opacity(0.02),
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            return LinearGradient(
+                colors: [
+                    Color.white.opacity(0.03),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
 
         private var ambientBackground: some View {
@@ -1102,9 +1133,12 @@ extension DriftlyRootView {
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 14)
                                         .background(rowBackground(focused: focusedRow == .off))
+                                        .scaleEffect(focusedRow == .off ? 1.01 : 1.0)
                                 }
                                 .buttonStyle(.plain)
+                                .focusEffectDisabled()
                                 .focused($focusedRow, equals: .off)
+                                .animation(.easeOut(duration: 0.14), value: focusedRow == .off)
                                 .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                                 .listRowBackground(Color.clear)
 
@@ -1119,9 +1153,12 @@ extension DriftlyRootView {
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 14)
                                             .background(rowBackground(focused: focusedRow == .common(minutes)))
+                                            .scaleEffect(focusedRow == .common(minutes) ? 1.01 : 1.0)
                                     }
                                     .buttonStyle(.plain)
+                                    .focusEffectDisabled()
                                     .focused($focusedRow, equals: .common(minutes))
+                                    .animation(.easeOut(duration: 0.14), value: focusedRow == .common(minutes))
                                     .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                                     .listRowBackground(Color.clear)
                                 }
@@ -1149,9 +1186,12 @@ extension DriftlyRootView {
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 14)
                                     .background(rowBackground(focused: focusedRow == .more))
+                                    .scaleEffect(focusedRow == .more ? 1.01 : 1.0)
                                 }
                                 .buttonStyle(.plain)
+                                .focusEffectDisabled()
                                 .focused($focusedRow, equals: .more)
+                                .animation(.easeOut(duration: 0.14), value: focusedRow == .more)
                                 .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                                 .listRowBackground(Color.clear)
                             } header: {
@@ -1226,30 +1266,61 @@ extension DriftlyRootView {
 
             private func rowBackground(focused: Bool) -> some View {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        focused
-                        ? LinearGradient(
-                            colors: [
-                                Color(red: 0.18, green: 0.21, blue: 0.28).opacity(0.96),
-                                Color(red: 0.10, green: 0.12, blue: 0.17).opacity(0.96)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        : LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.09),
-                                Color.white.opacity(0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(baseFill(focused: focused))
                     .overlay {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(focused ? Color.white.opacity(0.22) : Color.white.opacity(0.14), lineWidth: 1)
+                            .fill(glossFill(focused: focused))
                     }
-                    .shadow(color: focused ? Color.white.opacity(0.08) : .clear, radius: 12, x: 0, y: 0)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(focused ? Color(red: 0.68, green: 0.76, blue: 0.90).opacity(0.34) : Color.white.opacity(0.14), lineWidth: focused ? 1.35 : 1)
+                    }
+                    .shadow(color: focused ? Color(red: 0.62, green: 0.72, blue: 0.90).opacity(0.10) : .clear, radius: focused ? 10 : 0, x: 0, y: focused ? 3 : 0)
+            }
+
+            private func baseFill(focused: Bool) -> LinearGradient {
+                if focused {
+                    return LinearGradient(
+                        colors: [
+                            Color(red: 0.16, green: 0.18, blue: 0.24).opacity(0.94),
+                            Color(red: 0.10, green: 0.11, blue: 0.16).opacity(0.94)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+
+                return LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.10),
+                        Color.white.opacity(0.06)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            private func glossFill(focused: Bool) -> LinearGradient {
+                if focused {
+                    return LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.08),
+                            Color.white.opacity(0.02),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+
+                return LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.03),
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             }
 
             var body: some View {
@@ -1268,9 +1339,12 @@ extension DriftlyRootView {
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 14)
                                             .background(rowBackground(focused: focusedMinutes == minutes))
+                                            .scaleEffect(focusedMinutes == minutes ? 1.01 : 1.0)
                                 }
                                 .buttonStyle(.plain)
+                                .focusEffectDisabled()
                                 .focused($focusedMinutes, equals: minutes)
+                                .animation(.easeOut(duration: 0.14), value: focusedMinutes == minutes)
                                 .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                                 .listRowBackground(Color.clear)
                             }
