@@ -537,7 +537,7 @@ struct DriftModePickerView: View {
     }
 
     private func beginNewScene() {
-        sceneEditorName = "Scene \(engine.availableScenes.count + 1)"
+        sceneEditorName = nextDefaultSceneName()
         sceneEditorSelection = Set(engine.modeDisplayOrder)
         editingSceneID = nil
         isSceneEditorPresented = true
@@ -548,6 +548,25 @@ struct DriftModePickerView: View {
         sceneEditorSelection = Set(scene.modeIDs)
         editingSceneID = scene.id
         isSceneEditorPresented = true
+    }
+
+    private func nextDefaultSceneName() -> String {
+        let baseName = "New Scene"
+        let existingNames = Set(
+            engine.availableScenes.map {
+                $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            }
+        )
+
+        if !existingNames.contains(baseName.lowercased()) {
+            return baseName
+        }
+
+        var suffix = 2
+        while existingNames.contains("\(baseName) \(suffix)".lowercased()) {
+            suffix += 1
+        }
+        return "\(baseName) \(suffix)"
     }
 }
 
@@ -666,6 +685,20 @@ private struct SceneEditorView: View {
     let onSave: () -> Void
     let onCancel: () -> Void
 
+    @FocusState private var isNameFocused: Bool
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var selectedModeCount: Int {
+        selection.count
+    }
+
+    private var canSave: Bool {
+        !trimmedName.isEmpty && !selection.isEmpty
+    }
+
     private func binding(for mode: DriftMode) -> Binding<Bool> {
         Binding {
             selection.contains(mode)
@@ -681,13 +714,45 @@ private struct SceneEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Name") {
-                    TextField("Scene name", text: $name)
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Scene Name")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        TextField("Enter scene name", text: $name)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                            .focused($isNameFocused)
+                    }
+                    .padding(.vertical, 4)
+                } footer: {
+                    Text("Pick a clear name so this scene is easy to find later.")
                 }
 
-                Section("Modes") {
+                Section {
+                    HStack(spacing: 10) {
+                        Button("Select All") {
+                            selection = Set(allModes)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Clear") {
+                            selection.removeAll()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
                     ForEach(allModes) { mode in
                         Toggle(mode.displayName, isOn: binding(for: mode))
+                    }
+                } header: {
+                    HStack {
+                        Text("Modes")
+                        Spacer()
+                        Text("\(selectedModeCount) selected")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -699,7 +764,14 @@ private struct SceneEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { onSave() }
-                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selection.isEmpty)
+                        .disabled(!canSave)
+                }
+            }
+            .onAppear {
+                if !isEditing {
+                    DispatchQueue.main.async {
+                        isNameFocused = true
+                    }
                 }
             }
         }
