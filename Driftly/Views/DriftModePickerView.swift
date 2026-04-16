@@ -511,8 +511,8 @@ struct DriftModePickerView: View {
                 isFocused: isFocused
             )
             .frame(width: width, height: 232)
-            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.045) : 1.0)
-            .brightness(isFocused ? 0.05 : 0.0)
+            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.02) : 1.0)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: isFocused)
         }
         .buttonStyle(.plain)
         .focusEffectDisabled()
@@ -588,34 +588,23 @@ private struct ModeBrowserCard: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        palette.backgroundTop.opacity(section == .labs ? 0.70 : 0.90),
-                        palette.backgroundBottom.opacity(0.96)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .fill(cardFill)
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                palette.primary.opacity(section == .signature ? 0.38 : 0.28),
-                                palette.secondary.opacity(section == .labs ? 0.18 : 0.24),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .blendMode(.screen)
+                    .fill(accentWash)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(borderColor, lineWidth: borderWidth)
+                    .fill(glossFill)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(edgeColor, lineWidth: edgeWidth)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(innerEdgeColor, lineWidth: 0.7)
+                    .padding(1.1)
             }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 7) {
@@ -626,7 +615,7 @@ private struct ModeBrowserCard: View {
 
                     Text(descriptor)
                         .font(.caption)
-                        .foregroundStyle(section == .labs ? Color.white.opacity(0.62) : Color.white.opacity(0.78))
+                        .foregroundStyle(section == .labs ? Color.white.opacity(0.60) : Color.white.opacity(0.76))
                         .lineLimit(2)
 
                     HStack(spacing: 8) {
@@ -638,41 +627,86 @@ private struct ModeBrowserCard: View {
                         if isFavorite {
                             Label("Favorite", systemImage: "star.fill")
                                 .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Color.yellow.opacity(0.95))
+                                .foregroundStyle(Color.yellow.opacity(0.92))
                         }
                     }
                 }
                 .padding(14)
             }
-            .shadow(color: shadowColor, radius: 14, x: 0, y: 8)
-            .opacity(section == .labs ? 0.74 : 1.0)
+            .shadow(color: shadowColor, radius: isFocused ? 12 : 8, x: 0, y: isFocused ? 8 : 5)
+            .opacity(section == .labs ? 0.78 : 1.0)
     }
 
-    private var borderColor: Color {
-        if isFocused {
-            return palette.primary.opacity(0.86)
-        }
-        if isSelected {
-            return Color.white.opacity(0.84)
-        }
-        return Color.white.opacity(section == .labs ? 0.18 : 0.28)
+    private var cardFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                palette.backgroundTop.opacity(isFocused ? 0.82 : (section == .labs ? 0.68 : 0.84)),
+                palette.backgroundBottom.opacity(isFocused ? 0.92 : 0.96)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
-    private var borderWidth: CGFloat {
+    private var accentWash: LinearGradient {
+        LinearGradient(
+            colors: [
+                palette.primary.opacity(isFocused ? 0.18 : (section == .signature ? 0.26 : 0.20)),
+                palette.secondary.opacity(isFocused ? 0.12 : (section == .labs ? 0.10 : 0.16)),
+                Color.clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var glossFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(isFocused ? 0.10 : 0.05),
+                Color.white.opacity(isFocused ? 0.03 : 0.015),
+                Color.clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .center
+        )
+    }
+
+    private var edgeColor: Color {
         if isFocused {
-            return 2.8
+            return Color.white.opacity(0.42)
         }
         if isSelected {
-            return 1.7
+            return Color.white.opacity(0.28)
         }
-        return 1.0
+        return Color.white.opacity(section == .labs ? 0.12 : 0.18)
+    }
+
+    private var innerEdgeColor: Color {
+        if isFocused {
+            return palette.primary.opacity(0.42)
+        }
+        if isSelected {
+            return palette.primary.opacity(0.22)
+        }
+        return Color.white.opacity(0.06)
+    }
+
+    private var edgeWidth: CGFloat {
+        if isFocused {
+            return 1.35
+        }
+        if isSelected {
+            return 1.0
+        }
+        return 0.85
     }
 
     private var shadowColor: Color {
         if isFocused {
-            return palette.primary.opacity(0.52)
+            return Color.black.opacity(0.34)
         }
-        return palette.primary.opacity(section == .labs ? 0.12 : 0.20)
+        return Color.black.opacity(section == .labs ? 0.18 : 0.24)
     }
 }
 
