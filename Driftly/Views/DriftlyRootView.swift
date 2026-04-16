@@ -995,82 +995,131 @@ extension DriftlyRootView {
                 .foregroundStyle(focused ? Color.black.opacity(0.70) : Color.white.opacity(0.70))
         }
 
+        private func rowBackground(focused: Bool) -> some View {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(focused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(focused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
+                }
+        }
+
         var body: some View {
             ZStack {
-                // Force a stable, high-contrast backdrop regardless of the underlying mode.
-                Color.black.ignoresSafeArea()
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.02, green: 0.03, blue: 0.06),
+                        Color(red: 0.04, green: 0.05, blue: 0.09),
+                        Color.black
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
                 NavigationStack {
-                    List {
-                        Section {
-                            Text(statusText)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .padding(.vertical, 6)
-                                .focusable(false)
-                                .listRowBackground(Color.black)
-                        }
-
-                        Section {
-                            // Off row with explicit focus and color
-                            Button {
-                                onSetMinutes(nil)
-                            } label: {
-                                primary("Off", focused: focusedRow == .off)
-                                    .font(.headline)
-                                    .padding(.vertical, 6)
+                    VStack {
+                        List {
+                            Section {
+                                Text(statusText)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .fill(Color.white.opacity(0.05))
+                                            .overlay {
+                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            }
+                                    )
+                                    .focusable(false)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                    .listRowBackground(Color.clear)
                             }
-                            .buttonStyle(.plain)
-                            .focused($focusedRow, equals: .off)
-                            .listRowBackground(Color.black)
 
-                            // Common durations with explicit focus and color
-                            ForEach(commonDurations, id: \.self) { minutes in
+                            Section {
+                                // Off row with explicit focus and color
                                 Button {
-                                    onSetMinutes(minutes)
+                                    onSetMinutes(nil)
                                 } label: {
-                                    primary("\(minutes) minutes", focused: focusedRow == .common(minutes))
-                                        .font(.headline)
-                                        .padding(.vertical, 6)
+                                    primary("Off", focused: focusedRow == .off)
+                                        .font(.headline.weight(.semibold))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 14)
+                                        .background(rowBackground(focused: focusedRow == .off))
                                 }
                                 .buttonStyle(.plain)
-                                .focused($focusedRow, equals: .common(minutes))
-                                .listRowBackground(Color.black)
-                            }
-                        } header: {
-                            Text("Common")
-                        }
+                                .focused($focusedRow, equals: .off)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                .listRowBackground(Color.clear)
 
-                        Section {
-                            // More durations nav link with explicit focus and color
-                            NavigationLink {
-                                MoreDurationsView(
-                                    durations: moreDurations,
-                                    onSetMinutes: onSetMinutes
-                                )
-                            } label: {
-                                HStack {
-                                    primary("More durations", focused: focusedRow == .more)
-                                    Spacer()
-                                    secondary("5–240 min", focused: focusedRow == .more)
+                                // Common durations with explicit focus and color
+                                ForEach(commonDurations, id: \.self) { minutes in
+                                    Button {
+                                        onSetMinutes(minutes)
+                                    } label: {
+                                        primary("\(minutes) minutes", focused: focusedRow == .common(minutes))
+                                            .font(.headline.weight(.semibold))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 14)
+                                            .background(rowBackground(focused: focusedRow == .common(minutes)))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .focused($focusedRow, equals: .common(minutes))
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                    .listRowBackground(Color.clear)
                                 }
-                                .font(.headline)
-                                .padding(.vertical, 6)
+                            } header: {
+                                Text("Common")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .textCase(nil)
                             }
-                            .buttonStyle(.plain)
-                            .focused($focusedRow, equals: .more)
-                            .listRowBackground(Color.black)
-                        } header: {
-                            Text("More")
+
+                            Section {
+                                // More durations nav link with explicit focus and color
+                                NavigationLink {
+                                    MoreDurationsView(
+                                        durations: moreDurations,
+                                        onSetMinutes: onSetMinutes
+                                    )
+                                } label: {
+                                    HStack {
+                                        primary("More durations", focused: focusedRow == .more)
+                                        Spacer()
+                                        secondary("5-240 min", focused: focusedRow == .more)
+                                    }
+                                    .font(.headline.weight(.semibold))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 14)
+                                    .background(rowBackground(focused: focusedRow == .more))
+                                }
+                                .buttonStyle(.plain)
+                                .focused($focusedRow, equals: .more)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                .listRowBackground(Color.clear)
+                            } header: {
+                                Text("More")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .textCase(nil)
+                            }
                         }
+                        .listStyle(.plain)
+                        .background(Color.clear)
+                        .frame(maxWidth: 980)
                     }
-                    .listStyle(.plain)
-                    .background(Color.black)
+                    .padding(.horizontal, 56)
+                    .padding(.vertical, 36)
                     .navigationTitle("Sleep Timer")
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             Image(systemName: isActive ? "moon.zzz.fill" : "moon.zzz")
-                                .foregroundStyle(isActive ? .yellow.opacity(0.92) : .secondary)
+                                .foregroundStyle(isActive ? .yellow.opacity(0.9) : .secondary)
                         }
                     }
                 }
@@ -1094,24 +1143,51 @@ extension DriftlyRootView {
             }
 
             var body: some View {
-                List {
-                    Section {
-                        ForEach(durations, id: \.self) { minutes in
-                            Button {
-                                onSetMinutes(minutes)
-                            } label: {
-                                primary("\(minutes) minutes", focused: focusedMinutes == minutes)
-                                    .font(.headline)
-                                    .padding(.vertical, 6)
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.02, green: 0.03, blue: 0.06),
+                            Color(red: 0.04, green: 0.05, blue: 0.09),
+                            Color.black
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
+
+                    List {
+                        Section {
+                            ForEach(durations, id: \.self) { minutes in
+                                Button {
+                                    onSetMinutes(minutes)
+                                } label: {
+                                    primary("\(minutes) minutes", focused: focusedMinutes == minutes)
+                                        .font(.headline.weight(.semibold))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 14)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                .fill(focusedMinutes == minutes ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
+                                                .overlay {
+                                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                        .stroke(focusedMinutes == minutes ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
+                                                }
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .focused($focusedMinutes, equals: minutes)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                .listRowBackground(Color.clear)
                             }
-                            .buttonStyle(.plain)
-                            .focused($focusedMinutes, equals: minutes)
-                            .listRowBackground(Color.black)
                         }
                     }
+                    .frame(maxWidth: 980)
+                    .padding(.horizontal, 56)
+                    .padding(.vertical, 36)
                 }
                 .listStyle(.plain)
-                .background(Color.black)
+                .background(Color.clear)
                 .navigationTitle("More Durations")
             }
         }

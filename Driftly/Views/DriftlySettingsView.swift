@@ -39,13 +39,24 @@ struct DriftlySettingsView: View {
                     }
                 }
                 .font(.headline)
-                .padding(.vertical, 6)
-                // Critical: invert text under the focus pill
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
                 .foregroundStyle(isFocused ? Color.black : Color.white)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(isFocused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(isFocused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
+                        }
+                )
                 .animation(.easeInOut(duration: 0.12), value: isFocused)
             }
             .buttonStyle(.plain)
             .focused(focus, equals: id)
+            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowBackground(Color.clear)
         }
 
         var body: some View {
@@ -81,13 +92,24 @@ struct DriftlySettingsView: View {
                     Spacer()
                 }
                 .font(.headline)
-                .padding(.vertical, 6)
-                // Critical: invert text under the focus pill
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
                 .foregroundStyle(isFocused ? Color.black : Color.white)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(isFocused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(isFocused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
+                        }
+                )
                 .animation(.easeInOut(duration: 0.12), value: isFocused)
             }
             .buttonStyle(.plain)
             .focused(focus, equals: id)
+            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowBackground(Color.clear)
         }
 
         var body: some View {
@@ -218,113 +240,155 @@ struct DriftlySettingsView: View {
 #if os(tvOS)
     private var tvSettings: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            LinearGradient(
+                colors: [
+                    Color(red: 0.02, green: 0.03, blue: 0.06),
+                    Color(red: 0.04, green: 0.05, blue: 0.09),
+                    Color.black
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
             NavigationStack {
-                Form {
-                    Section("Animation") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Animation Speed")
-                                .font(.body.weight(.semibold))
+                VStack {
+                    Form {
+                        Section("Animation") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Animation Speed")
+                                    .font(.body.weight(.semibold))
 
-                            Picker("", selection: $engine.animationSpeed) {
-                                Text("Gentle").tag(0.6)
-                                Text("Normal").tag(1.0)
-                                Text("Lively").tag(1.4)
+                                Picker("", selection: $engine.animationSpeed) {
+                                    Text("Gentle").tag(0.6)
+                                    Text("Normal").tag(1.0)
+                                    Text("Lively").tag(1.4)
+                                }
+                                .pickerStyle(.segmented)
+
+                                Text(speedLabel)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .accessibilityIdentifier("animationSpeedLabel")
+                                    .focusable(false)
                             }
-                            .pickerStyle(.segmented)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.white.opacity(0.06))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    }
+                            )
+                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowBackground(Color.clear)
+                        }
 
-                            Text(speedLabel)
+                        Section {
+                            TVBoolRow(
+                                title: "Auto Drift Between Modes",
+                                isOn: $engine.autoDriftEnabled,
+                                id: .autoDriftEnabled,
+                                focus: $tvFocus
+                            )
+                            TVBoolRow(
+                                title: "Shuffle Order",
+                                isOn: $engine.autoDriftShuffleEnabled,
+                                id: .autoDriftShuffle,
+                                focus: $tvFocus
+                            )
+
+                            Picker("Drift From", selection: $engine.autoDriftSource) {
+                                Text("All Modes").tag(AutoDriftSource.all)
+                                Text("Favorites").tag(AutoDriftSource.favorites)
+                                if let sceneID = engine.activeSceneID,
+                                   let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
+                                    Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                                }
+                            }
+                            .listRowBackground(Color.clear)
+
+                            Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                                ForEach(autoDriftOptions, id: \.self) { minutes in
+                                    Text("\(minutes) minutes").tag(minutes)
+                                }
+                            }
+                            .listRowBackground(Color.clear)
+                        } header: {
+                            Text("Drifting")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(nil)
+                        } footer: {
+                            Text("Configure how Driftly transitions between modes.")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
-                                .accessibilityIdentifier("animationSpeedLabel")
                                 .focusable(false)
                         }
-                        .padding(.vertical, 8)
 
-                    }
+                        Section("Screen") {
+                            TVBoolRow(
+                                title: "Stay Awake",
+                                isOn: $engine.preventAutoLock,
+                                id: .stayAwake,
+                                focus: $tvFocus
+                            )
+                            TVBoolRow(
+                                title: "Show Clock",
+                                isOn: $engine.clockEnabled,
+                                id: .showClock,
+                                focus: $tvFocus
+                            )
+                            Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .focusable(false)
+                                .listRowBackground(Color.clear)
+                        }
 
-                    Section {
-                        TVBoolRow(
-                            title: "Auto Drift Between Modes",
-                            isOn: $engine.autoDriftEnabled,
-                            id: .autoDriftEnabled,
-                            focus: $tvFocus
-                        )
-                        TVBoolRow(
-                            title: "Shuffle Order",
-                            isOn: $engine.autoDriftShuffleEnabled,
-                            id: .autoDriftShuffle,
-                            focus: $tvFocus
-                        )
+                        Section("About") {
+                            HStack {
+                                Text("Version")
+                                Spacer()
+                                Text(versionString)
+                            }
+                            .font(.headline)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.white.opacity(0.06))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    }
+                            )
+                            .contentShape(Rectangle())
+                            .focusable(true)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowBackground(Color.clear)
+                        }
 
-                        Picker("Drift From", selection: $engine.autoDriftSource) {
-                            Text("All Modes").tag(AutoDriftSource.all)
-                            Text("Favorites").tag(AutoDriftSource.favorites)
-                            if let sceneID = engine.activeSceneID,
-                               let scene = engine.availableScenes.first(where: { $0.id == sceneID }) {
-                                Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
+                        Section("Help") {
+                            TVActionRow(
+                                title: "Show How To",
+                                systemImage: "questionmark.circle",
+                                id: .showHowTo,
+                                focus: $tvFocus,
+                                accessibilityID: "showHowToButton"
+                            ) {
+                                requestShowOnboarding = true
+                                dismiss()
                             }
                         }
-
-                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
-                            ForEach(autoDriftOptions, id: \.self) { minutes in
-                                Text("\(minutes) minutes").tag(minutes)
-                            }
-                        }
-                    } header: {
-                        Text("Drifting")
-                    } footer: {
-                        Text("Configure how Driftly transitions between modes.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .focusable(false)
                     }
-
-                    Section("Screen") {
-                        TVBoolRow(
-                            title: "Stay Awake",
-                            isOn: $engine.preventAutoLock,
-                            id: .stayAwake,
-                            focus: $tvFocus
-                        )
-                        TVBoolRow(
-                            title: "Show Clock",
-                            isOn: $engine.clockEnabled,
-                            id: .showClock,
-                            focus: $tvFocus
-                        )
-                        Text("When a sleep timer ends, tvOS can show the screen saver or power down.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .focusable(false)
-                    }
-
-                    Section("About") {
-                        HStack {
-                            Text("Version")
-                            Spacer()
-                            Text(versionString)
-                        }
-                        .font(.headline)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                        .focusable(true)
-                    }
-                    Section("Help") {
-                        TVActionRow(
-                            title: "Show How To",
-                            systemImage: "questionmark.circle",
-                            id: .showHowTo,
-                            focus: $tvFocus,
-                            accessibilityID: "showHowToButton"
-                        ) {
-                            requestShowOnboarding = true
-                            dismiss()
-                        }
-                    }
+                    .frame(maxWidth: 980)
+                    .background(Color.clear)
                 }
-                .background(Color.black)
+                .padding(.horizontal, 56)
+                .padding(.vertical, 36)
                 .navigationTitle("Settings")
             }
         }
