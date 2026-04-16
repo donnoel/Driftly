@@ -511,7 +511,7 @@ struct DriftModePickerView: View {
                 isFocused: isFocused
             )
             .frame(width: width, height: 232)
-            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.02) : 1.0)
+            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.01) : 1.0)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: isFocused)
         }
         .buttonStyle(.plain)
@@ -595,7 +595,7 @@ private struct ModeBrowserCard: View {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(glossFill)
+                    .fill(highlightFill)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -603,8 +603,8 @@ private struct ModeBrowserCard: View {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(innerEdgeColor, lineWidth: 0.7)
-                    .padding(1.1)
+                    .strokeBorder(innerEdgeColor, lineWidth: 0.55)
+                    .padding(1)
             }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 7) {
@@ -633,15 +633,15 @@ private struct ModeBrowserCard: View {
                 }
                 .padding(14)
             }
-            .shadow(color: shadowColor, radius: isFocused ? 12 : 8, x: 0, y: isFocused ? 8 : 5)
+            .shadow(color: shadowColor, radius: isFocused ? 7 : 5, x: 0, y: isFocused ? 4 : 3)
             .opacity(section == .labs ? 0.78 : 1.0)
     }
 
     private var cardFill: LinearGradient {
         LinearGradient(
             colors: [
-                palette.backgroundTop.opacity(isFocused ? 0.82 : (section == .labs ? 0.68 : 0.84)),
-                palette.backgroundBottom.opacity(isFocused ? 0.92 : 0.96)
+                palette.backgroundTop.opacity(section == .labs ? 0.68 : 0.82),
+                palette.backgroundBottom.opacity(0.95)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -651,8 +651,8 @@ private struct ModeBrowserCard: View {
     private var accentWash: LinearGradient {
         LinearGradient(
             colors: [
-                palette.primary.opacity(isFocused ? 0.18 : (section == .signature ? 0.26 : 0.20)),
-                palette.secondary.opacity(isFocused ? 0.12 : (section == .labs ? 0.10 : 0.16)),
+                palette.primary.opacity(section == .signature ? 0.20 : 0.16),
+                palette.secondary.opacity(section == .labs ? 0.08 : 0.12),
                 Color.clear
             ],
             startPoint: .topLeading,
@@ -660,11 +660,11 @@ private struct ModeBrowserCard: View {
         )
     }
 
-    private var glossFill: LinearGradient {
+    private var highlightFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color.white.opacity(isFocused ? 0.10 : 0.05),
-                Color.white.opacity(isFocused ? 0.03 : 0.015),
+                Color.white.opacity(isFocused ? 0.07 : 0.04),
+                Color.white.opacity(isFocused ? 0.018 : 0.01),
                 Color.clear
             ],
             startPoint: .topLeading,
@@ -674,7 +674,7 @@ private struct ModeBrowserCard: View {
 
     private var edgeColor: Color {
         if isFocused {
-            return Color.white.opacity(0.42)
+            return Color.white.opacity(0.26)
         }
         if isSelected {
             return Color.white.opacity(0.28)
@@ -684,7 +684,7 @@ private struct ModeBrowserCard: View {
 
     private var innerEdgeColor: Color {
         if isFocused {
-            return palette.primary.opacity(0.42)
+            return palette.primary.opacity(0.18)
         }
         if isSelected {
             return palette.primary.opacity(0.22)
@@ -694,7 +694,7 @@ private struct ModeBrowserCard: View {
 
     private var edgeWidth: CGFloat {
         if isFocused {
-            return 1.35
+            return 0.95
         }
         if isSelected {
             return 1.0
@@ -704,7 +704,7 @@ private struct ModeBrowserCard: View {
 
     private var shadowColor: Color {
         if isFocused {
-            return Color.black.opacity(0.34)
+            return Color.black.opacity(0.18)
         }
         return Color.black.opacity(section == .labs ? 0.18 : 0.24)
     }

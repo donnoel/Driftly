@@ -314,20 +314,19 @@ private struct CircleButton: View {
                 Circle()
                     .fill(buttonFill(isFocused: isFocused, isTvOS: isTvOS))
                     .frame(width: visualSize, height: visualSize)
-                    .background(buttonMaterial(isFocused: isFocused, isTvOS: isTvOS), in: Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(buttonStroke(tint: tint, isFocused: isFocused, isActive: isActive, isTvOS: isTvOS), lineWidth: isFocused && isTvOS ? 1.15 : 1)
-                    )
+                    .overlay(Circle().fill(buttonHighlight(isFocused: isFocused, isTvOS: isTvOS)))
+                    .overlay(Circle().stroke(buttonStroke(tint: tint, isFocused: isFocused, isActive: isActive, isTvOS: isTvOS), lineWidth: isFocused && isTvOS ? 1.05 : 0.9))
+                    .overlay(Circle().stroke(buttonInnerStroke(tint: tint, isFocused: isFocused, isTvOS: isTvOS), lineWidth: isTvOS ? 0.6 : 0))
+                    .padding(isTvOS ? 0.75 : 0)
 
                 Image(systemName: systemName)
                     .font(.system(size: fontSize, weight: .semibold))
                     .foregroundStyle(tint)
             }
             .frame(width: hitSize, height: hitSize)
-            .scaleEffect(isTvOS ? (isFocused ? 1.05 : 1.0) : 1.0)
-            .shadow(color: isTvOS && isFocused ? tint.opacity(0.14) : .clear, radius: 10, x: 0, y: 4)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
+            .scaleEffect(isTvOS ? (isFocused ? 1.025 : 1.0) : 1.0)
+            .shadow(color: isTvOS && isFocused ? Color.black.opacity(0.18) : .clear, radius: 6, x: 0, y: 3)
+            .animation(.easeOut(duration: 0.14), value: isFocused)
 #if os(tvOS)
             // tvOS: make the system focus effect follow the circular control, not a big rectangle.
             .contentShape(Circle())
@@ -336,30 +335,45 @@ private struct CircleButton: View {
             .contentShape(Rectangle())
 #endif
         }
-        .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
-#if !os(tvOS)
         .buttonStyle(.plain)
-#endif
+        .accessibilityIdentifier(accessibilityIdentifier ?? systemName)
     }
 
     private func buttonFill(isFocused: Bool, isTvOS: Bool) -> Color {
         guard isTvOS else { return Color.white.opacity(0.05) }
-        return isFocused ? Color(red: 0.16, green: 0.18, blue: 0.24).opacity(0.92) : Color.white.opacity(0.05)
+        return isFocused ? Color(red: 0.12, green: 0.14, blue: 0.19).opacity(0.94) : Color(red: 0.10, green: 0.11, blue: 0.15).opacity(0.88)
     }
 
-    private func buttonMaterial(isFocused: Bool, isTvOS: Bool) -> some ShapeStyle {
-        if isTvOS && isFocused {
-            return .ultraThinMaterial.opacity(0.36)
+    private func buttonHighlight(isFocused: Bool, isTvOS: Bool) -> LinearGradient {
+        guard isTvOS else {
+            return LinearGradient(colors: [Color.white.opacity(0.06), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
-        return .ultraThinMaterial.opacity(0.5)
+
+        return LinearGradient(
+            colors: [
+                Color.white.opacity(isFocused ? 0.11 : 0.05),
+                Color.white.opacity(isFocused ? 0.03 : 0.015),
+                Color.clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private func buttonStroke(tint: Color, isFocused: Bool, isActive: Bool, isTvOS: Bool) -> Color {
         guard isTvOS else { return tint.opacity(isActive ? 0.9 : 0.55) }
         if isFocused {
-            return tint.opacity(0.42)
+            return Color.white.opacity(0.34)
         }
-        return tint.opacity(isActive ? 0.82 : 0.5)
+        return tint.opacity(isActive ? 0.44 : 0.22)
+    }
+
+    private func buttonInnerStroke(tint: Color, isFocused: Bool, isTvOS: Bool) -> Color {
+        guard isTvOS else { return .clear }
+        if isFocused {
+            return tint.opacity(0.28)
+        }
+        return Color.white.opacity(0.04)
     }
 }
 
