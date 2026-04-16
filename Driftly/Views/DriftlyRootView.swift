@@ -987,24 +987,43 @@ extension DriftlyRootView {
 
         private func primary(_ text: String, focused: Bool) -> some View {
             Text(text)
-                .foregroundStyle(focused ? Color.black : Color.white)
+                .foregroundStyle(focused ? Color.white : Color.white)
         }
 
         private func secondary(_ text: String, focused: Bool) -> some View {
             Text(text)
-                .foregroundStyle(focused ? Color.black.opacity(0.70) : Color.white.opacity(0.70))
+                .foregroundStyle(focused ? Color.white.opacity(0.78) : Color.white.opacity(0.70))
         }
 
         private func rowBackground(focused: Bool) -> some View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(focused ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
+                .fill(
+                    focused
+                    ? LinearGradient(
+                        colors: [
+                            Color(red: 0.18, green: 0.21, blue: 0.28).opacity(0.96),
+                            Color(red: 0.10, green: 0.12, blue: 0.17).opacity(0.96)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    : LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.09),
+                            Color.white.opacity(0.06)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(focused ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
+                        .stroke(focused ? Color.white.opacity(0.22) : Color.white.opacity(0.14), lineWidth: 1)
                 }
+                .shadow(color: focused ? Color.white.opacity(0.08) : .clear, radius: 12, x: 0, y: 0)
         }
 
-        var body: some View {
+        private var ambientBackground: some View {
             ZStack {
                 LinearGradient(
                     colors: [
@@ -1015,32 +1034,65 @@ extension DriftlyRootView {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .ignoresSafeArea()
+
+                RadialGradient(
+                    colors: [
+                        Color.white.opacity(0.10),
+                        Color.clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 40,
+                    endRadius: 560
+                )
+                .blendMode(.screen)
+                .offset(x: -140, y: -160)
+            }
+            .ignoresSafeArea()
+        }
+
+        private var introCard: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: isActive ? "moon.zzz.fill" : "moon.zzz")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(isActive ? .yellow.opacity(0.92) : .white.opacity(0.82))
+
+                    Text("Sleep Timer")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+
+                Text("Choose when Driftly should wind down on Apple TV.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.white.opacity(0.72))
+
+                Text(statusText)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.86))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    }
+            )
+        }
+
+        var body: some View {
+            ZStack {
+                ambientBackground
 
                 NavigationStack {
-                    VStack {
+                    VStack(spacing: 18) {
+                        introCard
+
                         List {
                             Section {
-                                Text(statusText)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color.white.opacity(0.05))
-                                            .overlay {
-                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            }
-                                    )
-                                    .focusable(false)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                    .listRowBackground(Color.clear)
-                            }
-
-                            Section {
-                                // Off row with explicit focus and color
                                 Button {
                                     onSetMinutes(nil)
                                 } label: {
@@ -1112,19 +1164,22 @@ extension DriftlyRootView {
                         .listStyle(.plain)
                         .background(Color.clear)
                         .frame(maxWidth: 980)
+                        .padding(18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(Color.black.opacity(0.28))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                }
+                        )
                     }
                     .padding(.horizontal, 56)
                     .padding(.vertical, 36)
                     .navigationTitle("Sleep Timer")
-                    .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            Image(systemName: isActive ? "moon.zzz.fill" : "moon.zzz")
-                                .foregroundStyle(isActive ? .yellow.opacity(0.9) : .secondary)
-                        }
-                    }
+                    .toolbar(.hidden, for: .navigationBar)
                 }
             }
-            // tvOS is effectively always dark in system apps; enforce it for legibility.
             .onExitCommand {
                 onCancel()
             }
@@ -1137,12 +1192,7 @@ extension DriftlyRootView {
 
             @FocusState private var focusedMinutes: Int?
 
-            private func primary(_ text: String, focused: Bool) -> some View {
-                Text(text)
-                    .foregroundStyle(focused ? Color.black : Color.white)
-            }
-
-            var body: some View {
+            private var ambientBackground: some View {
                 ZStack {
                     LinearGradient(
                         colors: [
@@ -1153,7 +1203,58 @@ extension DriftlyRootView {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    .ignoresSafeArea()
+
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.10),
+                            Color.clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 40,
+                        endRadius: 560
+                    )
+                    .blendMode(.screen)
+                    .offset(x: -140, y: -160)
+                }
+                .ignoresSafeArea()
+            }
+
+            private func primary(_ text: String, focused: Bool) -> some View {
+                Text(text)
+                    .foregroundStyle(Color.white)
+            }
+
+            private func rowBackground(focused: Bool) -> some View {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(
+                        focused
+                        ? LinearGradient(
+                            colors: [
+                                Color(red: 0.18, green: 0.21, blue: 0.28).opacity(0.96),
+                                Color(red: 0.10, green: 0.12, blue: 0.17).opacity(0.96)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        : LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.09),
+                                Color.white.opacity(0.06)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(focused ? Color.white.opacity(0.22) : Color.white.opacity(0.14), lineWidth: 1)
+                    }
+                    .shadow(color: focused ? Color.white.opacity(0.08) : .clear, radius: 12, x: 0, y: 0)
+            }
+
+            var body: some View {
+                ZStack {
+                    ambientBackground
 
                     List {
                         Section {
@@ -1161,19 +1262,12 @@ extension DriftlyRootView {
                                 Button {
                                     onSetMinutes(minutes)
                                 } label: {
-                                    primary("\(minutes) minutes", focused: focusedMinutes == minutes)
-                                        .font(.headline.weight(.semibold))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                .fill(focusedMinutes == minutes ? Color.white.opacity(0.96) : Color.white.opacity(0.08))
-                                                .overlay {
-                                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                        .stroke(focusedMinutes == minutes ? Color.white.opacity(0.92) : Color.white.opacity(0.14), lineWidth: 1)
-                                                }
-                                        )
+                                        primary("\(minutes) minutes", focused: focusedMinutes == minutes)
+                                            .font(.headline.weight(.semibold))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 14)
+                                            .background(rowBackground(focused: focusedMinutes == minutes))
                                 }
                                 .buttonStyle(.plain)
                                 .focused($focusedMinutes, equals: minutes)
@@ -1182,13 +1276,23 @@ extension DriftlyRootView {
                             }
                         }
                     }
+                    .listStyle(.plain)
                     .frame(maxWidth: 980)
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(Color.black.opacity(0.28))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            }
+                    )
                     .padding(.horizontal, 56)
                     .padding(.vertical, 36)
                 }
-                .listStyle(.plain)
                 .background(Color.clear)
                 .navigationTitle("More Durations")
+                .toolbar(.hidden, for: .navigationBar)
             }
         }
     }

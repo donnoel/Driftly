@@ -240,19 +240,12 @@ struct DriftlySettingsView: View {
 #if os(tvOS)
     private var tvSettings: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.02, green: 0.03, blue: 0.06),
-                    Color(red: 0.04, green: 0.05, blue: 0.09),
-                    Color.black
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            tvAmbientBackground
 
             NavigationStack {
-                VStack {
+                VStack(spacing: 18) {
+                    tvIntroCard
+
                     Form {
                         Section("Animation") {
                             VStack(alignment: .leading, spacing: 12) {
@@ -386,14 +379,84 @@ struct DriftlySettingsView: View {
                     }
                     .frame(maxWidth: 980)
                     .background(Color.clear)
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(Color.black.opacity(0.28))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            }
+                    )
                 }
                 .padding(.horizontal, 56)
                 .padding(.vertical, 36)
                 .navigationTitle("Settings")
+                .toolbar(.hidden, for: .navigationBar)
             }
         }
         .onExitCommand { dismiss() }
         .preferredColorScheme(.dark)
+    }
+
+    private var tvAmbientBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.02, green: 0.03, blue: 0.06),
+                    Color(red: 0.04, green: 0.05, blue: 0.09),
+                    Color.black
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            RadialGradient(
+                colors: [
+                    Color.white.opacity(0.10),
+                    Color.clear
+                ],
+                center: .topLeading,
+                startRadius: 40,
+                endRadius: 620
+            )
+            .blendMode(.screen)
+            .offset(x: -160, y: -180)
+        }
+        .ignoresSafeArea()
+    }
+
+    private var tvIntroCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "gearshape.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.84))
+
+                Text("Settings")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+            }
+
+            Text("Fine-tune how Driftly behaves on Apple TV.")
+                .font(.footnote)
+                .foregroundStyle(Color.white.opacity(0.72))
+
+            Text("Adjust animation, drifting, screen behavior, and help in one place.")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.white.opacity(0.84))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                }
+        )
     }
 #endif
 
