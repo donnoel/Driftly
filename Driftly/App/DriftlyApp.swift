@@ -5,6 +5,10 @@ import SwiftUI
 struct DriftlyApp: App {
     @StateObject private var engine = DriftlyApp.makeEngine()
 
+    init() {
+        Self.updateSettingsVersionDisplay()
+    }
+
     var body: some Scene {
         WindowGroup {
             DriftlyRootView()
@@ -28,6 +32,25 @@ struct DriftlyApp: App {
         #endif
 
         return engine
+    }
+
+    private static func updateSettingsVersionDisplay() {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String
+        let build = info?["CFBundleVersion"] as? String
+
+        let displayValue: String
+        if let version, !version.isEmpty {
+            if let build, !build.isEmpty {
+                displayValue = "\(version) (\(build))"
+            } else {
+                displayValue = version
+            }
+        } else {
+            displayValue = "--"
+        }
+
+        UserDefaults.standard.set(displayValue, forKey: "app_version_display")
     }
 
 #if DEBUG
