@@ -15,64 +15,6 @@ struct DriftlySettingsView: View {
 
     @FocusState private var tvFocus: TVFocus?
 
-    private struct TVRowSurface: View {
-        let isFocused: Bool
-
-        var body: some View {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(baseFill)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(highlightFill)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(edgeColor, lineWidth: isFocused ? 1.0 : 0.85)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(innerEdgeColor, lineWidth: 0.55)
-                        .padding(1)
-                }
-                .shadow(color: shadowColor, radius: isFocused ? 6 : 0, x: 0, y: isFocused ? 3 : 0)
-        }
-
-        private var baseFill: LinearGradient {
-            return LinearGradient(
-                colors: [
-                    Color(red: 0.10, green: 0.11, blue: 0.15).opacity(isFocused ? 0.94 : 0.88),
-                    Color(red: 0.07, green: 0.08, blue: 0.11).opacity(isFocused ? 0.96 : 0.92)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-
-        private var highlightFill: LinearGradient {
-            return LinearGradient(
-                colors: [
-                    Color.white.opacity(isFocused ? 0.08 : 0.04),
-                    Color.white.opacity(isFocused ? 0.02 : 0.01),
-                    Color.clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-
-        private var edgeColor: Color {
-            isFocused ? Color.white.opacity(0.24) : Color.white.opacity(0.12)
-        }
-
-        private var innerEdgeColor: Color {
-            isFocused ? Color(red: 0.66, green: 0.74, blue: 0.88).opacity(0.18) : Color.white.opacity(0.03)
-        }
-
-        private var shadowColor: Color {
-            Color.black.opacity(0.18)
-        }
-    }
-
     private struct TVBoolRow: View {
         let title: String
         @Binding var isOn: Bool
@@ -99,7 +41,7 @@ struct DriftlySettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
                 .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
-                .background(TVRowSurface(isFocused: isFocused))
+                .background(TVFocusRowSurface(isFocused: isFocused))
                 .scaleEffect(isFocused ? 1.006 : 1.0)
                 .animation(.easeOut(duration: 0.14), value: isFocused)
             }
@@ -147,7 +89,7 @@ struct DriftlySettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
                 .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
-                .background(TVRowSurface(isFocused: isFocused))
+                .background(TVFocusRowSurface(isFocused: isFocused))
                 .scaleEffect(isFocused ? 1.006 : 1.0)
                 .animation(.easeOut(duration: 0.14), value: isFocused)
             }
@@ -511,3 +453,59 @@ struct DriftlySettingsView: View {
         return "\(version) (\(build))"
     }
 }
+
+#if os(tvOS)
+struct TVFocusRowSurface: View {
+    let isFocused: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(baseFill)
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(highlightFill)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(edgeColor, lineWidth: isFocused ? 1.0 : 0.85)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(innerEdgeColor, lineWidth: 0.55)
+                    .padding(1)
+            }
+            .shadow(color: Color.black.opacity(0.18), radius: isFocused ? 6 : 0, x: 0, y: isFocused ? 3 : 0)
+    }
+
+    private var baseFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 0.10, green: 0.11, blue: 0.15).opacity(isFocused ? 0.94 : 0.88),
+                Color(red: 0.07, green: 0.08, blue: 0.11).opacity(isFocused ? 0.96 : 0.92)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var highlightFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(isFocused ? 0.08 : 0.04),
+                Color.white.opacity(isFocused ? 0.02 : 0.01),
+                Color.clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var edgeColor: Color {
+        isFocused ? Color.white.opacity(0.24) : Color.white.opacity(0.12)
+    }
+
+    private var innerEdgeColor: Color {
+        isFocused ? Color(red: 0.66, green: 0.74, blue: 0.88).opacity(0.18) : Color.white.opacity(0.03)
+    }
+}
+#endif
