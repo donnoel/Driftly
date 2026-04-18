@@ -769,7 +769,7 @@ private struct IPadSceneEditorSheetModifier: ViewModifier {
             }
         } else {
             content
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
     }
