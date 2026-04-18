@@ -9,6 +9,8 @@ struct DriftlySettingsView: View {
     private enum TVFocus: Hashable {
         case autoDriftEnabled
         case autoDriftShuffle
+        case driftFrom
+        case driftEvery
         case stayAwake
         case showClock
     }
@@ -90,7 +92,7 @@ struct DriftlySettingsView: View {
             .onTapGesture {
                 isOn.toggle()
             }
-            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
             .listRowBackground(Color.clear)
         }
 
@@ -133,7 +135,7 @@ struct DriftlySettingsView: View {
             .onTapGesture {
                 action()
             }
-            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
             .listRowBackground(Color.clear)
         }
 
@@ -296,7 +298,7 @@ struct DriftlySettingsView: View {
                                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                     }
                             )
-                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                             .listRowBackground(Color.clear)
                         }
 
@@ -322,7 +324,10 @@ struct DriftlySettingsView: View {
                                     Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                                 }
                             }
-                            .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
+                            .modifier(TVSettingsRowSurface(isFocused: tvFocus == .driftFrom))
+                            .focusEffectDisabled()
+                            .focused($tvFocus, equals: .driftFrom)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                             .listRowBackground(Color.clear)
 
                             Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
@@ -330,7 +335,10 @@ struct DriftlySettingsView: View {
                                     Text("\(minutes) minutes").tag(minutes)
                                 }
                             }
-                            .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
+                            .modifier(TVSettingsRowSurface(isFocused: tvFocus == .driftEvery))
+                            .focusEffectDisabled()
+                            .focused($tvFocus, equals: .driftEvery)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                             .listRowBackground(Color.clear)
                         } header: {
                             Text("Drifting")
@@ -381,7 +389,7 @@ struct DriftlySettingsView: View {
                         }
 
                     }
-                    .frame(maxWidth: 1360)
+                    .frame(maxWidth: 1580)
                     .background(Color.clear)
                     .padding(18)
                     .background(
@@ -393,7 +401,7 @@ struct DriftlySettingsView: View {
                             }
                     )
                 }
-                .padding(.horizontal, 44)
+                .padding(.horizontal, 24)
                 .padding(.vertical, 36)
                 .navigationTitle("Settings")
                 .toolbar(.hidden, for: .navigationBar)
