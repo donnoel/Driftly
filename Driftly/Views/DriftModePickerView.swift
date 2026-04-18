@@ -10,6 +10,7 @@ struct DriftModePickerView: View {
     @State private var sceneEditorSelection: Set<DriftMode> = []
     @State private var sceneEditorName: String = ""
     @State private var editingSceneID: UUID?
+    @State private var pendingSceneDelete: DriftScene?
 #if !os(tvOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
@@ -198,7 +199,7 @@ struct DriftModePickerView: View {
                 }
 
                 Button(role: .destructive) {
-                    engine.deleteScene(id: scene.id)
+                    pendingSceneDelete = scene
                 } label: {
                     Label("Delete Scene", systemImage: "trash")
                 }
@@ -271,8 +272,24 @@ struct DriftModePickerView: View {
                     editingSceneID = nil
                 }
             )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            .modifier(IPadSceneEditorSheetModifier())
+        }
+        .confirmationDialog(
+            "Delete Scene?",
+            isPresented: pendingSceneDeleteDialogPresented,
+            titleVisibility: .visible
+        ) {
+            if let pendingSceneDelete {
+                Button("Delete \(pendingSceneDelete.name)", role: .destructive) {
+                    engine.deleteScene(id: pendingSceneDelete.id)
+                    self.pendingSceneDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                pendingSceneDelete = nil
+            }
+        } message: {
+            Text(deleteSceneMessage)
         }
     }
 
@@ -568,6 +585,29 @@ struct DriftModePickerView: View {
         }
         return "\(baseName) \(suffix)"
     }
+
+    private var pendingSceneDeleteDialogPresented: Binding<Bool> {
+        Binding(
+            get: { pendingSceneDelete != nil },
+            set: { isPresented in
+                if !isPresented {
+                    pendingSceneDelete = nil
+                }
+            }
+        )
+    }
+
+    private var deleteSceneMessage: String {
+        guard let pendingSceneDelete else {
+            return "This action can’t be undone."
+        }
+
+        if engine.activeSceneID == pendingSceneDelete.id {
+            return "This removes the active scene and switches Driftly back to direct mode control. This action can’t be undone."
+        }
+
+        return "This action can’t be undone."
+    }
 }
 
 private struct ModeBrowseGroup: Identifiable {
@@ -711,6 +751,30 @@ private struct ModeBrowserCard: View {
 }
 
 #if !os(tvOS)
+private struct IPadSceneEditorSheetModifier: ViewModifier {
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isPad {
+            if #available(iOS 17.0, *) {
+                content
+                    .presentationDetents([.large])
+                    .presentationSizing(.page)
+                    .presentationDragIndicator(.visible)
+            } else {
+                content
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+        } else {
+            content
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+}
+
 private struct SceneEditorView: View {
     @Binding var name: String
     @Binding var selection: Set<DriftMode>
