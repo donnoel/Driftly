@@ -259,47 +259,109 @@ struct DriftlyRootView: View {
 #if os(iOS)
             // Custom sleep timer picker
             .sheet(isPresented: $coordinator.isCustomSleepTimerPresented) {
-                NavigationStack {
-                    VStack(spacing: 16) {
-                        Text("Custom Sleep Timer")
-                            .font(.headline)
-                        
-                        // Dial-style picker with haptic feedback
-                        Picker("", selection: $coordinator.customSleepMinutes) {
-                            ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
-                                Text("\(minutes) min").tag(minutes)
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    NavigationStack {
+                        ZStack {
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.06, green: 0.08, blue: 0.15),
+                                    Color(red: 0.08, green: 0.08, blue: 0.16)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .ignoresSafeArea()
+
+                            VStack(spacing: 14) {
+                                Text("Custom Sleep Timer")
+                                    .font(.headline)
+                                    .foregroundStyle(.white.opacity(0.94))
+
+                                // Dial-style picker with haptic feedback
+                                Picker("", selection: $coordinator.customSleepMinutes) {
+                                    ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
+                                        Text("\(minutes) min").tag(minutes)
+                                    }
+                                }
+                                .pickerStyle(.wheel)
+                                .frame(width: 220, height: 170)
+                                .onChange(of: coordinator.customSleepMinutes) { _, _ in
+                                    DriftHaptics.settingsAdjusted()
+                                }
+
+                                Text("Choose when Driftly should fade to rest.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.white.opacity(0.66))
+                                    .padding(.top, 2)
+
+                                Spacer(minLength: 0)
+                            }
+                            .frame(width: 360, height: 320)
+                            .padding(.horizontal, 18)
+                            .padding(.top, 12)
+                        }
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Set") {
+                                    applySleepTimer(minutes: coordinator.customSleepMinutes)
+                                    coordinator.isCustomSleepTimerPresented = false
+                                }
+                            }
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Cancel") {
+                                    coordinator.isCustomSleepTimerPresented = false
+                                }
                             }
                         }
+                    }
+                    .preferredColorScheme(.dark)
+                    .presentationDetents([.fraction(0.56)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(24)
+                    .presentationBackground(.ultraThinMaterial)
+                } else {
+                    NavigationStack {
+                        VStack(spacing: 16) {
+                            Text("Custom Sleep Timer")
+                                .font(.headline)
+
+                            // Dial-style picker with haptic feedback
+                            Picker("", selection: $coordinator.customSleepMinutes) {
+                                ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
+                                    Text("\(minutes) min").tag(minutes)
+                                }
+                            }
 #if !os(tvOS)
-                        .pickerStyle(.wheel)
+                            .pickerStyle(.wheel)
 #endif
-                        .frame(width: 200, height: 160)
-                        .onChange(of: coordinator.customSleepMinutes) { _, _ in
-                            DriftHaptics.settingsAdjusted()
+                            .frame(width: 200, height: 160)
+                            .onChange(of: coordinator.customSleepMinutes) { _, _ in
+                                DriftHaptics.settingsAdjusted()
+                            }
+
+                            Spacer()
                         }
-                        
-                        Spacer()
-                    }
-                    .frame(width: 360, height: 360)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 14)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Set") {
-                                applySleepTimer(minutes: coordinator.customSleepMinutes)
-                                coordinator.isCustomSleepTimerPresented = false
+                        .frame(width: 360, height: 360)
+                        .padding(.horizontal, 18)
+                        .padding(.top, 14)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Set") {
+                                    applySleepTimer(minutes: coordinator.customSleepMinutes)
+                                    coordinator.isCustomSleepTimerPresented = false
+                                }
+                            }
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Cancel") {
+                                    coordinator.isCustomSleepTimerPresented = false
+                                }
                             }
                         }
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                coordinator.isCustomSleepTimerPresented = false
-                            }
-                        }
                     }
+                    .presentationDetents([.fraction(0.55)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(22)
                 }
-                .presentationDetents([.fraction(0.55)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
             }
 #endif
             .onDisappear {

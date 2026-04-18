@@ -64,16 +64,16 @@ struct ChromeBarView: View {
 
     private var iPhoneShellBackground: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.64))
+            .fill(.ultraThinMaterial.opacity(0.72))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(chromeTint.opacity(0.035))
+                    .fill(chromeTint.opacity(0.045))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 5)
     }
 
     private var iPadNowPlayingBackground: some View {
@@ -98,6 +98,16 @@ struct ChromeBarView: View {
                     .stroke(Color.white.opacity(0.085), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.11), radius: 5, x: 0, y: 3)
+    }
+
+    private var actionsBackgroundIPhone: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.ultraThinMaterial.opacity(0.68))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.16), radius: 6, x: 0, y: 4)
     }
 
     private var nowPlayingLabelIOS: some View {
@@ -176,17 +186,17 @@ struct ChromeBarView: View {
                 } else {
                     Image(systemName: "chevron.down")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.70))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .frame(width: 24, height: 24)
                         .background(
                             Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.06))
+                                .fill(Color.white.opacity(0.10))
                                 .overlay(
                                     Capsule(style: .continuous)
-                                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
                                 )
                         )
+                        .padding(.trailing, 2)
                 }
             }
             .padding(.horizontal, isPadLayout ? 4 : 1)
@@ -210,7 +220,13 @@ struct ChromeBarView: View {
         }
         .padding(.horizontal, isPadLayout ? 10 : 8)
         .padding(.vertical, isPadLayout ? 8 : 5)
-        .background(actionsBackgroundIOS)
+        .background {
+            if isPadLayout {
+                actionsBackgroundIOS
+            } else {
+                actionsBackgroundIPhone
+            }
+        }
     }
 
     private var iPhoneLayout: some View {

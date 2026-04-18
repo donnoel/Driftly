@@ -125,7 +125,9 @@ struct DriftlySettingsView: View {
 // MARK: - iOS
 #if !os(tvOS)
     private var iosSettings: some View {
-        NavigationStack {
+        let isPhoneLayout = UIDevice.current.userInterfaceIdiom == .phone
+
+        return NavigationStack {
             ZStack {
                 LinearGradient(
                     colors: [
@@ -163,6 +165,7 @@ struct DriftlySettingsView: View {
                                 .accessibilityIdentifier("animationSpeedLabel")
                                 .accessibilityValue(speedLabel)
                         }
+                        .padding(.vertical, isPhoneLayout ? 2 : 0)
 
                     }
 
@@ -201,6 +204,7 @@ struct DriftlySettingsView: View {
                         LabeledContent("Version", value: versionString)
                     }
                 }
+                .environment(\.defaultMinListRowHeight, isPhoneLayout ? 54 : 44)
                 .scrollContentBackground(.hidden)
             }
             .navigationTitle("Settings")
