@@ -19,6 +19,7 @@ struct DriftModePickerView: View {
 #endif
 #if os(tvOS)
     @FocusState private var focusedMode: DriftMode?
+    @FocusState private var focusedSceneID: UUID?
 #endif
 
     private var modeGroups: [ModeBrowseGroup] {
@@ -394,7 +395,17 @@ struct DriftModePickerView: View {
 
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 40) {
+                    VStack(alignment: .leading, spacing: 52) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Select Mode")
+                                .font(.system(size: 56, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                            Text("Browse Driftly atmospheres and start with the one that fits the room.")
+                                .font(.title3.weight(.medium))
+                                .foregroundStyle(Color.white.opacity(0.78))
+                        }
+                        .padding(.horizontal, 64)
+
                         if !engine.availableScenes.isEmpty {
                             tvScenesSection
                         }
@@ -415,16 +426,21 @@ struct DriftModePickerView: View {
         }
         .onAppear {
             if focusedMode == nil {
-                focusedMode = modeGroups
-                    .first(where: { $0.section == .signature })?
-                    .modes
-                    .first?
-                    .mode
-                    ?? modeGroups.first?.modes.first?.mode
+                let availableModes = Set(modeGroups.flatMap(\.modes).map(\.mode))
+                if availableModes.contains(engine.currentMode) {
+                    focusedMode = engine.currentMode
+                } else {
+                    focusedMode = modeGroups
+                        .first(where: { $0.section == .signature })?
+                        .modes
+                        .first?
+                        .mode
+                        ?? modeGroups.first?.modes.first?.mode
+                }
             }
         }
         .onPlayPauseCommand {
-            if let focusedMode {
+            if focusedSceneID == nil, let focusedMode {
                 engine.toggleFavorite(focusedMode)
             }
         }
@@ -449,35 +465,41 @@ struct DriftModePickerView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 18) {
                     ForEach(engine.availableScenes) { scene in
-                        Button {
-                            engine.activateScene(id: scene.id)
-                        } label: {
-                            HStack(spacing: 10) {
-                                Text(scene.name)
-                                    .font(.headline)
-                                if engine.activeSceneID == scene.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.headline)
-                                }
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(Color.white.opacity(engine.activeSceneID == scene.id ? 0.18 : 0.10))
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        tvSceneButton(for: scene)
                     }
                 }
                 .padding(.horizontal, 64)
             }
+            .scrollClipDisabled()
         }
     }
 
+    private func tvSceneButton(for scene: DriftScene) -> some View {
+        Button {
+            engine.activateScene(id: scene.id)
+        } label: {
+            HStack(spacing: 10) {
+                Text(scene.name)
+                    .font(.headline)
+                if engine.activeSceneID == scene.id {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.headline)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(engine.activeSceneID == scene.id ? 0.18 : 0.10))
+            )
+        }
+        .buttonStyle(.plain)
+        .focused($focusedSceneID, equals: scene.id)
+    }
+
     private func tvModeRail(for group: ModeBrowseGroup) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.section.title)
                     .font(group.section == .signature ? .title2.weight(.bold) : .title3.weight(.semibold))
@@ -489,14 +511,15 @@ struct DriftModePickerView: View {
             .padding(.horizontal, 64)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 20) {
+                LazyHStack(spacing: 28) {
                     ForEach(group.modes) { presentation in
                         tvModeCard(for: presentation)
                     }
                 }
                 .padding(.horizontal, 64)
-                .padding(.vertical, 6)
+                .padding(.vertical, 12)
             }
+            .scrollClipDisabled()
         }
     }
 
@@ -508,11 +531,11 @@ struct DriftModePickerView: View {
         let width: CGFloat
         switch presentation.section {
         case .signature:
-            width = 430
+            width = 500
         case .secondary:
-            width = 390
+            width = 460
         case .labs:
-            width = 360
+            width = 430
         }
 
         return Button {
@@ -528,11 +551,8 @@ struct DriftModePickerView: View {
                 isFocused: isFocused
             )
             .frame(width: width, height: 232)
-            .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.01) : 1.0)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: isFocused)
         }
         .buttonStyle(.plain)
-        .focusEffectDisabled()
         .focused($focusedMode, equals: mode)
         .accessibilityIdentifier("mode-\(mode.rawValue)")
         .contextMenu {
@@ -703,8 +723,8 @@ private struct ModeBrowserCard: View {
     private var highlightFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color.white.opacity(isFocused ? 0.07 : 0.04),
-                Color.white.opacity(isFocused ? 0.018 : 0.01),
+                Color.white.opacity(isFocused ? 0.05 : 0.04),
+                Color.white.opacity(isFocused ? 0.014 : 0.01),
                 Color.clear
             ],
             startPoint: .topLeading,
@@ -714,7 +734,7 @@ private struct ModeBrowserCard: View {
 
     private var edgeColor: Color {
         if isFocused {
-            return Color.white.opacity(0.26)
+            return Color.white.opacity(0.16)
         }
         if isSelected {
             return Color.white.opacity(0.28)
@@ -734,7 +754,7 @@ private struct ModeBrowserCard: View {
 
     private var edgeWidth: CGFloat {
         if isFocused {
-            return 0.95
+            return 0.8
         }
         if isSelected {
             return 1.0
@@ -744,7 +764,7 @@ private struct ModeBrowserCard: View {
 
     private var shadowColor: Color {
         if isFocused {
-            return Color.black.opacity(0.18)
+            return Color.black.opacity(0.14)
         }
         return Color.black.opacity(section == .labs ? 0.18 : 0.24)
     }
