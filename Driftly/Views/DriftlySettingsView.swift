@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct DriftlySettingsView: View {
+#if os(tvOS)
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-#if os(tvOS)
     private enum TVFocus: Hashable {
         case autoDriftEnabled
         case autoDriftShuffle
@@ -14,6 +14,53 @@ struct DriftlySettingsView: View {
     }
 
     @FocusState private var tvFocus: TVFocus?
+
+    private struct TVSettingsRowSurface: ViewModifier {
+        let isFocused: Bool
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(isFocused ? 0.06 : 0.04))
+
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .strokeBorder(
+                                Color.white.opacity(isFocused ? 0.14 : 0.08),
+                                lineWidth: isFocused ? 1.1 : 0.9
+                            )
+
+                        if isFocused {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.28),
+                                            Color.white.opacity(0.10),
+                                            Color.clear
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.15
+                                )
+                                .padding(1)
+                        }
+                    }
+                }
+                .shadow(
+                    color: isFocused ? Color.white.opacity(0.035) : Color.black.opacity(0.16),
+                    radius: isFocused ? 10 : 4,
+                    x: 0,
+                    y: isFocused ? 6 : 2
+                )
+                .scaleEffect(isFocused ? 1.015 : 1.0)
+                .animation(.interactiveSpring(response: 0.24, dampingFraction: 0.86), value: isFocused)
+        }
+    }
 
     private struct TVBoolRow: View {
         let title: String
@@ -25,29 +72,24 @@ struct DriftlySettingsView: View {
         private var isFocused: Bool { focus.wrappedValue == id }
 
         private var baseButton: some View {
-            Button {
-                isOn.toggle()
-            } label: {
-                HStack(spacing: 14) {
-                    Text(title)
-                    Spacer()
-                    if isOn {
-                        Image(systemName: "checkmark")
-                            .font(.headline.weight(.semibold))
-                    }
+            HStack(spacing: 14) {
+                Text(title)
+                Spacer()
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.headline.weight(.semibold))
                 }
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
-                .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
-                .background(TVFocusRowSurface(isFocused: isFocused))
-                .scaleEffect(isFocused ? 1.006 : 1.0)
-                .animation(.easeOut(duration: 0.14), value: isFocused)
             }
-            .buttonStyle(.plain)
+            .font(.headline)
+            .foregroundStyle(.white)
+            .modifier(TVSettingsRowSurface(isFocused: isFocused))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .focusable(true)
             .focusEffectDisabled()
             .focused(focus, equals: id)
+            .onTapGesture {
+                isOn.toggle()
+            }
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
             .listRowBackground(Color.clear)
         }
@@ -73,29 +115,24 @@ struct DriftlySettingsView: View {
         private var isFocused: Bool { focus.wrappedValue == id }
 
         private var baseButton: some View {
-            Button {
-                action()
-            } label: {
-                HStack(spacing: 14) {
-                    if let systemImage {
-                        Image(systemName: systemImage)
-                            .font(.headline.weight(.semibold))
-                    }
-                    Text(title)
-                    Spacer()
+            HStack(spacing: 14) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.headline.weight(.semibold))
                 }
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
-                .foregroundStyle(isFocused ? Color.white.opacity(0.98) : Color.white)
-                .background(TVFocusRowSurface(isFocused: isFocused))
-                .scaleEffect(isFocused ? 1.006 : 1.0)
-                .animation(.easeOut(duration: 0.14), value: isFocused)
+                Text(title)
+                Spacer()
             }
-            .buttonStyle(.plain)
+            .font(.headline)
+            .foregroundStyle(.white)
+            .modifier(TVSettingsRowSurface(isFocused: isFocused))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .focusable(true)
             .focusEffectDisabled()
             .focused(focus, equals: id)
+            .onTapGesture {
+                action()
+            }
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
             .listRowBackground(Color.clear)
         }
@@ -330,20 +367,13 @@ struct DriftlySettingsView: View {
                                 Text("Version")
                                 Spacer()
                                 Text(versionString)
+                                    .foregroundStyle(Color.white.opacity(0.68))
                             }
                             .font(.headline)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(Color.white.opacity(0.06))
-                                    .overlay {
-                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                    }
-                            )
+                            .foregroundStyle(.white)
+                            .modifier(TVSettingsRowSurface(isFocused: false))
                             .contentShape(Rectangle())
-                            .focusable(true)
+                            .focusable(false)
                             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                             .listRowBackground(Color.clear)
                         }
@@ -459,58 +489,3 @@ struct DriftlySettingsView: View {
     }
 }
 
-#if os(tvOS)
-struct TVFocusRowSurface: View {
-    let isFocused: Bool
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(baseFill)
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(highlightFill)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(edgeColor, lineWidth: isFocused ? 1.0 : 0.85)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(innerEdgeColor, lineWidth: 0.55)
-                    .padding(1)
-            }
-            .shadow(color: Color.black.opacity(0.18), radius: isFocused ? 6 : 0, x: 0, y: isFocused ? 3 : 0)
-    }
-
-    private var baseFill: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.10, green: 0.11, blue: 0.15).opacity(isFocused ? 0.94 : 0.88),
-                Color(red: 0.07, green: 0.08, blue: 0.11).opacity(isFocused ? 0.96 : 0.92)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    private var highlightFill: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(isFocused ? 0.08 : 0.04),
-                Color.white.opacity(isFocused ? 0.02 : 0.01),
-                Color.clear
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    private var edgeColor: Color {
-        isFocused ? Color.white.opacity(0.24) : Color.white.opacity(0.12)
-    }
-
-    private var innerEdgeColor: Color {
-        isFocused ? Color(red: 0.66, green: 0.74, blue: 0.88).opacity(0.18) : Color.white.opacity(0.03)
-    }
-}
-#endif
