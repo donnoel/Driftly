@@ -4,7 +4,6 @@ struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage("requestShowOnboarding") private var requestShowOnboarding: Bool = false
 
 #if os(tvOS)
     private enum TVFocus: Hashable {
@@ -12,7 +11,6 @@ struct DriftlySettingsView: View {
         case autoDriftShuffle
         case stayAwake
         case showClock
-        case showHowTo
     }
 
     @FocusState private var tvFocus: TVFocus?
@@ -260,15 +258,6 @@ struct DriftlySettingsView: View {
                     Section("About") {
                         LabeledContent("Version", value: versionString)
                     }
-                    Section("Help") {
-                        Button {
-                            requestShowOnboarding = true
-                            dismiss()
-                        } label: {
-                            Label("Show How To", systemImage: "questionmark.circle")
-                        }
-                        .accessibilityIdentifier("showHowToButton")
-                    }
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -412,18 +401,6 @@ struct DriftlySettingsView: View {
                             .listRowBackground(Color.clear)
                         }
 
-                        Section("Help") {
-                            TVActionRow(
-                                title: "Show How To",
-                                systemImage: "questionmark.circle",
-                                id: .showHowTo,
-                                focus: $tvFocus,
-                                accessibilityID: "showHowToButton"
-                            ) {
-                                requestShowOnboarding = true
-                                dismiss()
-                            }
-                        }
                     }
                     .frame(maxWidth: 980)
                     .background(Color.clear)

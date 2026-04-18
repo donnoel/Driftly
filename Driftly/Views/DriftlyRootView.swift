@@ -8,11 +8,6 @@ struct DriftlyRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
-    @AppStorage("didShowOnboarding") private var didShowOnboarding: Bool = false
-    @AppStorage("requestShowOnboarding") private var requestShowOnboarding: Bool = false
-    @State private var isOnboardingPresented: Bool = false
-    @State private var onboardingShouldOpenModePicker: Bool = false
-    
     @StateObject private var coordinator: DriftlyRootCoordinator
     @State private var motionUnavailable = false
     @State private var brightnessDragLastTranslation: CGFloat = 0
@@ -43,7 +38,7 @@ struct DriftlyRootView: View {
     var test_isModePickerPresented: Bool { testInitialModePickerPresented }
     var test_isSleepTimerDialogPresented: Bool { testInitialSleepTimerDialogPresented }
 #endif
-    
+
     var body: some View {
         baseContent
             // Screen darkening overlay based on brightness
@@ -222,11 +217,6 @@ struct DriftlyRootView: View {
                     }
                 }
 
-                // First-launch onboarding
-                if !DriftProfiling.profilingQuickEntryEnabled, !didShowOnboarding && !isOnboardingPresented {
-                    onboardingShouldOpenModePicker = true
-                    isOnboardingPresented = true
-                }
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -264,18 +254,6 @@ struct DriftlyRootView: View {
             updateIdleTimer()
         }
 #endif
-        .onChange(of: requestShowOnboarding) { _, newValue in
-            guard newValue else { return }
-            if DriftProfiling.profilingQuickEntryEnabled {
-                requestShowOnboarding = false
-                return
-            }
-            DispatchQueue.main.async {
-                onboardingShouldOpenModePicker = false
-                isOnboardingPresented = true
-                requestShowOnboarding = false
-            }
-        }
 #if os(tvOS)
         .onChange(of: engine.isChromeVisible) { _, isVisible in
             DispatchQueue.main.async {
@@ -322,26 +300,6 @@ struct DriftlyRootView: View {
         .onReceive(coordinator.clockTimer) { now in
             coordinator.clockNow = now
         }
-#if true
-            // Onboarding (first launch + restore from Settings)
-            .fullScreenCover(isPresented: $isOnboardingPresented) {
-                DriftlyOnboardingView {
-                    didShowOnboarding = true
-                    isOnboardingPresented = false
-
-                    if onboardingShouldOpenModePicker {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                            coordinator.isModePickerPresented = true
-#if os(tvOS)
-                            focusedButton = .modePicker
-                            fallbackFocus = false
-#endif
-                        }
-                    }
-                }
-                .environmentObject(engine)
-            }
-#endif
             // Mode picker (sparkles)
 #if os(tvOS)
             .fullScreenCover(isPresented: $coordinator.isModePickerPresented) {
