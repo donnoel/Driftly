@@ -126,6 +126,7 @@ struct DriftlySettingsView: View {
 #if !os(tvOS)
     private var iosSettings: some View {
         let isPhoneLayout = UIDevice.current.userInterfaceIdiom == .phone
+        let isPadLayout = UIDevice.current.userInterfaceIdiom == .pad
 
         return NavigationStack {
             ZStack {
@@ -165,7 +166,7 @@ struct DriftlySettingsView: View {
                                 .accessibilityIdentifier("animationSpeedLabel")
                                 .accessibilityValue(speedLabel)
                         }
-                        .padding(.vertical, isPhoneLayout ? 2 : 0)
+                        .padding(.vertical, isPhoneLayout ? 2 : (isPadLayout ? 4 : 0))
 
                     }
 
@@ -204,7 +205,7 @@ struct DriftlySettingsView: View {
                         LabeledContent("Version", value: versionString)
                     }
                 }
-                .environment(\.defaultMinListRowHeight, isPhoneLayout ? 54 : 44)
+                .environment(\.defaultMinListRowHeight, isPhoneLayout ? 54 : (isPadLayout ? 50 : 44))
                 .scrollContentBackground(.hidden)
             }
             .navigationTitle("Settings")

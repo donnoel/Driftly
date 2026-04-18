@@ -254,6 +254,7 @@ struct DriftlyRootView: View {
             .sheet(isPresented: $coordinator.isSettingsPresented) {
                 DriftlySettingsView()
                     .environmentObject(engine)
+                    .modifier(IPadSettingsSheetModifier())
             }
 #endif
 #if os(iOS)
@@ -321,29 +322,53 @@ struct DriftlyRootView: View {
                     .presentationBackground(.ultraThinMaterial)
                 } else {
                     NavigationStack {
-                        VStack(spacing: 16) {
-                            Text("Custom Sleep Timer")
-                                .font(.headline)
+                        ZStack {
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.05, green: 0.07, blue: 0.14),
+                                    Color(red: 0.09, green: 0.08, blue: 0.16)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .ignoresSafeArea()
 
-                            // Dial-style picker with haptic feedback
-                            Picker("", selection: $coordinator.customSleepMinutes) {
-                                ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
-                                    Text("\(minutes) min").tag(minutes)
-                                }
-                            }
+                            VStack(spacing: 22) {
+                                Text("Custom Sleep Timer")
+                                    .font(.title2.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.94))
+
+                                // Dial-style picker with haptic feedback
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                        .fill(.ultraThinMaterial.opacity(0.56))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                                        )
+                                        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
+
+                                    Picker("", selection: $coordinator.customSleepMinutes) {
+                                        ForEach(Array(stride(from: 5, through: 240, by: 5)), id: \.self) { minutes in
+                                            Text("\(minutes) min").tag(minutes)
+                                        }
+                                    }
 #if !os(tvOS)
-                            .pickerStyle(.wheel)
+                                    .pickerStyle(.wheel)
 #endif
-                            .frame(width: 200, height: 160)
-                            .onChange(of: coordinator.customSleepMinutes) { _, _ in
-                                DriftHaptics.settingsAdjusted()
-                            }
+                                    .frame(width: 300, height: 250)
+                                    .onChange(of: coordinator.customSleepMinutes) { _, _ in
+                                        DriftHaptics.settingsAdjusted()
+                                    }
+                                }
+                                .frame(width: 390, height: 290)
 
-                            Spacer()
+                                Spacer(minLength: 0)
+                            }
+                            .frame(width: 620, height: 520)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
                         }
-                        .frame(width: 360, height: 360)
-                        .padding(.horizontal, 18)
-                        .padding(.top, 14)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
                                 Button("Set") {
@@ -358,9 +383,8 @@ struct DriftlyRootView: View {
                             }
                         }
                     }
-                    .presentationDetents([.fraction(0.55)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(22)
+                    .preferredColorScheme(.dark)
+                    .modifier(IPadSleepTimerSheetModifier())
                 }
             }
 #endif
@@ -946,6 +970,54 @@ private struct IPadModePickerSheetModifier: ViewModifier {
                 content
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+private struct IPadSettingsSheetModifier: ViewModifier {
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isPad {
+            if #available(iOS 17.0, *) {
+                content
+                    .presentationDetents([.large])
+                    .presentationSizing(.page)
+                    .presentationDragIndicator(.visible)
+            } else {
+                content
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+private struct IPadSleepTimerSheetModifier: ViewModifier {
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isPad {
+            if #available(iOS 17.0, *) {
+                content
+                    .presentationDetents([.large])
+                    .presentationSizing(.page)
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(30)
+                    .presentationBackground(.ultraThinMaterial)
+            } else {
+                content
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(30)
+                    .presentationBackground(.ultraThinMaterial)
             }
         } else {
             content
