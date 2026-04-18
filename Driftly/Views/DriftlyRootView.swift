@@ -42,67 +42,16 @@ struct DriftlyRootView: View {
     var body: some View {
         baseContent
             // Screen darkening overlay based on brightness
-            .overlay(
-                Color.black
-                    .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            )
-            .overlay(alignment: .topTrailing) {
-                if coordinator.brightnessHUDVisible && !coordinator.sleepState.sleepTimerHasExpired {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sun.max.fill")
-                            .foregroundStyle(.yellow.opacity(0.95))
-                        Text(brightnessLabel)
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.white)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.black.opacity(0.6), in: Capsule())
-                    .padding(.top, 18)
-                    .padding(.trailing, 16)
-                    .transition(.opacity)
-                }
-            }
-            .overlay(alignment: .top) {
-                if motionUnavailable && !coordinator.sleepState.sleepTimerHasExpired {
-                    Text("Motion unavailable")
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.55), in: Capsule())
-                        .padding(.top, 18)
-                        .padding(.horizontal, 16)
-                }
-            }
+            .overlay(brightnessDarkeningOverlay)
+            .overlay(alignment: .topTrailing, content: { brightnessHUDOverlay })
+            .overlay(alignment: .top, content: { motionUnavailableOverlay })
             .overlay {
                 if coordinator.sleepState.sleepTimerHasExpired {
                     sleepOverlay
                 }
             }
-            .overlay(alignment: .topLeading) {
-                if engine.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
-                    let style = clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
-                    GeometryReader { proxy in
-                        ClockOverlayView(
-                            time: coordinator.clockNow,
-                            style: style,
-                            anchorDate: coordinator.phaseAnchorDate,
-                            containerSize: proxy.size
-                        )
-                        .padding(.top, 18)
-                        .padding(.leading, 16)
-                    }
-                }
-            }
-            .overlay(alignment: .topTrailing) {
-                if DriftProfiling.profilingOverlayEnabled {
-                    profilingOverlay
-                        .padding(.top, profilingOverlayTopPadding)
-                        .padding(.trailing, 16)
-                }
-            }
+            .overlay(alignment: .topLeading, content: { clockOverlay })
+            .overlay(alignment: .topTrailing, content: { profilingDebugOverlay })
             // Global animation speed for all lamp views
             .environment(\.driftPhaseAnchorDate, coordinator.phaseAnchorDate)
             .environment(\.driftAnimationSpeed, effectiveAnimationSpeed)
@@ -182,78 +131,14 @@ struct DriftlyRootView: View {
         }
 #endif
         .onAppear {
-            // Defer setup work until the next runloop to avoid mutating state
-            // while SwiftUI is still computing the initial view update.
-            DispatchQueue.main.async { @MainActor in
-#if os(tvOS)
-                coordinator.runInitialSetupIfNeeded(
-                    engine: engine,
-                    scenePhase: scenePhase,
-                    updateIdleTimer: updateIdleTimer,
-                    updateClockTicking: updateClockTicking,
-                    focusChromeIfNeeded: {
-                        if engine.isChromeVisible {
-                            focusedButton = .modePicker
-                            fallbackFocus = false
-                        }
-                    }
-                )
-#else
-                coordinator.runInitialSetupIfNeeded(
-                    engine: engine,
-                    scenePhase: scenePhase,
-                    updateIdleTimer: updateIdleTimer,
-                    updateClockTicking: updateClockTicking
-                )
-#endif
-
-                if DriftProfiling.profilingSessionEnabled {
-                    if profilingSessionStart == nil {
-                        profilingSessionStart = Date()
-                    }
-                    if DriftProfiling.profilingImmediateAutoDriftEnabled, !profilingImmediateAutoDriftTriggered {
-                        profilingImmediateAutoDriftTriggered = true
-                        coordinator.triggerImmediateAutoDriftIfPossible(engine: engine, scenePhase: scenePhase)
-                    }
-                }
-
-            }
+            handleRootAppear()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            let interval = DriftProfiling.begin(
-                DriftProfiling.Signpost.scenePhaseChange,
-                message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
-            )
-            defer {
-                DriftProfiling.end(
-                    DriftProfiling.Signpost.scenePhaseChange,
-                    interval,
-                    message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
-                )
-            }
-
-            if newPhase == .background {
-                engine.flushPendingScenePersistence()
-            }
-            coordinator.handleScenePhaseChange(to: newPhase)
-            updateIdleTimer()
-            updateClockTicking()
-            coordinator.updateTicking(engine: engine, scenePhase: newPhase)
-            coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: newPhase)
-            #if DEBUG
-            DebugMetrics.uiSignposter.emitEvent("ui.safeAreaChanged")
-            DebugMetrics.uiSignposter.emitEvent("ui.appearanceChanged")
-            #endif
+            handleScenePhaseChange(newPhase)
         }
-#if os(tvOS)
         .onChange(of: engine.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
-#else
-        .onChange(of: engine.preventAutoLock) { _, _ in
-            updateIdleTimer()
-        }
-#endif
 #if os(tvOS)
         .onChange(of: engine.isChromeVisible) { _, isVisible in
             DispatchQueue.main.async {
@@ -321,55 +206,19 @@ struct DriftlyRootView: View {
                 titleVisibility: .visible
             ) {
                 Button("Off") {
-                    engine.setSleepTimer(minutes: nil)
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        coordinator.sleepState.sleepTimerHasExpired = false
-                    }
-                    coordinator.sleepState.sleepTimerAllowsLock = false
-                    updateIdleTimer()
-                    DriftHaptics.sleepTimerSet()
-                    coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-                    updateClockTicking()
-                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+                    applySleepTimer(minutes: nil)
                 }
                 .accessibilityIdentifier("Off")
                 Button("15 minutes") {
-                    engine.setSleepTimer(minutes: 15)
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        coordinator.sleepState.sleepTimerHasExpired = false
-                    }
-                    coordinator.sleepState.sleepTimerAllowsLock = false
-                    updateIdleTimer()
-                    DriftHaptics.sleepTimerSet()
-                    coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-                    updateClockTicking()
-                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+                    applySleepTimer(minutes: 15)
                 }
                 .accessibilityIdentifier("15 minutes")
                 Button("30 minutes") {
-                    engine.setSleepTimer(minutes: 30)
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        coordinator.sleepState.sleepTimerHasExpired = false
-                    }
-                    coordinator.sleepState.sleepTimerAllowsLock = false
-                    updateIdleTimer()
-                    DriftHaptics.sleepTimerSet()
-                    coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-                    updateClockTicking()
-                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+                    applySleepTimer(minutes: 30)
                 }
                 .accessibilityIdentifier("30 minutes")
                 Button("60 minutes") {
-                    engine.setSleepTimer(minutes: 60)
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        coordinator.sleepState.sleepTimerHasExpired = false
-                    }
-                    coordinator.sleepState.sleepTimerAllowsLock = false
-                    updateIdleTimer()
-                    DriftHaptics.sleepTimerSet()
-                    coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-                    updateClockTicking()
-                    coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+                    applySleepTimer(minutes: 60)
                 }
                 .accessibilityIdentifier("60 minutes")
                 Button("Custom…") {
@@ -437,16 +286,7 @@ struct DriftlyRootView: View {
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Set") {
-                                engine.setSleepTimer(minutes: coordinator.customSleepMinutes)
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    coordinator.sleepState.sleepTimerHasExpired = false
-                                }
-                                coordinator.sleepState.sleepTimerAllowsLock = false
-                                updateIdleTimer()
-                                DriftHaptics.sleepTimerSet()
-                                coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-                                updateClockTicking()
-                                coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+                                applySleepTimer(minutes: coordinator.customSleepMinutes)
                                 coordinator.isCustomSleepTimerPresented = false
                             }
                         }
@@ -468,6 +308,149 @@ struct DriftlyRootView: View {
                 UIApplication.shared.isIdleTimerDisabled = false
 #endif
             }
+    }
+
+    private var brightnessDarkeningOverlay: some View {
+        Color.black
+            .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private var brightnessHUDOverlay: some View {
+        if coordinator.brightnessHUDVisible && !coordinator.sleepState.sleepTimerHasExpired {
+            HStack(spacing: 8) {
+                Image(systemName: "sun.max.fill")
+                    .foregroundStyle(.yellow.opacity(0.95))
+                Text(brightnessLabel)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.black.opacity(0.6), in: Capsule())
+            .padding(.top, 18)
+            .padding(.trailing, 16)
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var motionUnavailableOverlay: some View {
+        if motionUnavailable && !coordinator.sleepState.sleepTimerHasExpired {
+            Text("Motion unavailable")
+                .font(.caption2.bold())
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.black.opacity(0.55), in: Capsule())
+                .padding(.top, 18)
+                .padding(.horizontal, 16)
+        }
+    }
+
+    @ViewBuilder
+    private var clockOverlay: some View {
+        if engine.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
+            let style = clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
+            GeometryReader { proxy in
+                ClockOverlayView(
+                    time: coordinator.clockNow,
+                    style: style,
+                    anchorDate: coordinator.phaseAnchorDate,
+                    containerSize: proxy.size
+                )
+                .padding(.top, 18)
+                .padding(.leading, 16)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var profilingDebugOverlay: some View {
+        if DriftProfiling.profilingOverlayEnabled {
+            profilingOverlay
+                .padding(.top, profilingOverlayTopPadding)
+                .padding(.trailing, 16)
+        }
+    }
+
+    private func handleRootAppear() {
+        // Defer setup work until the next runloop to avoid mutating state
+        // while SwiftUI is still computing the initial view update.
+        DispatchQueue.main.async { @MainActor in
+#if os(tvOS)
+            coordinator.runInitialSetupIfNeeded(
+                engine: engine,
+                scenePhase: scenePhase,
+                updateIdleTimer: updateIdleTimer,
+                updateClockTicking: updateClockTicking,
+                focusChromeIfNeeded: {
+                    if engine.isChromeVisible {
+                        focusedButton = .modePicker
+                        fallbackFocus = false
+                    }
+                }
+            )
+#else
+            coordinator.runInitialSetupIfNeeded(
+                engine: engine,
+                scenePhase: scenePhase,
+                updateIdleTimer: updateIdleTimer,
+                updateClockTicking: updateClockTicking
+            )
+#endif
+
+            if DriftProfiling.profilingSessionEnabled {
+                if profilingSessionStart == nil {
+                    profilingSessionStart = Date()
+                }
+                if DriftProfiling.profilingImmediateAutoDriftEnabled, !profilingImmediateAutoDriftTriggered {
+                    profilingImmediateAutoDriftTriggered = true
+                    coordinator.triggerImmediateAutoDriftIfPossible(engine: engine, scenePhase: scenePhase)
+                }
+            }
+        }
+    }
+
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        let interval = DriftProfiling.begin(
+            DriftProfiling.Signpost.scenePhaseChange,
+            message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
+        )
+        defer {
+            DriftProfiling.end(
+                DriftProfiling.Signpost.scenePhaseChange,
+                interval,
+                message: "phase=\(scenePhaseName(newPhase)) mode=\(engine.currentMode.rawValue)"
+            )
+        }
+
+        if newPhase == .background {
+            engine.flushPendingScenePersistence()
+        }
+        coordinator.handleScenePhaseChange(to: newPhase)
+        updateIdleTimer()
+        updateClockTicking()
+        coordinator.updateTicking(engine: engine, scenePhase: newPhase)
+        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: newPhase)
+#if DEBUG
+        DebugMetrics.uiSignposter.emitEvent("ui.safeAreaChanged")
+        DebugMetrics.uiSignposter.emitEvent("ui.appearanceChanged")
+#endif
+    }
+
+    private func applySleepTimer(minutes: Int?) {
+        engine.setSleepTimer(minutes: minutes)
+        withAnimation(.easeInOut(duration: 0.6)) {
+            coordinator.sleepState.sleepTimerHasExpired = false
+        }
+        coordinator.sleepState.sleepTimerAllowsLock = false
+        updateIdleTimer()
+        DriftHaptics.sleepTimerSet()
+        coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
+        updateClockTicking()
+        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
 
     @ViewBuilder
@@ -913,16 +896,7 @@ private struct IPadModePickerSheetModifier: ViewModifier {
 #if os(tvOS)
 extension DriftlyRootView {
     private func setSleepTimerTvOS(minutes: Int?) {
-        engine.setSleepTimer(minutes: minutes)
-        withAnimation(.easeInOut(duration: 0.6)) {
-            coordinator.sleepState.sleepTimerHasExpired = false
-        }
-        coordinator.sleepState.sleepTimerAllowsLock = false
-        updateIdleTimer()
-        DriftHaptics.sleepTimerSet()
-        coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-        updateClockTicking()
-        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+        applySleepTimer(minutes: minutes)
     }
     
     private struct SleepTimerScreenTV: View {
