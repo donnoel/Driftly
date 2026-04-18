@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct DriftlySettingsView: View {
-#if os(tvOS)
     @EnvironmentObject private var engine: DriftlyEngine
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+#if os(tvOS)
     private enum TVFocus: Hashable {
         case autoDriftEnabled
         case autoDriftShuffle
@@ -322,6 +322,7 @@ struct DriftlySettingsView: View {
                                     Text("Scene: \(scene.name)").tag(AutoDriftSource.scene(sceneID))
                                 }
                             }
+                            .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
                             .listRowBackground(Color.clear)
 
                             Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
@@ -329,6 +330,7 @@ struct DriftlySettingsView: View {
                                     Text("\(minutes) minutes").tag(minutes)
                                 }
                             }
+                            .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
                             .listRowBackground(Color.clear)
                         } header: {
                             Text("Drifting")
@@ -379,7 +381,7 @@ struct DriftlySettingsView: View {
                         }
 
                     }
-                    .frame(maxWidth: 980)
+                    .frame(maxWidth: 1360)
                     .background(Color.clear)
                     .padding(18)
                     .background(
@@ -391,7 +393,7 @@ struct DriftlySettingsView: View {
                             }
                     )
                 }
-                .padding(.horizontal, 56)
+                .padding(.horizontal, 44)
                 .padding(.vertical, 36)
                 .navigationTitle("Settings")
                 .toolbar(.hidden, for: .navigationBar)
@@ -488,4 +490,3 @@ struct DriftlySettingsView: View {
         return "\(version) (\(build))"
     }
 }
-
