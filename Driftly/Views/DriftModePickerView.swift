@@ -511,7 +511,7 @@ struct DriftModePickerView: View {
             .padding(.horizontal, 64)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 28) {
+                LazyHStack(spacing: 36) {
                     ForEach(group.modes) { presentation in
                         tvModeCard(for: presentation)
                     }
@@ -538,22 +538,27 @@ struct DriftModePickerView: View {
             width = 430
         }
 
-        return Button {
-            selectMode(mode)
-        } label: {
-            ModeBrowserCard(
-                modeName: mode.displayName,
-                descriptor: presentation.descriptor,
-                palette: mode.config.palette,
-                section: presentation.section,
-                isSelected: mode == engine.currentMode,
-                isFavorite: isFavorite,
-                isFocused: isFocused
-            )
-            .frame(width: width, height: 232)
-        }
-        .buttonStyle(.plain)
+        return ModeBrowserCard(
+            modeName: mode.displayName,
+            descriptor: presentation.descriptor,
+            palette: mode.config.palette,
+            section: presentation.section,
+            isSelected: mode == engine.currentMode,
+            isFavorite: isFavorite,
+            isFocused: isFocused
+        )
+        .frame(width: width, height: 232)
+        .scaleEffect(isFocused ? (reduceMotion ? 1.0 : 1.032) : 1.0)
+        .offset(y: isFocused && !reduceMotion ? -8 : 0)
+        .zIndex(isFocused ? 1 : 0)
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .focusable(true)
+        .focusEffectDisabled()
         .focused($focusedMode, equals: mode)
+        .onTapGesture {
+            selectMode(mode)
+        }
+        .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("mode-\(mode.rawValue)")
         .contextMenu {
             Button {
@@ -565,6 +570,10 @@ struct DriftModePickerView: View {
                 )
             }
         }
+        .animation(
+            reduceMotion ? nil : .interactiveSpring(response: 0.24, dampingFraction: 0.86),
+            value: isFocused
+        )
     }
 #endif
 
@@ -666,6 +675,24 @@ private struct ModeBrowserCard: View {
                     .strokeBorder(innerEdgeColor, lineWidth: 0.55)
                     .padding(1)
             }
+            .overlay {
+                if isFocused {
+                    RoundedRectangle(cornerRadius: 23, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.34),
+                                    palette.primary.opacity(0.22),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.35
+                        )
+                        .padding(-1)
+                }
+            }
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(modeName)
@@ -693,7 +720,7 @@ private struct ModeBrowserCard: View {
                 }
                 .padding(14)
             }
-            .shadow(color: shadowColor, radius: isFocused ? 7 : 5, x: 0, y: isFocused ? 4 : 3)
+            .shadow(color: shadowColor, radius: isFocused ? 14 : 5, x: 0, y: isFocused ? 10 : 3)
             .opacity(section == .labs ? 0.78 : 1.0)
     }
 
@@ -723,8 +750,8 @@ private struct ModeBrowserCard: View {
     private var highlightFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color.white.opacity(isFocused ? 0.05 : 0.04),
-                Color.white.opacity(isFocused ? 0.014 : 0.01),
+                Color.white.opacity(isFocused ? 0.055 : 0.04),
+                Color.white.opacity(isFocused ? 0.016 : 0.01),
                 Color.clear
             ],
             startPoint: .topLeading,
@@ -744,7 +771,7 @@ private struct ModeBrowserCard: View {
 
     private var innerEdgeColor: Color {
         if isFocused {
-            return palette.primary.opacity(0.18)
+            return palette.primary.opacity(0.20)
         }
         if isSelected {
             return palette.primary.opacity(0.22)
@@ -754,7 +781,7 @@ private struct ModeBrowserCard: View {
 
     private var edgeWidth: CGFloat {
         if isFocused {
-            return 0.8
+            return 1.1
         }
         if isSelected {
             return 1.0
@@ -764,7 +791,7 @@ private struct ModeBrowserCard: View {
 
     private var shadowColor: Color {
         if isFocused {
-            return Color.black.opacity(0.14)
+            return palette.primary.opacity(0.14)
         }
         return Color.black.opacity(section == .labs ? 0.18 : 0.24)
     }
