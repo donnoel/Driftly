@@ -1050,15 +1050,60 @@ extension DriftlyRootView {
         }
 
         @FocusState private var focusedRow: FocusRow?
+        @State private var isShowingMoreDurations = false
 
         private func primary(_ text: String, focused: Bool) -> some View {
             Text(text)
-                .foregroundStyle(focused ? Color.white : Color.white)
+                .foregroundStyle(.white)
         }
 
         private func secondary(_ text: String, focused: Bool) -> some View {
             Text(text)
-                .foregroundStyle(focused ? Color.white.opacity(0.78) : Color.white.opacity(0.70))
+                .foregroundStyle(Color.white.opacity(0.70))
+        }
+
+        @ViewBuilder
+        private func timerRowSurface<Content: View>(focused: Bool, @ViewBuilder content: () -> Content) -> some View {
+            content()
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(focused ? 0.06 : 0.04))
+
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .strokeBorder(
+                                Color.white.opacity(focused ? 0.14 : 0.08),
+                                lineWidth: focused ? 1.1 : 0.9
+                            )
+
+                        if focused {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.28),
+                                            Color.white.opacity(0.10),
+                                            Color.clear
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.15
+                                )
+                                .padding(1)
+                        }
+                    }
+                }
+                .shadow(
+                    color: focused ? Color.white.opacity(0.035) : Color.black.opacity(0.16),
+                    radius: focused ? 10 : 4,
+                    x: 0,
+                    y: focused ? 6 : 2
+                )
+                .scaleEffect(focused ? 1.015 : 1.0)
+                .animation(.interactiveSpring(response: 0.24, dampingFraction: 0.86), value: focused)
         }
 
         private var ambientBackground: some View {
@@ -1109,16 +1154,109 @@ extension DriftlyRootView {
                     .foregroundStyle(Color.white.opacity(0.86))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 20)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
             .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.white.opacity(0.055))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 1)
                     }
             )
+        }
+
+        private var timerChoicesPanel: some View {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Common")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.38))
+                            .textCase(nil)
+
+                        VStack(spacing: 12) {
+                            timerChoiceRow(
+                                title: "Off",
+                                focused: focusedRow == .off,
+                                focusValue: .off,
+                                action: { onSetMinutes(nil) }
+                            )
+
+                            ForEach(commonDurations, id: \.self) { minutes in
+                                timerChoiceRow(
+                                    title: "\(minutes) minutes",
+                                    focused: focusedRow == .common(minutes),
+                                    focusValue: .common(minutes),
+                                    action: { onSetMinutes(minutes) }
+                                )
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("More")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.38))
+                            .textCase(nil)
+
+                        timerChoiceRow(
+                            title: "More durations",
+                            trailingText: "5-240 min",
+                            focused: focusedRow == .more,
+                            focusValue: .more,
+                            action: {
+                                isShowingMoreDurations = true
+                            }
+                        )
+                    }
+                }
+                .padding(24)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 30, style: .continuous)
+                    .fill(Color.black.opacity(0.24))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    }
+            )
+            .navigationDestination(isPresented: $isShowingMoreDurations) {
+                MoreDurationsView(
+                    durations: moreDurations,
+                    onSetMinutes: onSetMinutes
+                )
+            }
+        }
+
+        private func timerChoiceRow(
+            title: String,
+            trailingText: String? = nil,
+            focused: Bool,
+            focusValue: FocusRow,
+            action: @escaping () -> Void
+        ) -> some View {
+            timerRowSurface(focused: focused) {
+                HStack(spacing: 16) {
+                    primary(title, focused: focused)
+                        .font(.headline.weight(.semibold))
+
+                    Spacer(minLength: 12)
+
+                    if let trailingText {
+                        secondary(trailingText, focused: focused)
+                            .font(.headline.weight(.semibold))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .focusable(true)
+            .focusEffectDisabled()
+            .focused($focusedRow, equals: focusValue)
+            .onTapGesture {
+                action()
+            }
         }
 
         var body: some View {
@@ -1126,103 +1264,23 @@ extension DriftlyRootView {
                 ambientBackground
 
                 NavigationStack {
-                    VStack(spacing: 18) {
-                        introCard
+                    GeometryReader { proxy in
+                        let contentWidth = min(max(proxy.size.width - 140, 1220), 1700)
+                        let introWidth = min(max(contentWidth * 0.31, 390), 520)
 
-                        List {
-                            Section {
-                                Button {
-                                    onSetMinutes(nil)
-                                } label: {
-                                        primary("Off", focused: focusedRow == .off)
-                                            .font(.headline.weight(.semibold))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 14)
-                                            .background(TVFocusRowSurface(isFocused: focusedRow == .off))
-                                            .scaleEffect(focusedRow == .off ? 1.006 : 1.0)
-                                }
-                                .buttonStyle(.plain)
-                                .focusEffectDisabled()
-                                .focused($focusedRow, equals: .off)
-                                .animation(.easeOut(duration: 0.14), value: focusedRow == .off)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                .listRowBackground(Color.clear)
+                        HStack(alignment: .top, spacing: 34) {
+                            introCard
+                                .frame(width: introWidth)
 
-                                // Common durations with explicit focus and color
-                                ForEach(commonDurations, id: \.self) { minutes in
-                                    Button {
-                                        onSetMinutes(minutes)
-                                    } label: {
-                                        primary("\(minutes) minutes", focused: focusedRow == .common(minutes))
-                                            .font(.headline.weight(.semibold))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 14)
-                                            .background(TVFocusRowSurface(isFocused: focusedRow == .common(minutes)))
-                                            .scaleEffect(focusedRow == .common(minutes) ? 1.006 : 1.0)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .focusEffectDisabled()
-                                    .focused($focusedRow, equals: .common(minutes))
-                                    .animation(.easeOut(duration: 0.14), value: focusedRow == .common(minutes))
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                    .listRowBackground(Color.clear)
-                                }
-                            } header: {
-                                Text("Common")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .textCase(nil)
-                            }
-
-                            Section {
-                                // More durations nav link with explicit focus and color
-                                NavigationLink {
-                                    MoreDurationsView(
-                                        durations: moreDurations,
-                                        onSetMinutes: onSetMinutes
-                                    )
-                                } label: {
-                                    HStack {
-                                        primary("More durations", focused: focusedRow == .more)
-                                        Spacer()
-                                        secondary("5-240 min", focused: focusedRow == .more)
-                                    }
-                                    .font(.headline.weight(.semibold))
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 14)
-                                    .background(TVFocusRowSurface(isFocused: focusedRow == .more))
-                                    .scaleEffect(focusedRow == .more ? 1.006 : 1.0)
-                                }
-                                .buttonStyle(.plain)
-                                .focusEffectDisabled()
-                                .focused($focusedRow, equals: .more)
-                                .animation(.easeOut(duration: 0.14), value: focusedRow == .more)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                .listRowBackground(Color.clear)
-                            } header: {
-                                Text("More")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .textCase(nil)
-                            }
+                            timerChoicesPanel
+                                .frame(maxWidth: .infinity, minHeight: 700, maxHeight: 820, alignment: .top)
                         }
-                        .listStyle(.plain)
-                        .background(Color.clear)
-                        .frame(maxWidth: 980)
-                        .padding(18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .fill(Color.black.opacity(0.28))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                }
-                        )
+                        .frame(width: contentWidth, alignment: .leading)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 54)
+                        .padding(.bottom, 44)
                     }
-                    .padding(.horizontal, 56)
-                    .padding(.vertical, 36)
+                    .padding(.horizontal, 70)
                     .navigationTitle("Sleep Timer")
                     .toolbar(.hidden, for: .navigationBar)
                 }
@@ -1268,39 +1326,77 @@ extension DriftlyRootView {
 
             private func primary(_ text: String, focused: Bool) -> some View {
                 Text(text)
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(.white)
+            }
+
+            @ViewBuilder
+            private func timerRowSurface<Content: View>(focused: Bool, @ViewBuilder content: () -> Content) -> some View {
+                content()
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.white.opacity(focused ? 0.06 : 0.04))
+
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(
+                                    Color.white.opacity(focused ? 0.14 : 0.08),
+                                    lineWidth: focused ? 1.1 : 0.9
+                                )
+
+                            if focused {
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white.opacity(0.28),
+                                                Color.white.opacity(0.10),
+                                                Color.clear
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.15
+                                    )
+                                    .padding(1)
+                            }
+                        }
+                    }
+                    .shadow(
+                        color: focused ? Color.white.opacity(0.035) : Color.black.opacity(0.16),
+                        radius: focused ? 10 : 4,
+                        x: 0,
+                        y: focused ? 6 : 2
+                    )
+                    .scaleEffect(focused ? 1.015 : 1.0)
+                    .animation(.interactiveSpring(response: 0.24, dampingFraction: 0.86), value: focused)
             }
 
             var body: some View {
                 ZStack {
                     ambientBackground
 
-                    List {
-                        Section {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 12) {
                             ForEach(durations, id: \.self) { minutes in
-                                Button {
-                                    onSetMinutes(minutes)
-                                } label: {
-                                        primary("\(minutes) minutes", focused: focusedMinutes == minutes)
-                                            .font(.headline.weight(.semibold))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 14)
-                                            .background(TVFocusRowSurface(isFocused: focusedMinutes == minutes))
-                                            .scaleEffect(focusedMinutes == minutes ? 1.006 : 1.0)
+                                timerRowSurface(focused: focusedMinutes == minutes) {
+                                    primary("\(minutes) minutes", focused: focusedMinutes == minutes)
+                                        .font(.headline.weight(.semibold))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                .buttonStyle(.plain)
+                                .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .focusable(true)
                                 .focusEffectDisabled()
                                 .focused($focusedMinutes, equals: minutes)
-                                .animation(.easeOut(duration: 0.14), value: focusedMinutes == minutes)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                .listRowBackground(Color.clear)
+                                .onTapGesture {
+                                    onSetMinutes(minutes)
+                                }
                             }
                         }
+                        .padding(24)
                     }
-                    .listStyle(.plain)
                     .frame(maxWidth: 980)
-                    .padding(18)
                     .background(
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .fill(Color.black.opacity(0.28))
