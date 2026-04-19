@@ -242,9 +242,6 @@ struct DriftlySettingsView: View {
                         Toggle("Show Clock", isOn: $preferences.clockEnabled)
                     }
 
-                    Section("About") {
-                        LabeledContent("Version", value: versionString)
-                    }
                 }
                 .environment(\.defaultMinListRowHeight, isPhoneLayout ? 54 : (isPadLayout ? 50 : 44))
                 .scrollContentBackground(.hidden)
@@ -374,22 +371,6 @@ struct DriftlySettingsView: View {
                                 .listRowBackground(Color.clear)
                         }
 
-                        Section("About") {
-                            HStack {
-                                Text("Version")
-                                Spacer()
-                                Text(versionString)
-                                    .foregroundStyle(Color.white.opacity(0.68))
-                            }
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .modifier(TVSettingsRowSurface(isFocused: false))
-                            .contentShape(Rectangle())
-                            .focusable(false)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                            .listRowBackground(Color.clear)
-                        }
-
                     }
                     .frame(maxWidth: 1580)
                     .background(Color.clear)
@@ -494,9 +475,4 @@ struct DriftlySettingsView: View {
         }
     }
 
-    private var versionString: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-        return "\(version) (\(build))"
-    }
 }
