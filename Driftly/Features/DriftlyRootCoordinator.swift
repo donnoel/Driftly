@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class DriftlyRootCoordinator: ObservableObject {
+    enum SleepTransition {
+        case none
+        case expired
+        case woke
+    }
+
     @Published var sleepState = SleepAndDriftController.State()
     @Published var clockNow = Date()
     @Published var phaseAnchorDate = Date()
@@ -91,14 +97,41 @@ final class DriftlyRootCoordinator: ObservableObject {
         }
     }
 
-    func handleSleepTimerTick(now: Date, engine: DriftlyEngine) -> [SleepAndDriftController.Action] {
-        guard SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState) else { return [] }
-        return SleepAndDriftController.handleTick(
+    func applySleepTimerSelection(minutes: Int?, engine: DriftlyEngine, scenePhase: ScenePhase) {
+        engine.setSleepTimer(minutes: minutes)
+        setSleepAwakeStateIfNeeded()
+        updateTicking(engine: engine, scenePhase: scenePhase)
+        updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
+        updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+    }
+
+    func wakeFromSleep(engine: DriftlyEngine, scenePhase: ScenePhase) {
+        setSleepAwakeStateIfNeeded()
+        resetAutoDriftClock()
+        updateTicking(engine: engine, scenePhase: scenePhase)
+        updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
+        updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+    }
+
+    func processSleepTimerTick(now: Date, engine: DriftlyEngine, scenePhase: ScenePhase) -> SleepTransition {
+        guard SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState) else { return .none }
+        let actions = SleepAndDriftController.handleTick(
             now: now,
             engine: engine,
             state: &sleepState,
             includeAutoDrift: false
         )
+        updateTicking(engine: engine, scenePhase: scenePhase)
+        updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
+        updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
+
+        if actions.contains(.expire) {
+            return .expired
+        }
+        if actions.contains(.wake) {
+            return .woke
+        }
+        return .none
     }
 
     func updateTicking(engine: DriftlyEngine, scenePhase: ScenePhase) {
@@ -387,6 +420,15 @@ final class DriftlyRootCoordinator: ObservableObject {
             }
         }
         prewarmMode = nil
+    }
+
+    private func setSleepAwakeStateIfNeeded() {
+        if sleepState.sleepTimerHasExpired {
+            sleepState.sleepTimerHasExpired = false
+        }
+        if sleepState.sleepTimerAllowsLock {
+            sleepState.sleepTimerAllowsLock = false
+        }
     }
 
     func showBrightnessHUD(for value: Double) {
