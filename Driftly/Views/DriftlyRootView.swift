@@ -5,6 +5,7 @@ import os
 
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
+    @EnvironmentObject private var preferences: DriftlyPreferencesState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -78,7 +79,7 @@ struct DriftlyRootView: View {
                 }
 #endif
                 withAnimation(.easeInOut(duration: 0.35)) {
-                    engine.isChromeVisible.toggle()
+                    preferences.isChromeVisible.toggle()
                 }
                 DriftHaptics.chromeToggled()
             }
@@ -125,7 +126,7 @@ struct DriftlyRootView: View {
         }
         .onExitCommand {
             withAnimation(.easeInOut(duration: 0.35)) {
-                engine.isChromeVisible = true
+                preferences.isChromeVisible = true
                 focusedButton = .modePicker
             }
         }
@@ -136,11 +137,11 @@ struct DriftlyRootView: View {
         .onChange(of: scenePhase) { _, newPhase in
             handleScenePhaseChange(newPhase)
         }
-        .onChange(of: engine.preventAutoLock) { _, _ in
+        .onChange(of: preferences.preventAutoLock) { _, _ in
             updateIdleTimer()
         }
 #if os(tvOS)
-        .onChange(of: engine.isChromeVisible) { _, isVisible in
+        .onChange(of: preferences.isChromeVisible) { _, isVisible in
             DispatchQueue.main.async {
                 if isVisible {
                     focusedButton = .modePicker
@@ -176,7 +177,7 @@ struct DriftlyRootView: View {
             }
             coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
-        .onChange(of: engine.clockEnabled) { _, _ in
+        .onChange(of: preferences.clockEnabled) { _, _ in
             updateClockTicking()
         }
         .onReceive(coordinator.tickTimer) { now in
@@ -190,11 +191,13 @@ struct DriftlyRootView: View {
             .fullScreenCover(isPresented: $coordinator.isModePickerPresented) {
                 DriftModePickerView()
                     .environmentObject(engine)
+                    .environmentObject(preferences)
             }
 #else
             .sheet(isPresented: $coordinator.isModePickerPresented) {
                 DriftModePickerView()
                     .environmentObject(engine)
+                    .environmentObject(preferences)
                     .modifier(IPadModePickerSheetModifier())
             }
 #endif
@@ -249,11 +252,13 @@ struct DriftlyRootView: View {
             .fullScreenCover(isPresented: $coordinator.isSettingsPresented) {
                 DriftlySettingsView()
                     .environmentObject(engine)
+                    .environmentObject(preferences)
             }
 #else
             .sheet(isPresented: $coordinator.isSettingsPresented) {
                 DriftlySettingsView()
                     .environmentObject(engine)
+                    .environmentObject(preferences)
                     .modifier(IPadSettingsSheetModifier())
             }
 #endif
@@ -398,7 +403,7 @@ struct DriftlyRootView: View {
 
     private var brightnessDarkeningOverlay: some View {
         Color.black
-            .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - engine.brightness))
+            .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - preferences.brightness))
             .ignoresSafeArea()
             .allowsHitTesting(false)
     }
@@ -437,7 +442,7 @@ struct DriftlyRootView: View {
 
     @ViewBuilder
     private var clockOverlay: some View {
-        if engine.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
+        if preferences.clockEnabled && !coordinator.sleepState.sleepTimerHasExpired {
             let style = clockStyle(for: engine.currentMode, idiom: UIDevice.current.userInterfaceIdiom)
             GeometryReader { proxy in
                 ClockOverlayView(
@@ -472,7 +477,7 @@ struct DriftlyRootView: View {
                 updateIdleTimer: updateIdleTimer,
                 updateClockTicking: updateClockTicking,
                 focusChromeIfNeeded: {
-                    if engine.isChromeVisible {
+                    if preferences.isChromeVisible {
                         focusedButton = .modePicker
                         fallbackFocus = false
                     }
@@ -527,16 +532,11 @@ struct DriftlyRootView: View {
     }
 
     private func applySleepTimer(minutes: Int?) {
-        engine.setSleepTimer(minutes: minutes)
         withAnimation(.easeInOut(duration: 0.6)) {
-            coordinator.sleepState.sleepTimerHasExpired = false
+            coordinator.applySleepTimerSelection(minutes: minutes, engine: engine, scenePhase: scenePhase)
         }
-        coordinator.sleepState.sleepTimerAllowsLock = false
         updateIdleTimer()
         DriftHaptics.sleepTimerSet()
-        coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-        updateClockTicking()
-        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
 
     @ViewBuilder
@@ -551,13 +551,13 @@ struct DriftlyRootView: View {
                     scenePhase: scenePhase,
                     reduceMotion: reduceMotion,
                     sleepTimerHasExpired: coordinator.sleepState.sleepTimerHasExpired,
-                    isChromeVisible: engine.isChromeVisible,
-                    brightness: engine.brightness,
+                    isChromeVisible: preferences.isChromeVisible,
+                    brightness: preferences.brightness,
                     motionUnavailable: $motionUnavailable
                 )
             }
             
-            if engine.isChromeVisible && !coordinator.sleepState.sleepTimerHasExpired {
+            if preferences.isChromeVisible && !coordinator.sleepState.sleepTimerHasExpired {
                 VStack {
                     Spacer()
                     chromeBarView
@@ -740,14 +740,14 @@ struct DriftlyRootView: View {
     private func updateIdleTimer() {
 #if os(iOS)
         let prevent = shouldPreventLock(
-            preventAutoLock: engine.preventAutoLock,
+            preventAutoLock: preferences.preventAutoLock,
             sleepTimerAllowsLock: coordinator.sleepState.sleepTimerAllowsLock,
             scenePhase: scenePhase
         )
         UIApplication.shared.isIdleTimerDisabled = prevent
 #elseif os(tvOS)
         UIApplication.shared.isIdleTimerDisabled = shouldPreventLockTvOS(
-            preventAutoLock: engine.preventAutoLock,
+            preventAutoLock: preferences.preventAutoLock,
             sleepTimerAllowsLock: coordinator.sleepState.sleepTimerAllowsLock,
             scenePhase: scenePhase
         )
@@ -755,56 +755,46 @@ struct DriftlyRootView: View {
     }
     
     private func updateClockTicking() {
-        coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
+        coordinator.updateClockTicking(clockEnabled: preferences.clockEnabled, scenePhase: scenePhase)
     }
     
     // MARK: - Sleep timer tick & auto drift
     
     private func handleSleepTimerTick(now: Date) {
-        let actions = coordinator.handleSleepTimerTick(now: now, engine: engine)
-        
-        for action in actions {
-            switch action {
-            case .expire:
-                withAnimation(.easeInOut(duration: 1.5)) {
-                    coordinator.sleepState.sleepTimerHasExpired = true
-                }
-                updateIdleTimer()
+        let transition = coordinator.processSleepTimerTick(
+            now: now,
+            engine: engine,
+            scenePhase: scenePhase
+        )
+
+        switch transition {
+        case .expired:
+            updateIdleTimer()
 #if os(tvOS)
-                // Drop focus target while asleep to avoid stray focus highlights.
-                focusedButton = nil
-                fallbackFocus = false
+            // Drop focus target while asleep to avoid stray focus highlights.
+            focusedButton = nil
+            fallbackFocus = false
 #endif
-            case .wake:
-                withAnimation(.easeInOut(duration: 0.8)) {
-                    coordinator.sleepState.sleepTimerHasExpired = false
-                }
-                coordinator.sleepState.sleepTimerAllowsLock = false
-                updateIdleTimer()
-            case .autoDrift:
-                // Auto-drift now uses one-shot timers; sleep ticks should not send this.
-                break
-            }
+        case .woke:
+            updateIdleTimer()
+        case .none:
+            break
         }
-        
-        coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-        coordinator.updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
-        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
     
     private func adjustBrightness(by delta: Double) {
         let performChange = {
-            let proposed = engine.brightness + Double(delta)
+            let proposed = preferences.brightness + Double(delta)
             let clamped = max(0.2, min(1.0, proposed))
             
 #if os(iOS)
-            if (proposed < 0.2 && engine.brightness > 0.2) ||
-                (proposed > 1.0 && engine.brightness < 1.0) {
+            if (proposed < 0.2 && preferences.brightness > 0.2) ||
+                (proposed > 1.0 && preferences.brightness < 1.0) {
                 DriftHaptics.brightnessLimitHit()
             }
 #endif
             
-            engine.brightness = clamped
+            preferences.brightness = clamped
             coordinator.showBrightnessHUD(for: clamped)
         }
         
@@ -818,9 +808,9 @@ struct DriftlyRootView: View {
 #if os(tvOS)
     private func toggleChromeTvOS() {
         DispatchQueue.main.async {
-            let willShow = !engine.isChromeVisible
+            let willShow = !preferences.isChromeVisible
             withAnimation(.easeInOut(duration: 0.35)) {
-                engine.isChromeVisible = willShow
+                preferences.isChromeVisible = willShow
             }
             focusedButton = willShow ? .modePicker : nil
             fallbackFocus = !willShow
@@ -840,17 +830,12 @@ struct DriftlyRootView: View {
     
     private func wakeFromSleepTimer() {
         withAnimation(.easeInOut(duration: 0.8)) {
-            coordinator.sleepState.sleepTimerHasExpired = false
+            coordinator.wakeFromSleep(engine: engine, scenePhase: scenePhase)
         }
-        coordinator.sleepState.sleepTimerAllowsLock = false
-        coordinator.resetAutoDriftClock()
         updateIdleTimer()
-        updateClockTicking()
-        coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
-        coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
 #if os(tvOS)
         // Restore fallback focus so remote commands still arrive when chrome is hidden.
-        fallbackFocus = !engine.isChromeVisible
+        fallbackFocus = !preferences.isChromeVisible
 #endif
     }
     
@@ -872,9 +857,9 @@ struct DriftlyRootView: View {
     
     private var effectiveAnimationSpeed: Double {
         DriftAnimationPolicy.effectiveSpeed(
-            base: engine.animationSpeed,
+            base: preferences.animationSpeed,
             reduceMotion: reduceMotion,
-            respectSystemReduceMotion: engine.respectSystemReduceMotion
+            respectSystemReduceMotion: preferences.respectSystemReduceMotion
         )
     }
     

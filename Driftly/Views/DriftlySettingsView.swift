@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
+    @EnvironmentObject private var preferences: DriftlyPreferencesState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -190,7 +191,7 @@ struct DriftlySettingsView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
 
-                                Slider(value: $engine.animationSpeed, in: 0.5...1.8, step: 0.05)
+                                Slider(value: $preferences.animationSpeed, in: 0.5...1.8, step: 0.05)
                                     .accessibilityIdentifier("animationSpeedSlider")
                                     .accessibilityLabel("Animation Speed")
 
@@ -236,8 +237,8 @@ struct DriftlySettingsView: View {
                     }
 
                     Section("Screen") {
-                        Toggle("Stay Awake", isOn: $engine.preventAutoLock)
-                        Toggle("Show Clock", isOn: $engine.clockEnabled)
+                        Toggle("Stay Awake", isOn: $preferences.preventAutoLock)
+                        Toggle("Show Clock", isOn: $preferences.clockEnabled)
                     }
 
                     Section("About") {
@@ -275,7 +276,7 @@ struct DriftlySettingsView: View {
                                 Text("Animation Speed")
                                     .font(.body.weight(.semibold))
 
-                                Picker("", selection: $engine.animationSpeed) {
+                                Picker("", selection: $preferences.animationSpeed) {
                                     Text("Gentle").tag(0.6)
                                     Text("Normal").tag(1.0)
                                     Text("Lively").tag(1.4)
@@ -355,13 +356,13 @@ struct DriftlySettingsView: View {
                         Section("Screen") {
                             TVBoolRow(
                                 title: "Stay Awake",
-                                isOn: $engine.preventAutoLock,
+                                isOn: $preferences.preventAutoLock,
                                 id: .stayAwake,
                                 focus: $tvFocus
                             )
                             TVBoolRow(
                                 title: "Show Clock",
-                                isOn: $engine.clockEnabled,
+                                isOn: $preferences.clockEnabled,
                                 id: .showClock,
                                 focus: $tvFocus
                             )
@@ -478,9 +479,9 @@ struct DriftlySettingsView: View {
 
     private var effectiveAnimationSpeed: Double {
         DriftAnimationPolicy.effectiveSpeed(
-            base: engine.animationSpeed,
+            base: preferences.animationSpeed,
             reduceMotion: reduceMotion,
-            respectSystemReduceMotion: engine.respectSystemReduceMotion
+            respectSystemReduceMotion: preferences.respectSystemReduceMotion
         )
     }
 

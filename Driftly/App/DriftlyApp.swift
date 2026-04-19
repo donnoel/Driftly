@@ -13,6 +13,7 @@ struct DriftlyApp: App {
         WindowGroup {
             DriftlyRootView()
                 .environmentObject(engine)
+                .environmentObject(engine.preferences)
         }
     }
 

@@ -97,6 +97,82 @@ extension AutoDriftSource: Codable {
     }
 }
 
+final class DriftlyPreferencesState: ObservableObject {
+    var onChromeVisibilityChanged: ((Bool) -> Void)?
+    var onAnimationSpeedChanged: ((Double) -> Void)?
+    var onRespectReduceMotionChanged: ((Bool) -> Void)?
+    var onPreventAutoLockChanged: ((Bool) -> Void)?
+    var onBrightnessChanged: ((Double) -> Void)?
+    var onClockEnabledChanged: ((Bool) -> Void)?
+
+    @Published var isChromeVisible: Bool {
+        didSet {
+            guard isChromeVisible != oldValue else { return }
+            onChromeVisibilityChanged?(isChromeVisible)
+        }
+    }
+    /// 1.0 = normal speed, 0.5 = slower, 1.5 = faster
+    @Published var animationSpeed: Double {
+        didSet {
+            guard animationSpeed != oldValue else { return }
+            onAnimationSpeedChanged?(animationSpeed)
+        }
+    }
+    /// Whether to honor the system Reduce Motion setting for animation speed scaling.
+    @Published var respectSystemReduceMotion: Bool {
+        didSet {
+            guard respectSystemReduceMotion != oldValue else { return }
+            onRespectReduceMotionChanged?(respectSystemReduceMotion)
+        }
+    }
+    /// When true, Driftly will try to prevent auto-lock while active.
+    @Published var preventAutoLock: Bool {
+        didSet {
+            guard preventAutoLock != oldValue else { return }
+            onPreventAutoLockChanged?(preventAutoLock)
+        }
+    }
+    /// 0.2 (dim) ... 1.0 (full brightness)
+    @Published var brightness: Double {
+        didSet {
+            let clamped = Self.clampBrightness(brightness)
+            if clamped != brightness {
+                brightness = clamped
+                return
+            }
+            guard brightness != oldValue else { return }
+            onBrightnessChanged?(brightness)
+        }
+    }
+    /// Whether to show the clock overlay.
+    @Published var clockEnabled: Bool {
+        didSet {
+            guard clockEnabled != oldValue else { return }
+            onClockEnabledChanged?(clockEnabled)
+        }
+    }
+
+    init(
+        isChromeVisible: Bool,
+        animationSpeed: Double,
+        respectSystemReduceMotion: Bool,
+        preventAutoLock: Bool,
+        brightness: Double,
+        clockEnabled: Bool
+    ) {
+        self.isChromeVisible = isChromeVisible
+        self.animationSpeed = animationSpeed
+        self.respectSystemReduceMotion = respectSystemReduceMotion
+        self.preventAutoLock = preventAutoLock
+        self.brightness = Self.clampBrightness(brightness)
+        self.clockEnabled = clockEnabled
+    }
+
+    private static func clampBrightness(_ value: Double) -> Double {
+        min(1.0, max(0.2, value))
+    }
+}
+
 final class DriftlyEngine: ObservableObject {
     // MARK: - Published state
 
@@ -127,38 +203,31 @@ final class DriftlyEngine: ObservableObject {
         }
     }
 
-    @Published var isChromeVisible: Bool {
-        didSet { persistChromeVisibility() }
+    let preferences: DriftlyPreferencesState
+
+    var isChromeVisible: Bool {
+        get { preferences.isChromeVisible }
+        set { preferences.isChromeVisible = newValue }
     }
 
-    /// 1.0 = normal speed, 0.5 = slower, 1.5 = faster
-    @Published var animationSpeed: Double {
-        didSet {
-            persistAnimationSpeed()
-            updateActiveSceneFromState()
-        }
+    var animationSpeed: Double {
+        get { preferences.animationSpeed }
+        set { preferences.animationSpeed = newValue }
     }
 
-    /// Whether to honor the system Reduce Motion setting for animation speed scaling.
-    @Published var respectSystemReduceMotion: Bool {
-        didSet {
-            persistRespectReduceMotion()
-        }
+    var respectSystemReduceMotion: Bool {
+        get { preferences.respectSystemReduceMotion }
+        set { preferences.respectSystemReduceMotion = newValue }
     }
 
-    /// When true, Driftly will try to prevent auto-lock while active
-    @Published var preventAutoLock: Bool {
-        didSet {
-            persistPreventAutoLock()
-            updateActiveSceneFromState()
-        }
+    var preventAutoLock: Bool {
+        get { preferences.preventAutoLock }
+        set { preferences.preventAutoLock = newValue }
     }
 
-    /// 0.2 (dim) ... 1.0 (full brightness)
-    @Published private var brightnessStorage: Double
     var brightness: Double {
-        get { brightnessStorage }
-        set { applyBrightness(newValue) }
+        get { preferences.brightness }
+        set { preferences.brightness = newValue }
     }
 
     /// Feature gate for experimental toggles (per-device)
@@ -214,12 +283,10 @@ final class DriftlyEngine: ObservableObject {
 
     /// When set, Driftly will fade out once this time is reached (not persisted across launches)
     @Published var sleepTimerEndDate: Date? = nil
-    /// Whether to show the clock overlay
-    @Published var clockEnabled: Bool {
-        didSet {
-            persistClockEnabled()
-            updateActiveSceneFromState()
-        }
+    /// Whether to show the clock overlay.
+    var clockEnabled: Bool {
+        get { preferences.clockEnabled }
+        set { preferences.clockEnabled = newValue }
     }
 
     var allModes: [DriftMode] {
@@ -301,37 +368,55 @@ final class DriftlyEngine: ObservableObject {
             currentMode = .nebulaLake
         }
 
-        // isChromeVisible (default: true)
-        if defaults.object(forKey: DriftlyDefaultsKey.isChromeVisible) != nil {
-            isChromeVisible = defaults.bool(forKey: DriftlyDefaultsKey.isChromeVisible)
-        } else {
-            isChromeVisible = true
-        }
+        let initialChromeVisible: Bool = {
+            if defaults.object(forKey: DriftlyDefaultsKey.isChromeVisible) != nil {
+                return defaults.bool(forKey: DriftlyDefaultsKey.isChromeVisible)
+            } else {
+                return true
+            }
+        }()
 
-        // animationSpeed (default: 0.6 = Gentle)
+        // animationSpeed (default: 0.6 = Gentle), clamped in case of legacy/corrupted values.
         let storedSpeed = defaults.double(forKey: DriftlyDefaultsKey.animationSpeed)
         let rawSpeed = storedSpeed == 0 ? 0.6 : storedSpeed
-        // Clamp in case of legacy/corrupted values.
-        animationSpeed = min(1.8, max(0.5, rawSpeed))
+        let initialAnimationSpeed = min(1.8, max(0.5, rawSpeed))
 
-        // respectSystemReduceMotion (default: true)
-        if defaults.object(forKey: DriftlyDefaultsKey.respectReduceMotion) != nil {
-            respectSystemReduceMotion = defaults.bool(forKey: DriftlyDefaultsKey.respectReduceMotion)
-        } else {
-            respectSystemReduceMotion = true
-        }
+        let initialRespectReduceMotion: Bool = {
+            if defaults.object(forKey: DriftlyDefaultsKey.respectReduceMotion) != nil {
+                return defaults.bool(forKey: DriftlyDefaultsKey.respectReduceMotion)
+            } else {
+                return true
+            }
+        }()
 
-        // preventAutoLock (default: false)
-        if defaults.object(forKey: DriftlyDefaultsKey.preventAutoLock) != nil {
-            preventAutoLock = defaults.bool(forKey: DriftlyDefaultsKey.preventAutoLock)
-        } else {
-            preventAutoLock = false
-        }
+        let initialPreventAutoLock: Bool = {
+            if defaults.object(forKey: DriftlyDefaultsKey.preventAutoLock) != nil {
+                return defaults.bool(forKey: DriftlyDefaultsKey.preventAutoLock)
+            } else {
+                return false
+            }
+        }()
 
         // brightness (default: 1.0)
         let storedBrightness = defaults.double(forKey: DriftlyDefaultsKey.brightness)
         let initialBrightness = storedBrightness == 0 ? 1.0 : storedBrightness
-        brightnessStorage = Self.clampBrightness(initialBrightness)
+
+        let initialClockEnabled: Bool = {
+            if defaults.object(forKey: DriftlyDefaultsKey.clockEnabled) != nil {
+                return defaults.bool(forKey: DriftlyDefaultsKey.clockEnabled)
+            } else {
+                return false
+            }
+        }()
+
+        preferences = DriftlyPreferencesState(
+            isChromeVisible: initialChromeVisible,
+            animationSpeed: initialAnimationSpeed,
+            respectSystemReduceMotion: initialRespectReduceMotion,
+            preventAutoLock: initialPreventAutoLock,
+            brightness: initialBrightness,
+            clockEnabled: initialClockEnabled
+        )
 
         // Labs features (default: false)
         if defaults.object(forKey: DriftlyDefaultsKey.labsFeaturesEnabled) != nil {
@@ -414,13 +499,6 @@ final class DriftlyEngine: ObservableObject {
         }
         autoDriftSource = storedSource
 
-        // clock overlay (default: false)
-        if defaults.object(forKey: DriftlyDefaultsKey.clockEnabled) != nil {
-            clockEnabled = defaults.bool(forKey: DriftlyDefaultsKey.clockEnabled)
-        } else {
-            clockEnabled = false
-        }
-
         let userFacingModes = DriftModePresentationCatalog.userFacingModes
 
         // mode display order (default: curated user-facing modes)
@@ -440,6 +518,7 @@ final class DriftlyEngine: ObservableObject {
         }
 
         isInitializing = false
+        bindPreferencePersistence()
 
         // Re-validate the source now that initialization is complete.
         autoDriftSource = Self.validated(source: autoDriftSource, scenes: scenes)
@@ -482,18 +561,40 @@ final class DriftlyEngine: ObservableObject {
         }
     }
 
-    private func applyBrightness(_ value: Double) {
-        let clamped = Self.clampBrightness(value)
-        guard clamped != brightnessStorage else { return }
-        brightnessStorage = clamped
-        persistBrightness()
-        updateActiveSceneFromState()
-    }
-
     // MARK: - Persistence
 
     private func persistCurrentMode() {
         defaults.set(currentMode.rawValue, forKey: DriftlyDefaultsKey.currentMode)
+    }
+
+    private func bindPreferencePersistence() {
+        preferences.onChromeVisibilityChanged = { [weak self] isVisible in
+            self?.persistChromeVisibility(isVisible)
+        }
+
+        preferences.onAnimationSpeedChanged = { [weak self] speed in
+            self?.persistAnimationSpeed(speed)
+            self?.updateActiveSceneFromState()
+        }
+
+        preferences.onRespectReduceMotionChanged = { [weak self] shouldRespect in
+            self?.persistRespectReduceMotion(shouldRespect)
+        }
+
+        preferences.onPreventAutoLockChanged = { [weak self] shouldPrevent in
+            self?.persistPreventAutoLock(shouldPrevent)
+            self?.updateActiveSceneFromState()
+        }
+
+        preferences.onBrightnessChanged = { [weak self] brightness in
+            self?.persistBrightness(brightness)
+            self?.updateActiveSceneFromState()
+        }
+
+        preferences.onClockEnabledChanged = { [weak self] isEnabled in
+            self?.persistClockEnabled(isEnabled)
+            self?.updateActiveSceneFromState()
+        }
     }
 
     var isAutoDriftAllowed: Bool {
@@ -822,23 +923,42 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func persistAnimationSpeed() {
-        defaults.set(animationSpeed, forKey: DriftlyDefaultsKey.animationSpeed)
+        persistAnimationSpeed(animationSpeed)
+    }
+
+    private func persistAnimationSpeed(_ value: Double) {
+        defaults.set(value, forKey: DriftlyDefaultsKey.animationSpeed)
     }
 
     private func persistRespectReduceMotion() {
-        defaults.set(respectSystemReduceMotion, forKey: DriftlyDefaultsKey.respectReduceMotion)
+        persistRespectReduceMotion(respectSystemReduceMotion)
+    }
+
+    private func persistRespectReduceMotion(_ value: Bool) {
+        defaults.set(value, forKey: DriftlyDefaultsKey.respectReduceMotion)
     }
 
     private func persistPreventAutoLock() {
-        defaults.set(preventAutoLock, forKey: DriftlyDefaultsKey.preventAutoLock)
+        persistPreventAutoLock(preventAutoLock)
+    }
+
+    private func persistPreventAutoLock(_ value: Bool) {
+        defaults.set(value, forKey: DriftlyDefaultsKey.preventAutoLock)
     }
 
     private func persistChromeVisibility() {
-        defaults.set(isChromeVisible, forKey: DriftlyDefaultsKey.isChromeVisible)
+        persistChromeVisibility(isChromeVisible)
+    }
+
+    private func persistChromeVisibility(_ value: Bool) {
+        defaults.set(value, forKey: DriftlyDefaultsKey.isChromeVisible)
     }
 
     private func persistBrightness() {
-        let value = brightness
+        persistBrightness(brightness)
+    }
+
+    private func persistBrightness(_ value: Double) {
         persistenceQueue.async { [weak defaults] in
             defaults?.set(value, forKey: DriftlyDefaultsKey.brightness)
         }
@@ -877,7 +997,11 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func persistClockEnabled() {
-        defaults.set(clockEnabled, forKey: DriftlyDefaultsKey.clockEnabled)
+        persistClockEnabled(clockEnabled)
+    }
+
+    private func persistClockEnabled(_ value: Bool) {
+        defaults.set(value, forKey: DriftlyDefaultsKey.clockEnabled)
     }
 
     private static func initialFavorites(

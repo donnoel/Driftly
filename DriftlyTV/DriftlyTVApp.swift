@@ -8,6 +8,7 @@ struct DriftlyTVApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(engine)
+                .environmentObject(engine.preferences)
         }
     }
 
