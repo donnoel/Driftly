@@ -31,6 +31,82 @@ final class DriftlyUITests: XCTestCase {
     }
 
     @MainActor
+    func testColdLaunchShowsUsableMainShellWithoutForcedChrome() throws {
+        let app = launchApp()
+
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 10), "Main shell window did not appear")
+
+        // Follow the real user path: tap the shell, then reveal and use chrome controls.
+        app.tap()
+        ensureChromeVisible(in: app)
+
+        let modeButton = app.buttons["modePickerButton"].firstMatch
+        XCTAssertTrue(modeButton.waitForExistence(timeout: 8), "Mode picker affordance was not reachable")
+
+        if modeButton.isHittable {
+            modeButton.tap()
+        } else {
+            let coord = modeButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            coord.tap()
+        }
+
+        let opened = app.navigationBars["Select Mode"].waitForExistence(timeout: 5) ||
+            app.otherElements["modePickerSheet"].waitForExistence(timeout: 5)
+        XCTAssertTrue(opened, "Main shell did not respond to chrome interaction")
+    }
+
+    @MainActor
+    func testSceneCRUDSmokeCreateActivateAndPersistAcrossPickerReopen() throws {
+        let app = launchApp(arguments: ["UITestingReset"])
+
+        ensureModePickerOpen(app)
+
+        let suffix = String(UUID().uuidString.prefix(6))
+        let sceneName = "Smoke Scene \(suffix)"
+
+        let newSceneButton = app.buttons["newSceneButton"].firstMatch
+        XCTAssertTrue(newSceneButton.waitForExistence(timeout: 8), "New scene affordance was not found")
+        newSceneButton.tap()
+
+        let nameField = app.textFields["Enter scene name"].firstMatch
+        XCTAssertTrue(nameField.waitForExistence(timeout: 8), "Scene name field did not appear")
+        replaceText(in: nameField, with: sceneName)
+
+        let saveButton = app.buttons["Save"].firstMatch
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 6), "Scene editor Save action was not available")
+        saveButton.tap()
+
+        let createdSceneLabel = app.staticTexts[sceneName].firstMatch
+        XCTAssertTrue(createdSceneLabel.waitForExistence(timeout: 10), "Created scene was not shown in picker")
+
+        // Select the newly created scene through the real scene card path.
+        if createdSceneLabel.isHittable {
+            createdSceneLabel.tap()
+        } else {
+            let coord = createdSceneLabel.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            coord.tap()
+        }
+
+        let doneButton = app.buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 6), "Mode picker Done action was not available")
+        doneButton.tap()
+
+        XCTAssertFalse(
+            app.navigationBars["Select Mode"].waitForExistence(timeout: 2),
+            "Mode picker did not dismiss"
+        )
+
+        ensureModePickerOpen(app)
+
+        let persistedSceneLabel = app.staticTexts[sceneName].firstMatch
+        XCTAssertTrue(
+            persistedSceneLabel.waitForExistence(timeout: 10),
+            "Created scene was not persisted after picker reopen"
+        )
+    }
+
+    @MainActor
     func testModePickerOpensAndSelectsMode() throws {
         let app = launchApp(arguments: [
             "UITestingReset",
@@ -103,6 +179,54 @@ final class DriftlyUITests: XCTestCase {
         } else {
             XCTFail("Animation speed slider not found")
         }
+    }
+
+    @MainActor
+    func testSettingsPersistenceSmokeAnimationSpeedAcrossReopenAndRelaunch() throws {
+        let app = launchApp(arguments: ["UITestingReset"])
+
+        openSettingsSheet(in: app)
+
+        let speedLabel = app.staticTexts["animationSpeedLabel"].firstMatch
+        let slider = app.sliders["animationSpeedSlider"].firstMatch
+
+        XCTAssertTrue(speedLabel.waitForExistence(timeout: 6), "Animation speed label not found")
+        XCTAssertTrue(slider.waitForExistence(timeout: 6), "Animation speed slider not found")
+
+        let initialLabel = speedLabel.label
+
+        slider.adjust(toNormalizedSliderPosition: 1.0)
+        waitForLabel(speedLabel, equalsAny: ["Gentle", "Normal", "Lively"])
+
+        var changedLabel = speedLabel.label
+        if changedLabel == initialLabel {
+            slider.adjust(toNormalizedSliderPosition: 0.0)
+            waitForLabel(speedLabel, equalsAny: ["Gentle", "Normal", "Lively"])
+            changedLabel = speedLabel.label
+        }
+
+        XCTAssertNotEqual(changedLabel, initialLabel, "Visible setting did not change")
+
+        let doneButton = app.buttons["Done"].firstMatch
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 6), "Done button not found in Settings")
+        doneButton.tap()
+
+        openSettingsSheet(in: app)
+        let reopenedSpeedLabel = app.staticTexts["animationSpeedLabel"].firstMatch
+        XCTAssertTrue(reopenedSpeedLabel.waitForExistence(timeout: 6), "Animation speed label missing after reopen")
+        XCTAssertEqual(reopenedSpeedLabel.label, changedLabel, "Setting did not persist after reopening Settings")
+
+        let doneAfterReopen = app.buttons["Done"].firstMatch
+        XCTAssertTrue(doneAfterReopen.waitForExistence(timeout: 6), "Done button missing after reopen")
+        doneAfterReopen.tap()
+
+        app.terminate()
+
+        let relaunched = launchApp()
+        openSettingsSheet(in: relaunched)
+        let relaunchedSpeedLabel = relaunched.staticTexts["animationSpeedLabel"].firstMatch
+        XCTAssertTrue(relaunchedSpeedLabel.waitForExistence(timeout: 6), "Animation speed label missing after relaunch")
+        XCTAssertEqual(relaunchedSpeedLabel.label, changedLabel, "Setting did not persist after relaunch")
     }
 
     // MARK: - Snapshots
@@ -321,6 +445,19 @@ final class DriftlyUITests: XCTestCase {
         if altIdRow.exists { return altIdRow }
         if labelRow.exists { return labelRow }
         return textRow
+    }
+
+    private func replaceText(in textField: XCUIElement, with text: String) {
+        textField.tap()
+
+        if let currentValue = textField.value as? String,
+           !currentValue.isEmpty,
+           currentValue != textField.placeholderValue {
+            let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count)
+            textField.typeText(deleteString)
+        }
+
+        textField.typeText(text)
     }
 
     private func snapshotView(_ app: XCUIApplication, name: String) {
