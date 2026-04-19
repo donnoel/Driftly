@@ -4,6 +4,40 @@ import Testing
 
 @MainActor
 struct SceneStateSynchronizationTests {
+    @Test func sceneActivationNormalizesOutOfRangePersistedAnimationSpeed() async throws {
+        let suiteName = "SceneActivationNormalizeAnimationSpeed-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let sceneID = UUID()
+        let persistedScene = DriftScene(
+            id: sceneID,
+            name: "Persisted Out-of-Range Scene",
+            modeIDs: [.auroraVeil, .cosmicTide],
+            lastModeID: .auroraVeil,
+            settings: DriftSceneSettings(
+                brightness: 0.8,
+                animationSpeed: 3.2,
+                clockEnabled: false,
+                preventAutoLock: false,
+                autoDriftEnabled: false,
+                autoDriftIntervalMinutes: 10,
+                autoDriftShuffleEnabled: false
+            ),
+            updatedAt: Date(),
+            deletedAt: nil
+        )
+
+        defaults.set(try JSONEncoder().encode([persistedScene]), forKey: "driftly.scenes")
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.activateScene(id: sceneID)
+
+        #expect(engine.animationSpeed == DriftlyEngine.clampAnimationSpeed(3.2))
+        #expect(engine.availableScenes.first(where: { $0.id == sceneID })?.settings.animationSpeed == DriftlyEngine.clampAnimationSpeed(3.2))
+    }
+
     @Test func sceneActivationAppliesCapturedSettingsThroughSinglePath() async throws {
         let suiteName = "SceneActivation-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

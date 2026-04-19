@@ -521,6 +521,7 @@ struct DriftlyRootView: View {
         }
 
         if newPhase == .background {
+            engine.flushPendingBrightnessPersistence()
             engine.flushPendingScenePersistence()
         }
         coordinator.handleScenePhaseChange(to: newPhase)

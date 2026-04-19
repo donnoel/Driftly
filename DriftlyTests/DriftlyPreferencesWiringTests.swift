@@ -53,6 +53,19 @@ struct DriftlyPreferencesWiringTests {
         try await waitForBrightnessPersistence(defaults: defaults, expected: 0.58)
     }
 
+    @Test func brightnessFlushPersistsLatestValueImmediately() async throws {
+        let suiteName = "BrightnessFlush-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        engine.preferences.brightness = 0.74
+        engine.flushPendingBrightnessPersistence()
+
+        #expect(abs(defaults.double(forKey: "driftly.brightness") - 0.74) < 0.0001)
+    }
+
     private func waitForBrightnessPersistence(defaults: UserDefaults, expected: Double) async throws {
         for _ in 0..<20 {
             if abs(defaults.double(forKey: "driftly.brightness") - expected) < 0.0001 {

@@ -51,6 +51,11 @@ struct DriftScene: Codable, Equatable, Identifiable {
     var deletedAt: Date?
 }
 
+private struct DriftScenePayloadEnvelope: Codable, Equatable {
+    let version: Int
+    let scenes: [DriftScene]
+}
+
 enum AutoDriftSource: Equatable, Hashable {
     case all
     case favorites
@@ -254,9 +259,11 @@ final class DriftlyEngine: ObservableObject {
     private var applyingScene = false
     private var scenesCloudPushWorkItem: DispatchWorkItem?
     private var scenesPersistWorkItem: DispatchWorkItem?
+    private var brightnessPersistWorkItem: DispatchWorkItem?
     private var isInitializing = true
     private var reconcilingSceneLinkage = false
     private let persistenceQueue = DispatchQueue(label: "com.driftly.persistence", qos: .utility)
+    private static let currentScenePayloadVersion = 1
     private static let isTvOSPlatform: Bool = {
         #if os(tvOS)
         return true
@@ -436,7 +443,7 @@ final class DriftlyEngine: ObservableObject {
         // animationSpeed (default: 0.6 = Gentle), clamped in case of legacy/corrupted values.
         let storedSpeed = defaults.double(forKey: DriftlyDefaultsKey.animationSpeed)
         let rawSpeed = storedSpeed == 0 ? 0.6 : storedSpeed
-        let initialAnimationSpeed = min(1.8, max(0.5, rawSpeed))
+        let initialAnimationSpeed = Self.clampAnimationSpeed(rawSpeed)
 
         let initialRespectReduceMotion: Bool = {
             if defaults.object(forKey: DriftlyDefaultsKey.respectReduceMotion) != nil {
@@ -522,9 +529,13 @@ final class DriftlyEngine: ObservableObject {
 
         // scenes (default: none)
         let storedScenes: [DriftScene]
-        if let data = defaults.data(forKey: DriftlyDefaultsKey.scenes),
-           let decoded = Self.decodeScenes(from: data) {
-            storedScenes = decoded
+        if let data = defaults.data(forKey: DriftlyDefaultsKey.scenes) {
+            switch Self.decodeScenesPayload(from: data) {
+            case .decoded(let decoded, _):
+                storedScenes = decoded
+            case .failed:
+                storedScenes = []
+            }
         } else {
             storedScenes = []
         }
@@ -604,6 +615,7 @@ final class DriftlyEngine: ObservableObject {
         }
         scenesCloudPushWorkItem?.cancel()
         scenesPersistWorkItem?.cancel()
+        brightnessPersistWorkItem?.cancel()
     }
 
     // MARK: - Public API
@@ -958,7 +970,7 @@ final class DriftlyEngine: ObservableObject {
 
         activeSceneID = scene.id
         brightness = Self.clampBrightness(scene.settings.brightness)
-        animationSpeed = scene.settings.animationSpeed
+        animationSpeed = Self.clampAnimationSpeed(scene.settings.animationSpeed)
         clockEnabled = scene.settings.clockEnabled
         preventAutoLock = scene.settings.preventAutoLock
         autoDriftEnabled = scene.settings.autoDriftEnabled
@@ -1081,9 +1093,20 @@ final class DriftlyEngine: ObservableObject {
     }
 
     private func persistBrightness(_ value: Double) {
-        persistenceQueue.async { [weak defaults] in
+        brightnessPersistWorkItem?.cancel()
+
+        let work = DispatchWorkItem { [weak defaults] in
             defaults?.set(value, forKey: DriftlyDefaultsKey.brightness)
         }
+        brightnessPersistWorkItem = work
+        persistenceQueue.async(execute: work)
+    }
+
+    /// Immediately run any pending brightness persistence so recent changes are not lost (e.g., on background).
+    func flushPendingBrightnessPersistence() {
+        guard let work = brightnessPersistWorkItem else { return }
+        work.perform()
+        brightnessPersistWorkItem = nil
     }
 
     private func persistLabsFeaturesEnabled() {
@@ -1158,24 +1181,29 @@ final class DriftlyEngine: ObservableObject {
     ) -> [DriftScene] {
         guard let ubiquitousStore else { return localScenes }
 
-        if let data = ubiquitousStore.data(forKey: DriftlyDefaultsKey.scenes),
-           let cloudScenes = decodeScenes(from: data) {
-            let merged = mergeScenes(local: localScenes, cloud: cloudScenes)
-            if let mergedData = try? JSONEncoder().encode(merged) {
-                defaults.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
-                // Push the merged result back to iCloud so other devices converge immediately.
-                ubiquitousStore.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
-                if ubiquitousStore is NSUbiquitousKeyValueStore {
-                    DispatchQueue.global(qos: .utility).async {
+        if let data = ubiquitousStore.data(forKey: DriftlyDefaultsKey.scenes) {
+            switch decodeScenesPayload(from: data) {
+            case .decoded(let cloudScenes, _):
+                let merged = mergeScenes(local: localScenes, cloud: cloudScenes)
+                if let mergedData = encodeScenesPayload(merged) {
+                    defaults.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
+                    // Push the merged result back to iCloud so other devices converge immediately.
+                    ubiquitousStore.set(mergedData, forKey: DriftlyDefaultsKey.scenes)
+                    if ubiquitousStore is NSUbiquitousKeyValueStore {
+                        DispatchQueue.global(qos: .utility).async {
+                            _ = ubiquitousStore.synchronize()
+                        }
+                    } else {
                         _ = ubiquitousStore.synchronize()
                     }
-                } else {
-                    _ = ubiquitousStore.synchronize()
                 }
+                return merged
+            case .failed:
+                // Keep local scenes as-is and avoid overwriting cloud data we couldn't decode.
+                return localScenes
             }
-            return merged
         } else {
-            if let data = try? JSONEncoder().encode(localScenes) {
+            if let data = encodeScenesPayload(localScenes) {
                 ubiquitousStore.set(data, forKey: DriftlyDefaultsKey.scenes)
                 if ubiquitousStore is NSUbiquitousKeyValueStore {
                     DispatchQueue.global(qos: .utility).async {
@@ -1205,7 +1233,7 @@ final class DriftlyEngine: ObservableObject {
             guard let self else { return }
             persistenceQueue.async { [weak self] in
                 guard let self else { return }
-                let data = try? JSONEncoder().encode(self.scenes)
+                let data = Self.encodeScenesPayload(self.scenes)
                 self.defaults.set(data, forKey: DriftlyDefaultsKey.scenes)
                 self.scheduleScenesCloudPush(data: data)
             }
@@ -1230,8 +1258,42 @@ final class DriftlyEngine: ObservableObject {
         }
     }
 
-    private static func decodeScenes(from data: Data) -> [DriftScene]? {
-        try? JSONDecoder().decode([DriftScene].self, from: data)
+    private enum ScenePayloadSource {
+        case versioned
+        case legacyArray
+    }
+
+    private enum ScenePayloadDecodeFailure {
+        case unsupportedVersion
+        case invalidPayload
+    }
+
+    private enum ScenePayloadDecodeResult {
+        case decoded([DriftScene], source: ScenePayloadSource)
+        case failed(ScenePayloadDecodeFailure)
+    }
+
+    private static func encodeScenesPayload(_ scenes: [DriftScene]) -> Data? {
+        let payload = DriftScenePayloadEnvelope(
+            version: currentScenePayloadVersion,
+            scenes: scenes
+        )
+        return try? JSONEncoder().encode(payload)
+    }
+
+    private static func decodeScenesPayload(from data: Data) -> ScenePayloadDecodeResult {
+        if let payload = try? JSONDecoder().decode(DriftScenePayloadEnvelope.self, from: data) {
+            guard payload.version == currentScenePayloadVersion else {
+                return .failed(.unsupportedVersion)
+            }
+            return .decoded(payload.scenes, source: .versioned)
+        }
+
+        if let legacyScenes = try? JSONDecoder().decode([DriftScene].self, from: data) {
+            return .decoded(legacyScenes, source: .legacyArray)
+        }
+
+        return .failed(.invalidPayload)
     }
 
     private static func validated(source: AutoDriftSource, scenes: [DriftScene]) -> AutoDriftSource {
@@ -1287,7 +1349,12 @@ final class DriftlyEngine: ObservableObject {
 
     private func loadCloudScenes() -> [DriftScene]? {
         guard let data = ubiquitousStore?.data(forKey: DriftlyDefaultsKey.scenes) else { return nil }
-        return Self.decodeScenes(from: data)
+        switch Self.decodeScenesPayload(from: data) {
+        case .decoded(let scenes, _):
+            return scenes
+        case .failed:
+            return nil
+        }
     }
 
     private func scheduleScenesCloudPush(data: Data?) {
@@ -1348,6 +1415,10 @@ final class DriftlyEngine: ObservableObject {
 
     static func clampBrightness(_ value: Double) -> Double {
         max(0.2, min(1.0, value))
+    }
+
+    static func clampAnimationSpeed(_ value: Double) -> Double {
+        min(1.8, max(0.5, value))
     }
 
     private func autoDriftSourceName(_ source: AutoDriftSource) -> String {
