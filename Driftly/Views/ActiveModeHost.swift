@@ -1,6 +1,23 @@
 import SwiftUI
 import os
 
+enum ActiveModeHostTransitionDecisions {
+    static func shouldRenderPrewarmLayer(
+        reduceMotion: Bool,
+        hasPreviousMode: Bool,
+        modeCrossfade: Double
+    ) -> Bool {
+        !reduceMotion && !hasPreviousMode && modeCrossfade >= 1
+    }
+
+    static func shouldCleanupPreviousLayer(
+        expectedPreviousMode: DriftMode,
+        currentPreviousMode: DriftMode?
+    ) -> Bool {
+        currentPreviousMode == expectedPreviousMode
+    }
+}
+
 /// Hosts the active Drift mode with crossfade and optional prewarm layer.
 struct ActiveModeHost: View {
     let currentMode: DriftMode
@@ -78,7 +95,11 @@ struct ActiveModeHost: View {
     /// Keep hidden prewarm work scoped to idle windows where it can help the next transition.
     /// Avoid carrying an extra full-screen tree while a crossfade is running or when motion is reduced.
     private var shouldRenderPrewarmLayer: Bool {
-        !reduceMotion && previousMode == nil && modeCrossfade >= 1
+        ActiveModeHostTransitionDecisions.shouldRenderPrewarmLayer(
+            reduceMotion: reduceMotion,
+            hasPreviousMode: previousMode != nil,
+            modeCrossfade: modeCrossfade
+        )
     }
 
     private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
@@ -150,7 +171,10 @@ struct ActiveModeHost: View {
         }
 
         let cleanup = DispatchWorkItem {
-            guard previousMode == oldMode else {
+            guard ActiveModeHostTransitionDecisions.shouldCleanupPreviousLayer(
+                expectedPreviousMode: oldMode,
+                currentPreviousMode: previousMode
+            ) else {
 #if DEBUG
                 debugTransitionEvent(
                     "cleanup.skip expected=\(oldMode.rawValue) actual=\(previousMode?.rawValue ?? "none") to=\(newMode.rawValue)"
