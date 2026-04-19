@@ -515,7 +515,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Driftly/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Driftly;
+				INFOPLIST_KEY_CFBundleDisplayName = "Driftly Night";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Motion data is used to add gentle parallax effects to Driftly’s visuals.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -557,7 +557,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Driftly/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Driftly;
+				INFOPLIST_KEY_CFBundleDisplayName = "Driftly Night";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Motion data is used to add gentle parallax effects to Driftly’s visuals.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
