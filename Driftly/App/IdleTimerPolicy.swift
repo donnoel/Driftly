@@ -14,5 +14,9 @@ func shouldPreventLockTvOS(
     sleepTimerAllowsLock: Bool,
     scenePhase: ScenePhase
 ) -> Bool {
-    preventAutoLock && !sleepTimerAllowsLock && scenePhase == .active
+    shouldPreventLock(
+        preventAutoLock: preventAutoLock,
+        sleepTimerAllowsLock: sleepTimerAllowsLock,
+        scenePhase: scenePhase
+    )
 }

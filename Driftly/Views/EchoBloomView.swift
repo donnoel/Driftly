@@ -34,12 +34,6 @@ private struct HorizonWaveGlowOverlay: View {
             .accessibilityHidden(true)
     }
 
-    // Kept (even if unused) to avoid churn.
-    private func hash01(_ x: Int, _ seed: Int) -> Double {
-        var n = x &* 374761393 &+ seed &* 668265263
-        n = (n ^ (n >> 13)) &* 1274126177
-        return Double(n & 0x7fffffff) / 2147483647.0
-    }
 }
 
 private struct HorizonWaveGlowTimeline: View {
