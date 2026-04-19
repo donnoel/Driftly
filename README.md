@@ -23,13 +23,14 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 |--------|-------------|
 | 🌈 **30 Ambient Modes** | A curated gallery of “Cosmic Liquid” gradients plus abstract, line-based generative modes. |
 | 🫥 **Minimal UI Chrome** | Fullscreen experience with tiny controls that fade away. |
-| 🔁 **Auto Drift** | Automatically cycles modes on a timer (with shuffle + favorites-only options) and pre-warms the next mode before the switch. |
+| 🔁 **Auto Drift** | Automatically cycles modes on a timer (all modes, favorites, or a selected scene) and pre-warms the next mode before the switch. |
 | 🎚️ **Seamless Transitions** | Stacked crossfades keep the previous mode alive until the new one is drawn, hiding Canvas warm-up and avoiding black flashes. |
 | ⏱️ **Phase-Stable Animation** | A shared phase anchor keeps animations continuous across pauses, backgrounding, and mode switches. |
 | 🌙 **Sleep Timer** | Set a timer and Driftly gently powers down the visuals. |
 | ☀️ **Brightness Edge Gestures** | Drag up/down on screen edges to adjust in-app brightness (clamped with haptic feedback). |
 | 🌀 **Motion Parallax** | Optional subtle motion parallax using device motion for extra depth. |
 | ⭐️ **Favorites Sync** | Favorites sync via iCloud key-value store so they match across iOS and tvOS. |
+| 🎬 **Scenes** | Save named scene presets (mode set + key settings), edit them in the picker, and reuse them as an auto-drift source. |
 | 💾 **Persistence** | Remembers mode, brightness, chrome visibility, auto-drift settings, favorites, and ordering. |
 | 📺 **tvOS Support** | Includes a tvOS target for big-screen ambient Driftly vibes with shared favorites. |
 
@@ -62,7 +63,7 @@ A mix of cosmic-liquid gradients and “generative art gallery” modes:
 - **Ember Drift**
 - **Pulse Aurora**
 - **Vital Wave**
-- **Echo Bloom**
+- **Glow Bloom**
 - **Cosmic Heart**
 - **Signal Drift**
 - **Horizon Pulse**
@@ -101,7 +102,9 @@ The single source of truth for the app:
 - Brightness
 - Chrome visibility
 - Auto-drift settings (interval, shuffle, favorites-only)
+- Auto-drift source (all / favorites / scene)
 - Favorites + mode display ordering
+- Saved scenes + active scene
 - Sleep timer end date
 - Favorites sync propagation to iCloud key-value store (shared between iOS/tvOS)
 
@@ -109,7 +112,13 @@ The single source of truth for the app:
 Owns the logic for:
 - Auto drift timing
 - Sleep timer expiration
-- “tick” updates (driven from `DriftlyRootView`)
+- Tick decision/action logic consumed by `DriftlyRootCoordinator`
+
+### **DriftlyRootCoordinator**
+Owns runtime orchestration for:
+- Sleep/clock tick timer lifecycles
+- Auto-drift scheduling + prewarm timing
+- Scene phase handling for pause/resume continuity
 
 ### **DriftlyRootView**
 The full-screen shell:
@@ -142,7 +151,7 @@ Driftly/
 │   ├── DriftNoise.swift
 │   ├── DriftMotionManager.swift
 │   ├── MotionPhaseHandler.swift
-│   ├── PhaseController.swift
+│   ├── PhaseState.swift  (contains `PhaseController`)
 │   └── SleepAndDriftController.swift
 ├── Haptics/
 │   └── DriftHaptics.swift
@@ -173,6 +182,22 @@ Also included:
 - Root view initialization (test overrides)
 - Favorites sync behaviors (local ↔︎ iCloud key-value store)
 - Mode builder coverage (all modes have a view builder)
+
+---
+
+## ▶️ How To Run Tests
+
+Run iOS tests from the command line:
+
+```bash
+xcodebuild \
+  -project Driftly.xcodeproj \
+  -scheme Driftly \
+  -destination "platform=iOS Simulator,OS=latest,name=iPhone 17 Pro Max" \
+  clean test
+```
+
+Or run tests in Xcode with the `Driftly` scheme (`Product` → `Test`).
 
 ---
 
