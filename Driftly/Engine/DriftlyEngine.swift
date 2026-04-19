@@ -110,6 +110,7 @@ final class DriftlyEngine: ObservableObject {
     private var scenesCloudPushWorkItem: DispatchWorkItem?
     private var scenesPersistWorkItem: DispatchWorkItem?
     private var isInitializing = true
+    private var reconcilingSceneLinkage = false
     private let persistenceQueue = DispatchQueue(label: "com.driftly.persistence", qos: .utility)
     private static let isTvOSPlatform: Bool = {
         #if os(tvOS)
@@ -235,20 +236,15 @@ final class DriftlyEngine: ObservableObject {
         didSet {
             guard !isInitializing else { return }
             persistScenes()
-            autoDriftSource = Self.validated(source: autoDriftSource, scenes: scenes)
-            if let activeSceneID, scene(withID: activeSceneID) == nil {
-                self.activeSceneID = nil
-            }
+            reconcileSceneLinkage()
         }
     }
 
     /// Currently active scene ID (nil when not using a scene)
     @Published var activeSceneID: UUID? {
         didSet {
-            if activeSceneID == nil, case .scene = autoDriftSource {
-                autoDriftSource = .all
-            }
             persistActiveSceneID()
+            reconcileSceneLinkage()
         }
     }
 
@@ -625,9 +621,6 @@ final class DriftlyEngine: ObservableObject {
         upsertScene(scene)
         if activeSceneID == id {
             activeSceneID = nil
-            if case .scene = autoDriftSource {
-                autoDriftSource = .all
-            }
         }
     }
 
@@ -638,7 +631,6 @@ final class DriftlyEngine: ObservableObject {
 
     private func applyScene(_ scene: DriftScene, setAutoDriftSource: Bool = true) {
         guard scene.deletedAt == nil else { return }
-        var mutableScene = scene
         let targetMode: DriftMode = {
             if let last = scene.lastModeID, scene.modeIDs.contains(last) {
                 return last
@@ -661,26 +653,12 @@ final class DriftlyEngine: ObservableObject {
             )
         }
 
-        applyingScene = true
-        activeSceneID = scene.id
-        brightness = Self.clampBrightness(scene.settings.brightness)
-        animationSpeed = scene.settings.animationSpeed
-        clockEnabled = scene.settings.clockEnabled
-        preventAutoLock = scene.settings.preventAutoLock
-        autoDriftEnabled = scene.settings.autoDriftEnabled
-        autoDriftIntervalMinutes = max(1, scene.settings.autoDriftIntervalMinutes)
-        autoDriftShuffleEnabled = scene.settings.autoDriftShuffleEnabled
-        currentMode = targetMode
-        applyingScene = false
-
-        mutableScene.lastModeID = targetMode
-        mutableScene.settings = currentSceneSettings()
-        mutableScene.updatedAt = Date()
-        upsertScene(mutableScene)
-
-        if setAutoDriftSource {
-            autoDriftSource = .scene(scene.id)
-        }
+        let sourceOverride: AutoDriftSource? = setAutoDriftSource ? .scene(scene.id) : nil
+        commitSceneApplyTransaction(
+            scene: scene,
+            targetMode: targetMode,
+            autoDriftSourceOverride: sourceOverride
+        )
 
         DriftProfiling.event(
             DriftProfiling.Signpost.modeTransition,
@@ -744,6 +722,53 @@ final class DriftlyEngine: ObservableObject {
         if didChange {
             scene.updatedAt = Date()
             upsertScene(scene)
+        }
+    }
+
+    private func commitSceneApplyTransaction(
+        scene: DriftScene,
+        targetMode: DriftMode,
+        autoDriftSourceOverride: AutoDriftSource?
+    ) {
+        applyingScene = true
+        defer { applyingScene = false }
+
+        activeSceneID = scene.id
+        brightness = Self.clampBrightness(scene.settings.brightness)
+        animationSpeed = scene.settings.animationSpeed
+        clockEnabled = scene.settings.clockEnabled
+        preventAutoLock = scene.settings.preventAutoLock
+        autoDriftEnabled = scene.settings.autoDriftEnabled
+        autoDriftIntervalMinutes = max(1, scene.settings.autoDriftIntervalMinutes)
+        autoDriftShuffleEnabled = scene.settings.autoDriftShuffleEnabled
+        currentMode = targetMode
+        if let autoDriftSourceOverride {
+            autoDriftSource = autoDriftSourceOverride
+        }
+
+        var synchronizedScene = scene
+        synchronizedScene.lastModeID = targetMode
+        synchronizedScene.settings = currentSceneSettings()
+        synchronizedScene.updatedAt = Date()
+        upsertScene(synchronizedScene)
+    }
+
+    private func reconcileSceneLinkage() {
+        guard !reconcilingSceneLinkage else { return }
+        reconcilingSceneLinkage = true
+        defer { reconcilingSceneLinkage = false }
+
+        let validatedSource = Self.validated(source: autoDriftSource, scenes: scenes)
+        if validatedSource != autoDriftSource {
+            autoDriftSource = validatedSource
+        }
+
+        if let activeSceneID, scene(withID: activeSceneID) == nil {
+            self.activeSceneID = nil
+        }
+
+        if activeSceneID == nil, case .scene = autoDriftSource {
+            autoDriftSource = .all
         }
     }
 
