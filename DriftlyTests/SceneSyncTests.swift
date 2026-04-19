@@ -103,6 +103,100 @@ struct SceneSyncTests {
         #expect((mockStore.storage[scenesKey] as? Data) == invalidCloudData)
     }
 
+    @Test func keepsLocalScenesAndPreservesUnsupportedVersionCloudPayloadOnInit() async throws {
+        let suiteName = "SceneUnsupportedVersionCloudPayload-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let sceneID = UUID()
+        let localScene = makeScene(
+            id: sceneID,
+            name: "Local Scene",
+            updatedAt: Date(timeIntervalSince1970: 250)
+        )
+        let localData = try JSONEncoder().encode([localScene])
+        defaults.set(localData, forKey: scenesKey)
+
+        let unsupportedEnvelope = TestSceneEnvelope(version: 999, scenes: [
+            makeScene(
+                id: sceneID,
+                name: "Remote Unsupported",
+                updatedAt: Date(timeIntervalSince1970: 999)
+            )
+        ])
+        let unsupportedCloudData = try JSONEncoder().encode(unsupportedEnvelope)
+
+        let mockStore = MockUbiquitousKeyValueStore()
+        mockStore.storage[scenesKey] = unsupportedCloudData
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
+
+        #expect(engine.scenes.contains(where: { $0.id == localScene.id && $0.name == "Local Scene" }))
+        #expect((mockStore.storage[scenesKey] as? Data) == unsupportedCloudData)
+        #expect(defaults.data(forKey: scenesKey) == localData)
+    }
+
+    @Test func mergePrefersNewerNonDeletedSceneBetweenCloudAndLocal() async throws {
+        let suiteName = "SceneMergePrefersNewerNonDeleted-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let sceneID = UUID()
+        let localOlder = makeScene(
+            id: sceneID,
+            name: "Local Older",
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        defaults.set(try JSONEncoder().encode([localOlder]), forKey: scenesKey)
+
+        let remoteNewer = makeScene(
+            id: sceneID,
+            name: "Cloud Newer",
+            updatedAt: Date(timeIntervalSince1970: 500)
+        )
+        let mockStore = MockUbiquitousKeyValueStore()
+        mockStore.storage[scenesKey] = try JSONEncoder().encode(TestSceneEnvelope(version: payloadVersion, scenes: [remoteNewer]))
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
+
+        #expect(engine.scenes.count == 1)
+        #expect(engine.scenes.first?.id == sceneID)
+        #expect(engine.scenes.first?.name == "Cloud Newer")
+    }
+
+    @Test func mergeHonorsDeletionPrecedenceWhenDeletionIsNewestEvent() async throws {
+        let suiteName = "SceneMergeDeletionPrecedence-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let sceneID = UUID()
+        let localActive = makeScene(
+            id: sceneID,
+            name: "Local Active",
+            updatedAt: Date(timeIntervalSince1970: 200),
+            deletedAt: nil
+        )
+        defaults.set(try JSONEncoder().encode([localActive]), forKey: scenesKey)
+
+        let remoteDeleted = makeScene(
+            id: sceneID,
+            name: "Cloud Tombstone",
+            updatedAt: Date(timeIntervalSince1970: 150),
+            deletedAt: Date(timeIntervalSince1970: 400)
+        )
+        let mockStore = MockUbiquitousKeyValueStore()
+        mockStore.storage[scenesKey] = try JSONEncoder().encode(TestSceneEnvelope(version: payloadVersion, scenes: [remoteDeleted]))
+
+        let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
+
+        #expect(engine.scenes.count == 1)
+        #expect(engine.scenes.first?.id == sceneID)
+        #expect(engine.scenes.first?.deletedAt == remoteDeleted.deletedAt)
+    }
+
     private func waitForScenesPersistence(defaults: UserDefaults) async throws -> Data {
         for _ in 0..<20 {
             if let data = defaults.data(forKey: scenesKey) {
@@ -113,6 +207,36 @@ struct SceneSyncTests {
 
         return try #require(defaults.data(forKey: scenesKey))
     }
+}
+
+private struct TestSceneEnvelope: Codable {
+    let version: Int
+    let scenes: [DriftScene]
+}
+
+private func makeScene(
+    id: UUID = UUID(),
+    name: String,
+    updatedAt: Date,
+    deletedAt: Date? = nil
+) -> DriftScene {
+    DriftScene(
+        id: id,
+        name: name,
+        modeIDs: [.auroraVeil, .cosmicTide],
+        lastModeID: .auroraVeil,
+        settings: DriftSceneSettings(
+            brightness: 0.7,
+            animationSpeed: 1.0,
+            clockEnabled: false,
+            preventAutoLock: false,
+            autoDriftEnabled: false,
+            autoDriftIntervalMinutes: 10,
+            autoDriftShuffleEnabled: false
+        ),
+        updatedAt: updatedAt,
+        deletedAt: deletedAt
+    )
 }
 
 private extension Data {

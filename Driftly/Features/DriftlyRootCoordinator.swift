@@ -33,15 +33,20 @@ final class DriftlyRootCoordinator: ObservableObject {
     private var lastSignpostedAutoDriftFireDate: Date?
     private var lastSignpostedPrewarmFireDate: Date?
     private let prewarmLead: TimeInterval = 1.5
+    private let nowProvider: () -> Date
     private var didRunInitialSetup = false
 
-    init(testOverrides: (modePicker: Bool, sleepDialog: Bool)? = nil) {
+    init(
+        testOverrides: (modePicker: Bool, sleepDialog: Bool)? = nil,
+        nowProvider: @escaping () -> Date = Date.init
+    ) {
         let args = ProcessInfo.processInfo.arguments
         let defaultModePicker = args.contains("UITestingOpenModePicker")
         let defaultSleepDialog = args.contains("UITestingOpenSleepTimer")
 
         isModePickerPresented = testOverrides?.modePicker ?? defaultModePicker
         isSleepTimerDialogPresented = testOverrides?.sleepDialog ?? defaultSleepDialog
+        self.nowProvider = nowProvider
     }
 
     func runInitialSetupIfNeeded(
@@ -81,7 +86,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         currentScenePhase = newPhase
         if newPhase == .active {
             if let pausedAt = autoDriftPausedAt {
-                let now = Date()
+                let now = nowProvider()
                 let delta = now.timeIntervalSince(pausedAt)
                 let adjusted = sleepState.lastAutoDriftChange.addingTimeInterval(delta)
                 sleepState.lastAutoDriftChange = min(adjusted, now)
@@ -92,7 +97,7 @@ final class DriftlyRootCoordinator: ObservableObject {
                 )
             }
         } else {
-            autoDriftPausedAt = Date()
+            autoDriftPausedAt = nowProvider()
             cancelAutoDriftTimers()
         }
     }
@@ -212,7 +217,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         guard scenePhase == .active, !sleepState.sleepTimerHasExpired else { return }
 
         let intervalSeconds = Double(max(1, engine.sleepDrift.autoDriftIntervalMinutes) * 60)
-        sleepState.lastAutoDriftChange = Date().addingTimeInterval(-intervalSeconds)
+        sleepState.lastAutoDriftChange = nowProvider().addingTimeInterval(-intervalSeconds)
 
         DriftProfiling.event(
             DriftProfiling.Signpost.autoDriftSchedule,
@@ -237,7 +242,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         }
 
         let intervalSeconds = Double(max(1, engine.sleepDrift.autoDriftIntervalMinutes) * 60)
-        let now = Date()
+        let now = nowProvider()
         let nextDriftDate = sleepState.lastAutoDriftChange.addingTimeInterval(intervalSeconds)
 
         if nextDriftDate <= now {
@@ -288,7 +293,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         prewarmFireTimer = nil
 
         let prewarmDate = driftDate.addingTimeInterval(-prewarmLead)
-        let now = Date()
+        let now = nowProvider()
 
         guard engine.isAutoDriftOperational, currentScenePhase == .active, !sleepState.sleepTimerHasExpired else {
             prewarmMode = nil
@@ -370,7 +375,7 @@ final class DriftlyRootCoordinator: ObservableObject {
             return
         }
 
-        let now = Date()
+        let now = nowProvider()
         let nextMode = engine.nextAutoDriftMode(after: engine.currentMode)
         DriftProfiling.event(
             DriftProfiling.Signpost.autoDriftSelect,
