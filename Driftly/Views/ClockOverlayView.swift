@@ -31,7 +31,7 @@ struct ClockOverlayView: View {
     }()
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1.0 / 60.0)) { timeline in
+        TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { timeline in
             let raw = animationsPaused ? 0 : timeline.date.timeIntervalSince(anchorDate)
             let beat = 0.5 + 0.5 * sin(raw * 1.3)
             let pulseScale = 1.0 + 0.05 * beat
