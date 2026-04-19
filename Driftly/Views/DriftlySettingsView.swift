@@ -3,6 +3,7 @@ import SwiftUI
 struct DriftlySettingsView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @EnvironmentObject private var preferences: DriftlyPreferencesState
+    @EnvironmentObject private var sleepDrift: DriftlySleepDriftControlState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -211,10 +212,10 @@ struct DriftlySettingsView: View {
                     }
 
                     Section {
-                        Toggle("Auto Drift Between Modes", isOn: $engine.autoDriftEnabled)
-                        Toggle("Shuffle Order", isOn: $engine.autoDriftShuffleEnabled)
+                        Toggle("Auto Drift Between Modes", isOn: $sleepDrift.autoDriftEnabled)
+                        Toggle("Shuffle Order", isOn: $sleepDrift.autoDriftShuffleEnabled)
 
-                        Picker("Drift From", selection: $engine.autoDriftSource) {
+                        Picker("Drift From", selection: $sleepDrift.autoDriftSource) {
                             Text("All Modes").tag(AutoDriftSource.all)
                             Text("Favorites").tag(AutoDriftSource.favorites)
                             if let sceneID = engine.activeSceneID,
@@ -223,7 +224,7 @@ struct DriftlySettingsView: View {
                             }
                         }
 
-                        Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                        Picker("Drift Every", selection: $sleepDrift.autoDriftIntervalMinutes) {
                             ForEach(autoDriftOptions, id: \.self) { minutes in
                                 Text("\(minutes) minutes").tag(minutes)
                             }
@@ -306,18 +307,18 @@ struct DriftlySettingsView: View {
                         Section {
                             TVBoolRow(
                                 title: "Auto Drift Between Modes",
-                                isOn: $engine.autoDriftEnabled,
+                                isOn: $sleepDrift.autoDriftEnabled,
                                 id: .autoDriftEnabled,
                                 focus: $tvFocus
                             )
                             TVBoolRow(
                                 title: "Shuffle Order",
-                                isOn: $engine.autoDriftShuffleEnabled,
+                                isOn: $sleepDrift.autoDriftShuffleEnabled,
                                 id: .autoDriftShuffle,
                                 focus: $tvFocus
                             )
 
-                            Picker("Drift From", selection: $engine.autoDriftSource) {
+                            Picker("Drift From", selection: $sleepDrift.autoDriftSource) {
                                 Text("All Modes").tag(AutoDriftSource.all)
                                 Text("Favorites").tag(AutoDriftSource.favorites)
                                 if let sceneID = engine.activeSceneID,
@@ -331,7 +332,7 @@ struct DriftlySettingsView: View {
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                             .listRowBackground(Color.clear)
 
-                            Picker("Drift Every", selection: $engine.autoDriftIntervalMinutes) {
+                            Picker("Drift Every", selection: $sleepDrift.autoDriftIntervalMinutes) {
                                 ForEach(autoDriftOptions, id: \.self) { minutes in
                                     Text("\(minutes) minutes").tag(minutes)
                                 }

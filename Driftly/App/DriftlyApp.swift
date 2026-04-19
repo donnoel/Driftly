@@ -14,6 +14,7 @@ struct DriftlyApp: App {
             DriftlyRootView()
                 .environmentObject(engine)
                 .environmentObject(engine.preferences)
+                .environmentObject(engine.sleepDrift)
         }
     }
 

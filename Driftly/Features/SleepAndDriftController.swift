@@ -14,12 +14,16 @@ struct SleepAndDriftController {
         case autoDrift
     }
 
-    static func shouldTick(engine: DriftlyEngine, state: State) -> Bool {
-        engine.isAutoDriftOperational || shouldSleepTick(engine: engine, state: state)
+    static func shouldTick(
+        engine: DriftlyEngine,
+        sleepDrift: DriftlySleepDriftControlState,
+        state: State
+    ) -> Bool {
+        engine.isAutoDriftOperational || shouldSleepTick(sleepDrift: sleepDrift, state: state)
     }
 
-    static func shouldSleepTick(engine: DriftlyEngine, state: State) -> Bool {
-        engine.sleepTimerEndDate != nil && !state.sleepTimerHasExpired
+    static func shouldSleepTick(sleepDrift: DriftlySleepDriftControlState, state: State) -> Bool {
+        sleepDrift.sleepTimerEndDate != nil && !state.sleepTimerHasExpired
     }
 
     static func resetAutoDriftClock(state: inout State) {
@@ -30,16 +34,17 @@ struct SleepAndDriftController {
     static func handleTick(
         now: Date,
         engine: DriftlyEngine,
+        sleepDrift: DriftlySleepDriftControlState,
         state: inout State,
         includeAutoDrift: Bool = true
     ) -> [Action] {
         var actions: [Action] = []
 
-        if let end = engine.sleepTimerEndDate {
+        if let end = sleepDrift.sleepTimerEndDate {
             if now >= end && !state.sleepTimerHasExpired {
                 state.sleepTimerHasExpired = true
                 state.sleepTimerAllowsLock = true
-                engine.setSleepTimer(minutes: nil) // clear once reached to avoid pointless ticking/persistence
+                sleepDrift.setSleepTimer(minutes: nil) // clear once reached to avoid pointless ticking/persistence
                 actions.append(.expire)
             }
         } else if state.sleepTimerHasExpired {

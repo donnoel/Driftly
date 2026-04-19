@@ -173,6 +173,75 @@ final class DriftlyPreferencesState: ObservableObject {
     }
 }
 
+final class DriftlySleepDriftControlState: ObservableObject {
+    var onAutoDriftEnabledChanged: ((Bool) -> Void)?
+    var onAutoDriftShuffleChanged: ((Bool) -> Void)?
+    var onAutoDriftIntervalChanged: ((Int) -> Void)?
+    var onAutoDriftSourceChanged: ((AutoDriftSource) -> Void)?
+    var validateAutoDriftSource: ((AutoDriftSource) -> AutoDriftSource)?
+
+    @Published var autoDriftEnabled: Bool {
+        didSet {
+            guard autoDriftEnabled != oldValue else { return }
+            onAutoDriftEnabledChanged?(autoDriftEnabled)
+        }
+    }
+
+    @Published var autoDriftShuffleEnabled: Bool {
+        didSet {
+            guard autoDriftShuffleEnabled != oldValue else { return }
+            onAutoDriftShuffleChanged?(autoDriftShuffleEnabled)
+        }
+    }
+
+    @Published var autoDriftIntervalMinutes: Int {
+        didSet {
+            let clamped = max(1, autoDriftIntervalMinutes)
+            if clamped != autoDriftIntervalMinutes {
+                autoDriftIntervalMinutes = clamped
+                return
+            }
+            guard autoDriftIntervalMinutes != oldValue else { return }
+            onAutoDriftIntervalChanged?(autoDriftIntervalMinutes)
+        }
+    }
+
+    @Published var autoDriftSource: AutoDriftSource {
+        didSet {
+            guard autoDriftSource != oldValue else { return }
+            let validated = validateAutoDriftSource?(autoDriftSource) ?? autoDriftSource
+            if validated != autoDriftSource {
+                autoDriftSource = validated
+                return
+            }
+            onAutoDriftSourceChanged?(autoDriftSource)
+        }
+    }
+
+    /// When set, Driftly will fade out once this time is reached (not persisted across launches)
+    @Published var sleepTimerEndDate: Date? = nil
+
+    init(
+        autoDriftEnabled: Bool,
+        autoDriftShuffleEnabled: Bool,
+        autoDriftIntervalMinutes: Int,
+        autoDriftSource: AutoDriftSource
+    ) {
+        self.autoDriftEnabled = autoDriftEnabled
+        self.autoDriftShuffleEnabled = autoDriftShuffleEnabled
+        self.autoDriftIntervalMinutes = max(1, autoDriftIntervalMinutes)
+        self.autoDriftSource = autoDriftSource
+    }
+
+    func setSleepTimer(minutes: Int?) {
+        if let minutes {
+            sleepTimerEndDate = Date().addingTimeInterval(Double(minutes) * 60.0)
+        } else {
+            sleepTimerEndDate = nil
+        }
+    }
+}
+
 final class DriftlyEngine: ObservableObject {
     // MARK: - Published state
 
@@ -204,6 +273,7 @@ final class DriftlyEngine: ObservableObject {
     }
 
     let preferences: DriftlyPreferencesState
+    let sleepDrift: DriftlySleepDriftControlState
 
     var isChromeVisible: Bool {
         get { preferences.isChromeVisible }
@@ -239,41 +309,27 @@ final class DriftlyEngine: ObservableObject {
     }
 
     /// Auto-drift: whether Driftly should automatically change modes
-    @Published var autoDriftEnabled: Bool {
-        didSet {
-            persistAutoDriftEnabled()
-            updateActiveSceneFromState()
-        }
+    var autoDriftEnabled: Bool {
+        get { sleepDrift.autoDriftEnabled }
+        set { sleepDrift.autoDriftEnabled = newValue }
     }
 
     /// Whether auto-drift should use a shuffled order.
-    @Published var autoDriftShuffleEnabled: Bool {
-        didSet {
-            persistAutoDriftShuffle()
-            updateActiveSceneFromState()
-        }
+    var autoDriftShuffleEnabled: Bool {
+        get { sleepDrift.autoDriftShuffleEnabled }
+        set { sleepDrift.autoDriftShuffleEnabled = newValue }
     }
 
     /// Auto-drift interval in minutes
-    @Published var autoDriftIntervalMinutes: Int {
-        didSet {
-            persistAutoDriftInterval()
-            updateActiveSceneFromState()
-        }
+    var autoDriftIntervalMinutes: Int {
+        get { sleepDrift.autoDriftIntervalMinutes }
+        set { sleepDrift.autoDriftIntervalMinutes = newValue }
     }
 
     /// Auto-drift source (all, favorites, or an active scene)
-    @Published var autoDriftSource: AutoDriftSource {
-        didSet {
-            guard !isInitializing else { return }
-            let validated = Self.validated(source: autoDriftSource, scenes: scenes)
-            if validated != autoDriftSource {
-                autoDriftSource = validated
-                return
-            }
-            shuffleQueue.removeAll()
-            persistAutoDriftSource()
-        }
+    var autoDriftSource: AutoDriftSource {
+        get { sleepDrift.autoDriftSource }
+        set { sleepDrift.autoDriftSource = newValue }
     }
 
     /// Favorited modes (set of raw values)
@@ -281,8 +337,9 @@ final class DriftlyEngine: ObservableObject {
         didSet { persistFavorites() }
     }
 
-    /// When set, Driftly will fade out once this time is reached (not persisted across launches)
-    @Published var sleepTimerEndDate: Date? = nil
+    var sleepTimerEndDate: Date? {
+        sleepDrift.sleepTimerEndDate
+    }
     /// Whether to show the clock overlay.
     var clockEnabled: Bool {
         get { preferences.clockEnabled }
@@ -426,25 +483,28 @@ final class DriftlyEngine: ObservableObject {
         }
 
         // autoDriftEnabled (default: false)
+        let initialAutoDriftEnabled: Bool
         if defaults.object(forKey: DriftlyDefaultsKey.autoDriftEnabled) != nil {
-            autoDriftEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftEnabled)
+            initialAutoDriftEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftEnabled)
         } else {
-            autoDriftEnabled = false
+            initialAutoDriftEnabled = false
         }
 
         // autoDriftShuffleEnabled (default: false)
+        let initialAutoDriftShuffleEnabled: Bool
         if defaults.object(forKey: DriftlyDefaultsKey.autoDriftShuffle) != nil {
-            autoDriftShuffleEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftShuffle)
+            initialAutoDriftShuffleEnabled = defaults.bool(forKey: DriftlyDefaultsKey.autoDriftShuffle)
         } else {
-            autoDriftShuffleEnabled = false
+            initialAutoDriftShuffleEnabled = false
         }
 
         // autoDriftIntervalMinutes (default: 15)
         let storedInterval = defaults.integer(forKey: DriftlyDefaultsKey.autoDriftIntervalMins)
+        let initialAutoDriftIntervalMinutes: Int
         if storedInterval == 0 {
-            autoDriftIntervalMinutes = 15
+            initialAutoDriftIntervalMinutes = 15
         } else {
-            autoDriftIntervalMinutes = max(1, storedInterval)
+            initialAutoDriftIntervalMinutes = max(1, storedInterval)
         }
 
         // favorites (default: empty)
@@ -497,7 +557,12 @@ final class DriftlyEngine: ObservableObject {
         } else {
             storedSource = .all
         }
-        autoDriftSource = storedSource
+        sleepDrift = DriftlySleepDriftControlState(
+            autoDriftEnabled: initialAutoDriftEnabled,
+            autoDriftShuffleEnabled: initialAutoDriftShuffleEnabled,
+            autoDriftIntervalMinutes: initialAutoDriftIntervalMinutes,
+            autoDriftSource: storedSource
+        )
 
         let userFacingModes = DriftModePresentationCatalog.userFacingModes
 
@@ -519,6 +584,7 @@ final class DriftlyEngine: ObservableObject {
 
         isInitializing = false
         bindPreferencePersistence()
+        bindSleepDriftPersistence()
 
         // Re-validate the source now that initialization is complete.
         autoDriftSource = Self.validated(source: autoDriftSource, scenes: scenes)
@@ -554,11 +620,7 @@ final class DriftlyEngine: ObservableObject {
 
     /// minutes = nil → turn timer off (not persisted)
     func setSleepTimer(minutes: Int?) {
-        if let minutes {
-            sleepTimerEndDate = Date().addingTimeInterval(Double(minutes) * 60.0)
-        } else {
-            sleepTimerEndDate = nil
-        }
+        sleepDrift.setSleepTimer(minutes: minutes)
     }
 
     // MARK: - Persistence
@@ -594,6 +656,37 @@ final class DriftlyEngine: ObservableObject {
         preferences.onClockEnabledChanged = { [weak self] isEnabled in
             self?.persistClockEnabled(isEnabled)
             self?.updateActiveSceneFromState()
+        }
+    }
+
+    private func bindSleepDriftPersistence() {
+        sleepDrift.validateAutoDriftSource = { [weak self] source in
+            guard let self else { return source }
+            return Self.validated(source: source, scenes: self.scenes)
+        }
+
+        sleepDrift.onAutoDriftEnabledChanged = { [weak self] _ in
+            guard let self, !self.isInitializing else { return }
+            self.persistAutoDriftEnabled()
+            self.updateActiveSceneFromState()
+        }
+
+        sleepDrift.onAutoDriftShuffleChanged = { [weak self] _ in
+            guard let self, !self.isInitializing else { return }
+            self.persistAutoDriftShuffle()
+            self.updateActiveSceneFromState()
+        }
+
+        sleepDrift.onAutoDriftIntervalChanged = { [weak self] _ in
+            guard let self, !self.isInitializing else { return }
+            self.persistAutoDriftInterval()
+            self.updateActiveSceneFromState()
+        }
+
+        sleepDrift.onAutoDriftSourceChanged = { [weak self] _ in
+            guard let self, !self.isInitializing else { return }
+            self.shuffleQueue.removeAll()
+            self.persistAutoDriftSource()
         }
     }
 
@@ -641,12 +734,20 @@ final class DriftlyEngine: ObservableObject {
 
         let modes = autoDriftCandidates(startingAt: current)
         guard let idx = modes.firstIndex(of: current) else {
-            selectedMode = modes.first ?? .nebulaLake
+            if let first = modes.first(where: { $0 != current }) {
+                selectedMode = first
+            } else {
+                selectedMode = modes.first ?? .nebulaLake
+            }
             return selectedMode
         }
 
         let nextIndex = modes.index(after: idx)
         selectedMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        if selectedMode == current,
+           let fallback = modes.first(where: { $0 != current }) {
+            selectedMode = fallback
+        }
         return selectedMode
     }
 
@@ -658,10 +759,17 @@ final class DriftlyEngine: ObservableObject {
         }
 
         let modes = autoDriftCandidates(startingAt: current)
-        guard let idx = modes.firstIndex(of: current) else { return modes.first ?? .nebulaLake }
+        guard let idx = modes.firstIndex(of: current) else {
+            return modes.first(where: { $0 != current }) ?? modes.first ?? .nebulaLake
+        }
 
         let nextIndex = modes.index(after: idx)
-        return nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        let selected = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        if selected == current,
+           let fallback = modes.first(where: { $0 != current }) {
+            return fallback
+        }
+        return selected
     }
 
     func toggleFavorite(_ mode: DriftMode) {

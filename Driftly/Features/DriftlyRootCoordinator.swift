@@ -98,7 +98,7 @@ final class DriftlyRootCoordinator: ObservableObject {
     }
 
     func applySleepTimerSelection(minutes: Int?, engine: DriftlyEngine, scenePhase: ScenePhase) {
-        engine.setSleepTimer(minutes: minutes)
+        engine.sleepDrift.setSleepTimer(minutes: minutes)
         setSleepAwakeStateIfNeeded()
         updateTicking(engine: engine, scenePhase: scenePhase)
         updateClockTicking(clockEnabled: engine.clockEnabled, scenePhase: scenePhase)
@@ -114,10 +114,11 @@ final class DriftlyRootCoordinator: ObservableObject {
     }
 
     func processSleepTimerTick(now: Date, engine: DriftlyEngine, scenePhase: ScenePhase) -> SleepTransition {
-        guard SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState) else { return .none }
+        guard SleepAndDriftController.shouldSleepTick(sleepDrift: engine.sleepDrift, state: sleepState) else { return .none }
         let actions = SleepAndDriftController.handleTick(
             now: now,
             engine: engine,
+            sleepDrift: engine.sleepDrift,
             state: &sleepState,
             includeAutoDrift: false
         )
@@ -135,7 +136,7 @@ final class DriftlyRootCoordinator: ObservableObject {
     }
 
     func updateTicking(engine: DriftlyEngine, scenePhase: ScenePhase) {
-        let shouldTick = SleepAndDriftController.shouldSleepTick(engine: engine, state: sleepState)
+        let shouldTick = SleepAndDriftController.shouldSleepTick(sleepDrift: engine.sleepDrift, state: sleepState)
             && scenePhase == .active
             && !sleepState.sleepTimerHasExpired
         if shouldTick {
@@ -210,7 +211,7 @@ final class DriftlyRootCoordinator: ObservableObject {
         guard engine.isAutoDriftOperational else { return }
         guard scenePhase == .active, !sleepState.sleepTimerHasExpired else { return }
 
-        let intervalSeconds = Double(max(1, engine.autoDriftIntervalMinutes) * 60)
+        let intervalSeconds = Double(max(1, engine.sleepDrift.autoDriftIntervalMinutes) * 60)
         sleepState.lastAutoDriftChange = Date().addingTimeInterval(-intervalSeconds)
 
         DriftProfiling.event(
@@ -235,7 +236,7 @@ final class DriftlyRootCoordinator: ObservableObject {
             return
         }
 
-        let intervalSeconds = Double(max(1, engine.autoDriftIntervalMinutes) * 60)
+        let intervalSeconds = Double(max(1, engine.sleepDrift.autoDriftIntervalMinutes) * 60)
         let now = Date()
         let nextDriftDate = sleepState.lastAutoDriftChange.addingTimeInterval(intervalSeconds)
 

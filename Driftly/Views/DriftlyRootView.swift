@@ -6,6 +6,7 @@ import os
 struct DriftlyRootView: View {
     @EnvironmentObject private var engine: DriftlyEngine
     @EnvironmentObject private var preferences: DriftlyPreferencesState
+    @EnvironmentObject private var sleepDrift: DriftlySleepDriftControlState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -153,14 +154,14 @@ struct DriftlyRootView: View {
             }
         }
 #endif
-        .onChange(of: engine.autoDriftEnabled) { _, newValue in
+        .onChange(of: sleepDrift.autoDriftEnabled) { _, newValue in
             if newValue && engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
             coordinator.updateTicking(engine: engine, scenePhase: scenePhase)
             coordinator.updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
         }
-        .onChange(of: engine.autoDriftIntervalMinutes) { _, _ in
+        .onChange(of: sleepDrift.autoDriftIntervalMinutes) { _, _ in
             if engine.isAutoDriftOperational {
                 coordinator.resetAutoDriftClock()
             }
@@ -253,12 +254,14 @@ struct DriftlyRootView: View {
                 DriftlySettingsView()
                     .environmentObject(engine)
                     .environmentObject(preferences)
+                    .environmentObject(sleepDrift)
             }
 #else
             .sheet(isPresented: $coordinator.isSettingsPresented) {
                 DriftlySettingsView()
                     .environmentObject(engine)
                     .environmentObject(preferences)
+                    .environmentObject(sleepDrift)
                     .modifier(IPadSettingsSheetModifier())
             }
 #endif
@@ -840,11 +843,11 @@ struct DriftlyRootView: View {
     }
     
     private var sleepTimerActive: Bool {
-        engine.sleepTimerEndDate != nil && !coordinator.sleepState.sleepTimerHasExpired
+        sleepDrift.sleepTimerEndDate != nil && !coordinator.sleepState.sleepTimerHasExpired
     }
-    
+
     private var sleepTimerStatusText: String {
-        guard let end = engine.sleepTimerEndDate else { return "Timer off" }
+        guard let end = sleepDrift.sleepTimerEndDate else { return "Timer off" }
         let remaining = Int(max(0, end.timeIntervalSince(Date()) / 60))
         if remaining <= 0 { return "Timer ended" }
         return "Time remaining: \(remaining) min"
@@ -893,7 +896,7 @@ struct DriftlyRootView: View {
                     Text("0:00")
                 }
             }
-            profilingLine("AutoDrift", engine.autoDriftEnabled ? "enabled" : "disabled")
+            profilingLine("AutoDrift", sleepDrift.autoDriftEnabled ? "enabled" : "disabled")
             profilingLine("Operational", engine.isAutoDriftOperational ? "yes" : "no")
         }
         .font(.caption2.monospaced())

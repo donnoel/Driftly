@@ -9,6 +9,7 @@ struct DriftlyTVApp: App {
             ContentView()
                 .environmentObject(engine)
                 .environmentObject(engine.preferences)
+                .environmentObject(engine.sleepDrift)
         }
     }
 

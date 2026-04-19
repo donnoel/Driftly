@@ -22,7 +22,12 @@ struct SleepAndDriftControllerTests {
         )
 
         let now = Date().addingTimeInterval(60)
-        let actions = SleepAndDriftController.handleTick(now: now, engine: engine, state: &state)
+        let actions = SleepAndDriftController.handleTick(
+            now: now,
+            engine: engine,
+            sleepDrift: engine.sleepDrift,
+            state: &state
+        )
 
         #expect(actions.contains(.expire))
         #expect(state.sleepTimerHasExpired == true)
@@ -45,7 +50,12 @@ struct SleepAndDriftControllerTests {
             lastAutoDriftChange: .distantPast
         )
 
-        let actions = SleepAndDriftController.handleTick(now: Date(), engine: engine, state: &state)
+        let actions = SleepAndDriftController.handleTick(
+            now: Date(),
+            engine: engine,
+            sleepDrift: engine.sleepDrift,
+            state: &state
+        )
 
         #expect(actions.contains(.wake))
         #expect(state.sleepTimerHasExpired == false)
@@ -74,6 +84,7 @@ struct SleepAndDriftControllerTests {
         let actions = SleepAndDriftController.handleTick(
             now: now,
             engine: engine,
+            sleepDrift: engine.sleepDrift,
             state: &state
         )
         #expect(actions.contains(.autoDrift))
@@ -99,10 +110,11 @@ struct SleepAndDriftControllerTests {
         _ = SleepAndDriftController.handleTick(
             now: Date().addingTimeInterval(60),
             engine: engine,
+            sleepDrift: engine.sleepDrift,
             state: &state
         )
 
         #expect(state.sleepTimerHasExpired == true)
-        #expect(SleepAndDriftController.shouldTick(engine: engine, state: state) == false)
+        #expect(SleepAndDriftController.shouldTick(engine: engine, sleepDrift: engine.sleepDrift, state: state) == false)
     }
 }

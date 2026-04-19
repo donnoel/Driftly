@@ -59,15 +59,15 @@ struct DriftlyTVTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
-        engine.favoriteModes = [.auroraVeil, .cosmicTide]
+        engine.favoriteModes = [.auroraVeil, .abyssGlow]
         engine.autoDriftSource = .favorites
         engine.autoDriftShuffleEnabled = false
 
         engine.currentMode = .auroraVeil
-        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .cosmicTide)
+        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .abyssGlow)
 
         // Non-favorite current mode should lead into the favorite cycle
         engine.currentMode = .nebulaLake
-        #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .auroraVeil)
+        #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .abyssGlow)
     }
 }
