@@ -821,6 +821,7 @@ final class DriftlyEngine: ObservableObject {
         }
         scene.updatedAt = Date()
         upsertScene(scene)
+        applyActiveSceneEditIfNeeded(scene)
     }
 
     func deleteScene(id: UUID) {
@@ -840,15 +841,7 @@ final class DriftlyEngine: ObservableObject {
 
     private func applyScene(_ scene: DriftScene, setAutoDriftSource: Bool = true) {
         guard scene.deletedAt == nil else { return }
-        let targetMode: DriftMode = {
-            if let last = scene.lastModeID, scene.modeIDs.contains(last) {
-                return last
-            }
-            if let first = scene.modeIDs.first {
-                return first
-            }
-            return currentMode
-        }()
+        let targetMode = targetMode(for: scene)
         let previousMode = currentMode
         let interval = DriftProfiling.begin(
             DriftProfiling.Signpost.sceneApply,
@@ -875,6 +868,17 @@ final class DriftlyEngine: ObservableObject {
         )
     }
 
+    private func applyActiveSceneEditIfNeeded(_ scene: DriftScene) {
+        guard scene.deletedAt == nil else { return }
+        guard activeSceneID == scene.id else { return }
+
+        commitSceneApplyTransaction(
+            scene: scene,
+            targetMode: targetMode(for: scene),
+            autoDriftSourceOverride: nil
+        )
+    }
+
     private func scene(withID id: UUID, includeDeleted: Bool = false) -> DriftScene? {
         scenes.first(where: { $0.id == id && (includeDeleted || $0.deletedAt == nil) })
     }
@@ -897,6 +901,16 @@ final class DriftlyEngine: ObservableObject {
             }
         }
         return result
+    }
+
+    private func targetMode(for scene: DriftScene) -> DriftMode {
+        if let last = scene.lastModeID, scene.modeIDs.contains(last) {
+            return last
+        }
+        if let first = scene.modeIDs.first {
+            return first
+        }
+        return currentMode
     }
 
     private func currentSceneSettings() -> DriftSceneSettings {

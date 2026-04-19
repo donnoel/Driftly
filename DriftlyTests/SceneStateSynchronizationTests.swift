@@ -47,7 +47,7 @@ struct SceneStateSynchronizationTests {
         #expect(engine.autoDriftShuffleEnabled == true)
     }
 
-    @Test func sceneUpdateEditsAffectSubsequentActivationDeterministically() async throws {
+    @Test func activeSceneUpdateEditsApplyImmediatelyThroughSceneTransactionPath() async throws {
         let suiteName = "SceneUpdate-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
@@ -55,13 +55,20 @@ struct SceneStateSynchronizationTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.currentMode = .auroraVeil
+        engine.brightness = 0.7
+        engine.animationSpeed = 1.2
 
         let scene = engine.createScene(name: "Original", modeIDs: [.auroraVeil, .cosmicTide])
-        engine.updateScene(id: scene.id, name: "Edited", modeIDs: [.cosmicTide])
-
         engine.activateScene(id: scene.id)
 
+        engine.currentMode = .lunarDrift
+        engine.brightness = 0.42
+        engine.animationSpeed = 0.8
+        engine.updateScene(id: scene.id, name: "Edited", modeIDs: [.cosmicTide])
+
         #expect(engine.currentMode == .cosmicTide)
+        #expect(engine.brightness == 0.42)
+        #expect(engine.animationSpeed == 0.8)
         #expect(engine.availableScenes.contains(where: { $0.id == scene.id && $0.name == "Edited" }))
     }
 
