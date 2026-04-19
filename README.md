@@ -21,7 +21,7 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 
 | Feature | Description |
 |--------|-------------|
-| 🌈 **30 Ambient Modes** | A curated gallery of “Cosmic Liquid” gradients plus abstract, line-based generative modes. |
+| 🌈 **22 Ambient Modes** | A curated gallery of “Cosmic Liquid” gradients plus abstract, line-based generative modes. |
 | 🫥 **Minimal UI Chrome** | Fullscreen experience with tiny controls that fade away. |
 | 🔁 **Auto Drift** | Automatically cycles modes on a timer (all modes, favorites, or a selected scene) and pre-warms the next mode before the switch. |
 | 🎚️ **Seamless Transitions** | Stacked crossfades keep the previous mode alive until the new one is drawn, hiding Canvas warm-up and avoiding black flashes. |
