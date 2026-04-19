@@ -824,7 +824,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "DriftlyTV/AppInfo-tvOS.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Driftly;
+				INFOPLIST_KEY_CFBundleDisplayName = "Driftly Night";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
@@ -863,7 +863,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "DriftlyTV/AppInfo-tvOS.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Driftly;
+				INFOPLIST_KEY_CFBundleDisplayName = "Driftly Night";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
