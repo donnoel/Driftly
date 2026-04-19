@@ -32,7 +32,10 @@ struct ActiveModeHost: View {
                 .id(currentModeLayerID)
                 .opacity(modeCrossfade)
 
-            if let prewarmMode, prewarmMode != currentMode, let prewarmLayerID {
+            if shouldRenderPrewarmLayer,
+               let prewarmMode,
+               prewarmMode != currentMode,
+               let prewarmLayerID {
                 ModeViewRegistry.view(for: prewarmMode)
                     .id(prewarmLayerID)
                     .opacity(0)
@@ -70,6 +73,12 @@ struct ActiveModeHost: View {
                 message: "activeModeHost current=\(currentMode.rawValue)"
             )
         }
+    }
+
+    /// Keep hidden prewarm work scoped to idle windows where it can help the next transition.
+    /// Avoid carrying an extra full-screen tree while a crossfade is running or when motion is reduced.
+    private var shouldRenderPrewarmLayer: Bool {
+        !reduceMotion && previousMode == nil && modeCrossfade >= 1
     }
 
     private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
