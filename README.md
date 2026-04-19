@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/SwiftUI-Canvas-orange?logo=swift">
   <img src="https://img.shields.io/badge/Platforms-iOS_26.1_|_tvOS_18-blue">
-  <img src="https://img.shields.io/badge/Modes-30-purple">
+  <img src="https://img.shields.io/badge/Modes-22-purple">
 </p>
 
 ---
@@ -48,38 +48,30 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 
 ## 🎨 Modes
 
-A mix of cosmic-liquid gradients and “generative art gallery” modes:
+A curated mix of currently user-facing ambient modes:
 
-- **Nebula Lake**
-- **Cosmic Tide**
+- **Velvet Eclipse**
+- **Ember Drift**
+- **Photon Rain**
+- **Prism Shards**
 - **Aurora Veil**
 - **Abyss Glow**
-- **Starlit Mist**
-- **Lunar Drift**
-- **Solar Bloom**
-- **Plasma Reef**
-- **Velvet Eclipse**
-- **Neon Kelp**
-- **Ember Drift**
 - **Pulse Aurora**
-- **Vital Wave**
 - **Glow Bloom**
-- **Cosmic Heart**
-- **Signal Drift**
 - **Horizon Pulse**
-- **Photon Rain**
-- **Gravity Rings**
-- **Drift Grid**
-- **Quiet Signal**
 - **Chromatic Spine**
 - **Ribbon Orbit**
 - **Ink Topography**
-- **Prism Shards**
-- **Lissajous Bloom**
 - **Meridian Arcs**
-- **Spectral Loom**
-- **Voxel Mirage**
-- **Halo Interference**
+- **Starlit Mist**
+- **Plasma Reef**
+- **Neon Kelp**
+- **Vital Wave**
+- **Gravity Rings**
+- **Drift Grid**
+- **Quiet Signal**
+- **Nebula Lake**
+- **Signal Drift**
 
 ---
 
