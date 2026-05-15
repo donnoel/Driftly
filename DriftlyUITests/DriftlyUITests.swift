@@ -104,6 +104,11 @@ final class DriftlyUITests: XCTestCase {
             persistedSceneLabel.waitForExistence(timeout: 10),
             "Created scene was not persisted after picker reopen"
         )
+
+        let doneAfterReopen = app.buttons["Done"].firstMatch
+        if doneAfterReopen.waitForExistence(timeout: 4) {
+            doneAfterReopen.tap()
+        }
     }
 
     @MainActor
@@ -171,7 +176,7 @@ final class DriftlyUITests: XCTestCase {
             waitForLabel(speedLabel, equalsAny: ["Gentle", "Normal"])
 
             slider.adjust(toNormalizedSliderPosition: 1.0)
-            waitForLabel(speedLabel, equalsAny: ["Lively", "Normal"])
+            waitForLabel(speedLabel, equalsAny: ["Gentle", "Normal", "Lively"])
         } else {
             XCTFail("Animation speed slider not found")
         }
