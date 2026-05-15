@@ -228,24 +228,25 @@ final class DriftlyUITests: XCTestCase {
     // MARK: - Snapshots
 
     @MainActor
-    func testSnapshotPhotonRainAndVoxelMirage() throws {
-        // Photon Rain
-        let photonApp = launchApp(arguments: [
+    func testSnapshotPhotonRain() throws {
+        let app = launchApp(arguments: [
             "UITestingReset",
             "UITestingForceChromeVisible",
             "UITestingSetMode=photonRain"
         ])
-        ensureChromeVisible(in: photonApp)
-        snapshotView(photonApp, name: "PhotonRain")
+        ensureChromeVisible(in: app)
+        snapshotView(app, name: "PhotonRain")
+    }
 
-        // Voxel Mirage
-        let voxelApp = launchApp(arguments: [
+    @MainActor
+    func testSnapshotVoxelMirage() throws {
+        let app = launchApp(arguments: [
             "UITestingReset",
             "UITestingForceChromeVisible",
             "UITestingSetMode=voxelMirage"
         ])
-        ensureChromeVisible(in: voxelApp)
-        snapshotView(voxelApp, name: "VoxelMirage")
+        ensureChromeVisible(in: app)
+        snapshotView(app, name: "VoxelMirage")
     }
 
     @MainActor
