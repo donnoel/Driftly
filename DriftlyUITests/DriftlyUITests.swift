@@ -115,9 +115,7 @@ final class DriftlyUITests: XCTestCase {
 
         ensureModePickerOpen(app)
 
-        let modeRow = app.buttons["modeRow-nebulaLake"].firstMatch
-        XCTAssertTrue(modeRow.waitForExistence(timeout: 10))
-        modeRow.tap()
+        selectMode(app, identifier: "modeRow-nebulaLake", expectedLabel: "Nebula Lake")
     }
 
     @MainActor
@@ -150,9 +148,7 @@ final class DriftlyUITests: XCTestCase {
 
         ensureModePickerOpen(app)
 
-        let starlit = app.buttons["modeRow-starlitMist"].firstMatch
-        XCTAssertTrue(starlit.waitForExistence(timeout: 10))
-        starlit.tap()
+        selectMode(app, identifier: "modeRow-starlitMist", expectedLabel: "Starlit Mist")
 
         ensureChromeVisible(in: app)
 
@@ -241,7 +237,6 @@ final class DriftlyUITests: XCTestCase {
         ])
         ensureChromeVisible(in: photonApp)
         snapshotView(photonApp, name: "PhotonRain")
-        photonApp.terminate()
 
         // Voxel Mirage
         let voxelApp = launchApp(arguments: [
@@ -251,7 +246,6 @@ final class DriftlyUITests: XCTestCase {
         ])
         ensureChromeVisible(in: voxelApp)
         snapshotView(voxelApp, name: "VoxelMirage")
-        voxelApp.terminate()
     }
 
     @MainActor
@@ -263,7 +257,6 @@ final class DriftlyUITests: XCTestCase {
         ])
         ensureChromeVisible(in: app)
         snapshotView(app, name: "InkTopography")
-        app.terminate()
     }
 
     // Helpers

@@ -27,16 +27,17 @@ struct DriftlyTests {
             engine.preventAutoLock = true
             engine.isChromeVisible = false
             engine.brightness = 0.65
+            engine.flushPendingBrightnessPersistence()
             engine.autoDriftEnabled = true
             engine.autoDriftShuffleEnabled = true
             engine.autoDriftIntervalMinutes = 10
-            engine.favoriteModes = [DriftMode.auroraVeil, DriftMode.cosmicTide]
+            engine.favoriteModes = [DriftMode.auroraVeil, DriftMode.starlitMist]
             engine.autoDriftSource = .favorites
             engine.clockEnabled = true
             engine.modeDisplayOrder = [
-                .cosmicTide,
+                .starlitMist,
                 .auroraVeil
-            ] + DriftMode.allCases.filter { $0 != .cosmicTide && $0 != .auroraVeil }
+            ] + DriftModePresentationCatalog.userFacingModes.filter { $0 != .starlitMist && $0 != .auroraVeil }
         }
 
         // Second run: ensure values persisted
@@ -51,10 +52,10 @@ struct DriftlyTests {
             #expect(engine.autoDriftEnabled == true)
             #expect(engine.autoDriftShuffleEnabled == true)
             #expect(engine.autoDriftIntervalMinutes == 10)
-            #expect(engine.favoriteModes == [DriftMode.auroraVeil, DriftMode.cosmicTide])
+            #expect(engine.favoriteModes == [DriftMode.auroraVeil, DriftMode.starlitMist])
             #expect(engine.autoDriftSource == .favorites)
             #expect(engine.clockEnabled == true)
-            #expect(engine.modeDisplayOrder.starts(with: [.cosmicTide, .auroraVeil]))
+            #expect(engine.modeDisplayOrder.starts(with: [.starlitMist, .auroraVeil]))
         }
     }
 

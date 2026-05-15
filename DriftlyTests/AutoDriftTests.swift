@@ -53,9 +53,10 @@ struct AutoDriftTests {
         engine.labsFeaturesEnabled = true
         engine.autoDriftShuffleEnabled = false
 
-        for (index, mode) in DriftMode.allCases.enumerated() {
+        let modes = engine.modePickerModes
+        for (index, mode) in modes.enumerated() {
             engine.currentMode = mode
-            let expected = DriftMode.allCases[(index + 1) % DriftMode.allCases.count]
+            let expected = modes[(index + 1) % modes.count]
             let next = engine.nextAutoDriftMode(after: mode)
             #expect(next == expected)
         }
@@ -69,15 +70,15 @@ struct AutoDriftTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.labsFeaturesEnabled = true
-        engine.favoriteModes = [.auroraVeil, .cosmicTide]
+        engine.favoriteModes = [.auroraVeil, .starlitMist]
         engine.autoDriftSource = .favorites
         engine.autoDriftShuffleEnabled = false
 
         engine.currentMode = .auroraVeil
-        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .cosmicTide)
+        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .starlitMist)
 
-        engine.currentMode = .cosmicTide
-        #expect(engine.nextAutoDriftMode(after: .cosmicTide) == .auroraVeil)
+        engine.currentMode = .starlitMist
+        #expect(engine.nextAutoDriftMode(after: .starlitMist) == .auroraVeil)
 
         // If current mode not favorited, include it once then cycle favorites
         engine.currentMode = .nebulaLake
@@ -111,12 +112,12 @@ struct AutoDriftTests {
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
         engine.labsFeaturesEnabled = true
-        let scene = engine.createScene(name: "Two Modes", modeIDs: [.auroraVeil, .cosmicTide])
+        let scene = engine.createScene(name: "Two Modes", modeIDs: [.auroraVeil, .starlitMist])
         engine.activateScene(id: scene.id)
         #expect(engine.autoDriftSource == .scene(scene.id))
 
         engine.currentMode = .auroraVeil
-        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .cosmicTide)
+        #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .starlitMist)
 
         // If current mode is outside the scene, auto-drift immediately jumps into the scene list.
         engine.currentMode = .driftGrid
