@@ -152,7 +152,7 @@ jobs:
           rm -rf "$RESULT_BUNDLE"
           EXTRA_TEST_FLAGS=""
           if [[ "${{ matrix.scheme }}" == "Driftly" ]]; then
-            EXTRA_TEST_FLAGS="-only-testing:DriftlyUITests -skip-testing:DriftlyUITests/DriftlyUITests/testModeLabelUpdatesAfterSelection -skip-testing:DriftlyUITests/DriftlyUITests/testModePickerOpensAndSelectsMode"
+            EXTRA_TEST_FLAGS="-only-testing:DriftlyUITests/DriftlyUITests -skip-testing:DriftlyUITests/DriftlyUITests/testModeLabelUpdatesAfterSelection -skip-testing:DriftlyUITests/DriftlyUITests/testModePickerOpensAndSelectsMode"
           fi
           xcodebuild \
             -project Driftly.xcodeproj \
