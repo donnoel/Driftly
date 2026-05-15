@@ -150,11 +150,6 @@ jobs:
           set -euo pipefail
           mkdir -p "$(dirname "$RESULT_BUNDLE")"
           rm -rf "$RESULT_BUNDLE"
-          ACTION="test"
-          EXTRA_TEST_FLAGS=""
-          if [[ "${{ matrix.scheme }}" == "Driftly" ]]; then
-            ACTION="build"
-          fi
           xcodebuild \
             -project Driftly.xcodeproj \
             -scheme '${{ matrix.scheme }}' \
@@ -165,8 +160,7 @@ jobs:
             -parallel-testing-enabled NO \
             -maximum-concurrent-test-simulator-destinations 1 \
             ${{ matrix.deployment_flag }}=${{ matrix.deployment_target }} \
-            $EXTRA_TEST_FLAGS \
-            clean "$ACTION"
+            clean test
 
       - name: Upload xcodebuild artifacts
         if: failure()
