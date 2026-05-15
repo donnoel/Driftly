@@ -17,9 +17,13 @@ jobs:
           - scheme: Driftly
             platform: iOS
             simulator_family: iPhone
+            deployment_flag: IPHONEOS_DEPLOYMENT_TARGET
+            deployment_target: "26.4"
           - scheme: DriftlyTV
             platform: tvOS
             simulator_family: Apple TV
+            deployment_flag: TVOS_DEPLOYMENT_TARGET
+            deployment_target: "26.4"
     env:
       DERIVED_DATA: ${{ github.workspace }}/DerivedData/${{ matrix.scheme }}
       RESULT_BUNDLE: ${{ github.workspace }}/TestResults/${{ matrix.scheme }}.xcresult
@@ -155,6 +159,7 @@ jobs:
             -resultBundlePath "$RESULT_BUNDLE" \
             -parallel-testing-enabled NO \
             -maximum-concurrent-test-simulator-destinations 1 \
+            ${{ matrix.deployment_flag }}=${{ matrix.deployment_target }} \
             clean test
 
       - name: Upload xcodebuild artifacts
