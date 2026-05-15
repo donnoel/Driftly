@@ -1,156 +1,82 @@
-# AGENTS.md — Don’s Agent Contract (Apple-platform / Codex)
+# AGENTS.md
 
-This file defines how coding agents should work in this repository.
-Follow these rules unless a closer (more specific) AGENTS.md overrides them.
+This repo is an Apple-platform app codebase. You are an engineering agent (Codex) collaborating with the human. Your job is to make small, correct, testable changes with a clean build at every step.
 
----
+## Hard requirements (do not violate)
+- **No build warnings.** Treat warnings as errors in practice.
+- **No large rewrites.** Prefer small, surgical diffs.
+- **Apple-native only.** No third-party libraries unless explicitly requested.
+- **SwiftUI + MVVM.** Keep UI declarative; isolate logic in view models/services.
+- **Concurrency correctness.** Avoid broad `@MainActor` on data models / filesystem / networking types. Use actors/services for isolation.
+- **File persistence must be safe.** Use atomic writes where appropriate.
+- **Privacy-first.** No unexpected network calls.
+- **Preserve core behavior contracts.** Do not regress existing user-visible flows without explicitly calling it out.
+- **Accessibility is first-class.** Treat accessibility as a foundation requirement for every user-facing change, not a later polish pass.
 
-## Prime Directive
-Ship **production-grade Apple-platform code** with clean builds, high performance, and Apple-native UX.
-Prefer the **simplest viable solution**. Avoid over-engineering and unnecessary abstractions.
+## Workflow
+1. Read existing code and architecture before editing.
+2. Read `AGENTS.project.md` before making project-specific decisions.
+3. Propose a minimal plan in 2-5 bullets.
+4. Implement the smallest viable patch; solve the specific problem first before generalizing.
+5. Ensure build passes with **zero warnings**.
+6. If tests exist or are touched, run them. Add tests for non-trivial logic.
+7. If behavior changed, update docs (`README.md` / `AGENTS.project.md`) in the same patch.
+8. Keep changes easy to validate locally.
+9. For user-facing UI work, perform an accessibility pass before considering the task done.
 
----
+## Accessibility baseline (required)
+For every user-facing view, feature, or interaction, evaluate and implement the accessibility support that is relevant to that code.
 
-## Operating mode (non-negotiable)
+Always scan for and handle, where applicable:
+- VoiceOver support with clear labels, values, hints, traits, and reading order
+- Semantic controls and roles using Apple-native accessibility APIs
+- Dynamic Type / scalable text where the platform and UI call for it
+- Sufficient contrast and legibility in light/dark appearances
+- Hit target size and interaction affordance
+- Reduce Motion / Reduce Transparency accommodations where motion, blur, or translucency are used
+- State communication for toggles, selections, progress, timers, alerts, and transient status
+- Focus behavior and keyboard navigation where relevant (especially macOS/tvOS)
+- Image/chart/media descriptions when visual meaning would otherwise be lost
+- Accessibility actions or adjustable behavior for custom controls when needed
 
-- Work **iteratively** with small, testable changes. Avoid large rewrites.
-- Prefer **one best recommendation**. Provide alternatives only when tradeoffs are meaningful.
-- If uncertain, explicitly state:
-  - what is known
-  - what is assumed
-  - what would change the recommendation
-- Surface risks and constraints **early** (API availability, platform limits, performance cost, UX regressions).
-- Maintain a calm, practical, “ship-it safely” tone.
-- Propose **natural pause points** so the user can build/run/test locally.
+Rules:
+- Do not claim accessibility support exists unless there is concrete code evidence.
+- Prefer semantic SwiftUI / Apple-native APIs over custom accessibility workarounds.
+- If a custom control or visual treatment weakens accessibility, fix it or call out the gap explicitly.
+- When shipping or reviewing a feature, note what accessibility support was added, verified, missing, or not applicable.
+- When asked for an accessibility audit, report: what was scanned, what was identified in code, what is missing, and what can be safely declared in App Store Connect.
 
----
+## Code style
+- Keep types small and focused.
+- Avoid invasive refactors unless the current structure is blocking progress.
+- Prefer `Foundation` + `OSLog`/structured status over ad-hoc prints.
+- Use actors/services for mutable shared state that should not run on the main thread.
+- Prefer `@MainActor` only for UI/view models that must touch SwiftUI state.
+- Keep mutable state ownership explicit and avoid duplicate mutation paths for the same source of truth.
+- Prefer derived state over duplicated stored state where practical.
+- Keep side effects behind narrow, intentional boundaries.
+- Prefer cohesive feature-local code over premature modularization.
+- Add abstractions only when they improve clarity, reduce coupling, or enable testing.
+- Treat performance, memory use, energy use, and UI smoothness as architectural concerns.
+- Avoid unbounded caches without a clear eviction strategy.
+- Avoid broad invalidation, unnecessary recomputation, large observable surfaces, and expensive work in SwiftUI render paths.
+- Avoid global singletons (unless explicitly designed).
+- Keep command execution wrappers deterministic and easy to retry.
+- Document non-obvious invariants, ownership rules, and architectural constraints when needed; favor intent and constraints over obvious narration.
 
-## Platforms & stack
+## Deliverables for each change
+- Mention which files were modified and why.
+- Provide a short commit message suggestion.
+- Mention any user-visible behavior changes explicitly.
+- Mention accessibility impact for user-facing changes: what was improved, verified, still missing, or not applicable.
 
-- Apple platforms only: **iOS / macOS / tvOS** (watchOS only if explicitly requested).
-- Language / UI: **Swift, SwiftUI**.
-- Tooling: **Xcode**.
-- Architecture bias: **MVVM**, clean separation, Apple-native patterns.
-- Dependencies: avoid third-party libraries unless explicitly approved; prefer system frameworks.
+## What not to do
+- Don't introduce new dependencies.
+- Don't "fix" code by disabling concurrency checks.
+- Don't add `@MainActor` broadly to silence warnings.
+- Don't change public behavior without stating it.
+- Don't hide failures; surface actionable status and retry paths.
+- Don't replace plain-language setup guidance with unnecessary jargon.
+- Don't mark an accessibility feature as supported unless the implementation is actually present and appropriate.
 
----
-
-## Quality bar (non-negotiable)
-
-### Build & correctness
-- Code must compile cleanly with **zero warnings**.
-- Avoid deprecated APIs unless explicitly required.
-- Ensure correctness across:
-  - edge cases
-  - state transitions
-  - concurrency safety
-  - error paths
-
-### Performance & energy (first-class concerns)
-- Treat performance as first-class:
-  - no main-thread blocking
-  - minimize SwiftUI state invalidations / recompositions
-  - avoid unnecessary allocations in hot paths (animations, Canvas, timers)
-  - minimize GPU cost (blur, materials, overdraw, offscreen passes)
-  - consider battery and thermal impact
-- Respect Reduce Motion; avoid large or flashy animations by default.
-- When performance is in scope:
-  - propose profiling steps (Instruments)
-  - define measurable targets or expectations
-
-### Accessibility & Apple-style UX
-- Prefer **Apple-native UI patterns** over custom chrome unless there is a clear experiential benefit.
-- Accessibility is required:
-  - VoiceOver labels
-  - Dynamic Type / scalable text
-  - Reduce Motion / Reduce Transparency
-  - sufficient contrast
-  - correct focus behavior (especially tvOS)
-
-### Security & privacy
-- Do not introduce insecure patterns:
-  - no secrets in the repo
-  - use Keychain for sensitive data
-  - least-privilege permissions
-  - safe networking (TLS, validation where appropriate)
-- Be explicit about data flows, storage, and retention.
-
-### Reliability & resilience
-- Defensive handling for:
-  - network failure
-  - decoding errors
-  - disk issues
-  - permission denial
-- Predictable behavior across:
-  - app lifecycle
-  - background / foreground
-  - first-run and empty states
-  - corrupted or missing state
-
----
-
-## Default workflow (implementation changes)
-
-1. **Brief plan** (3–8 bullets) including:
-   - files to touch
-   - approach and why it’s the simplest viable option
-   - risks / tradeoffs
-   - test plan
-2. Make changes with **minimal edits / commits**.
-3. Stop at a natural **pause point** and ask the user to build/run/test locally.
-4. If failures occur, diagnose using evidence:
-   - logs
-   - stack traces
-   - reproduction steps
-
----
-
-## Testing expectations
-
-- Add or update tests when they meaningfully reduce regression risk:
-  - unit tests for domain / business logic
-  - UI tests only when practical and valuable
-- Always include a short checklist:
-  - **How I tested**
-  - **How you should test**
-
----
-
-## Git hygiene
-
-- Keep changes tightly scoped; avoid drive-by refactors.
-- Provide high-quality commit messages (conventional style acceptable).
-- If multiple changes are needed, propose a clear commit breakdown.
-
----
-
-## Media & provided artifacts (must comply)
-
-- If a ZIP, project, or file is provided: **open and inspect it**.
-- If screenshots or photos are provided: **view them**.
-- If you cannot open or view something, say so **explicitly and immediately**.
-- Never guess about unseen files or media.
-
----
-
-## Code review mode (when user says “code review”)
-
-Perform a **production-grade code review** covering:
-
-- correctness
-- architecture (MVVM / Apple-native)
-- code quality & style
-- clean builds (no warnings)
-- performance (main-thread usage, state mutation, memory / CPU / GPU, caching)
-- security & privacy (data handling, permissions, networking, secrets)
-- accessibility (VoiceOver, Dynamic Type, Reduce Motion / Transparency, contrast)
-- reliability (errors, edge cases, lifecycle)
-- platform compliance (iOS / macOS / tvOS guidelines)
-- tests (unit / UI, regression coverage)
-
-Conclude every review with:
-- the **single best path forward** (prioritized)
-- explicit tradeoffs and risks
-- an overall **letter grade (A–F)** with a short rubric summary
-
----
+If something is ambiguous, default to the simplest solution that preserves correctness and forward progress.
