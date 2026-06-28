@@ -14,6 +14,7 @@ struct ModeViewBuilderTests {
     }
 }
 
+@MainActor
 struct ActiveModeHostTransitionDecisionTests {
 
     @Test func prewarmRendersOnlyInIdleNonReducedMotionState() async throws {

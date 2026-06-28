@@ -40,6 +40,9 @@ struct DriftModePresentation: Identifiable, Equatable {
 
 enum DriftModePresentationCatalog {
     static let signatureModes: [DriftMode] = [
+        .causticSilk,
+        .obsidianMonolith,
+        .lumenVault,
         .velvetEclipse,
         .emberDrift,
         .photonRain,
@@ -144,6 +147,12 @@ enum DriftModePresentationCatalog {
             return "Voxel mirage depth."
         case .haloInterference:
             return "Halo interference field."
+        case .causticSilk:
+            return "Liquid caustic linework."
+        case .obsidianMonolith:
+            return "Glass column field."
+        case .lumenVault:
+            return "Slow architectural light."
         }
     }
 

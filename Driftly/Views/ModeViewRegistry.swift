@@ -32,7 +32,10 @@ enum ModeViewRegistry {
         .meridianArcs: { AnyView(MeridianArcsView(config: $0)) },
         .spectralLoom: { AnyView(SpectralLoomView(config: $0)) },
         .voxelMirage: { AnyView(VoxelMirageView(config: $0)) },
-        .haloInterference: { AnyView(HaloInterferenceView(config: $0)) }
+        .haloInterference: { AnyView(HaloInterferenceView(config: $0)) },
+        .causticSilk: { AnyView(CausticSilkView(config: $0)) },
+        .obsidianMonolith: { AnyView(ObsidianMonolithView(config: $0)) },
+        .lumenVault: { AnyView(LumenVaultView(config: $0)) }
     ]
 
     @ViewBuilder

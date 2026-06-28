@@ -44,6 +44,10 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case spectralLoom
     case voxelMirage
     case haloInterference
+    // Premium set
+    case causticSilk
+    case obsidianMonolith
+    case lumenVault
 
     var id: String { rawValue }
 
@@ -79,6 +83,9 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
         case .spectralLoom:      return "Spectral Loom"
         case .voxelMirage:       return "Voxel Mirage"
         case .haloInterference:  return "Halo Interference"
+        case .causticSilk:       return "Caustic Silk"
+        case .obsidianMonolith:  return "Obsidian Monolith"
+        case .lumenVault:        return "Lumen Vault"
         }
     }
 
@@ -502,6 +509,48 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     tertiary:     Color(red: 0.75, green: 0.80, blue: 1.00),
                     backgroundTop:    Color(red: 0.02, green: 0.01, blue: 0.08),
                     backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
+                )
+            )
+
+        case .causticSilk:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 42,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.78, green: 0.96, blue: 0.92),
+                    secondary:    Color(red: 0.95, green: 0.72, blue: 0.36),
+                    tertiary:     Color(red: 0.56, green: 0.72, blue: 1.00),
+                    backgroundTop:    Color(red: 0.01, green: 0.04, blue: 0.06),
+                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.03)
+                )
+            )
+
+        case .obsidianMonolith:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 48,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.88, green: 0.70, blue: 0.42),
+                    secondary:    Color(red: 0.46, green: 0.62, blue: 0.80),
+                    tertiary:     Color(red: 0.70, green: 0.20, blue: 0.32),
+                    backgroundTop:    Color(red: 0.02, green: 0.02, blue: 0.03),
+                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.01)
+                )
+            )
+
+        case .lumenVault:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 54,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.96, green: 0.86, blue: 0.62),
+                    secondary:    Color(red: 0.42, green: 0.76, blue: 0.84),
+                    tertiary:     Color(red: 0.82, green: 0.84, blue: 1.00),
+                    backgroundTop:    Color(red: 0.03, green: 0.03, blue: 0.05),
+                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.03)
                 )
             )
         }
