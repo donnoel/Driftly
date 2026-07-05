@@ -81,8 +81,8 @@ struct AutoDriftTests {
         #expect(engine.nextAutoDriftMode(after: .starlitMist) == .auroraVeil)
 
         // If current mode not favorited, include it once then cycle favorites
-        engine.currentMode = .nebulaLake
-        #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .auroraVeil)
+        engine.currentMode = .glassTides
+        #expect(engine.nextAutoDriftMode(after: .glassTides) == .auroraVeil)
     }
 
     @Test func enforcesMinimumAutoDriftInterval() async throws {

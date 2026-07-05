@@ -30,10 +30,10 @@ struct FavoritesSyncTests {
         let mockStore = MockUbiquitousKeyValueStore()
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
 
-        engine.favoriteModes = [.auroraVeil, .nebulaLake]
+        engine.favoriteModes = [.auroraVeil, .glassTides]
 
         let stored = mockStore.storage[favoriteKey] as? [String] ?? []
-        #expect(Set(stored) == Set([DriftMode.auroraVeil.rawValue, DriftMode.nebulaLake.rawValue]))
+        #expect(Set(stored) == Set([DriftMode.auroraVeil.rawValue, DriftMode.glassTides.rawValue]))
     }
 
     @Test func appliesServerChangesFromCloud() async throws {

@@ -308,6 +308,9 @@ final class DriftlyEngine: ObservableObject {
     private let defaults: UserDefaults
     private let ubiquitousStore: UbiquitousKeyValueStoring?
     private let ubiquitousQueue = DispatchQueue(label: "com.driftly.ubiquitous", qos: .utility)
+    private static var fallbackMode: DriftMode {
+        DriftModePresentationCatalog.userFacingModes.first ?? .glassTides
+    }
     private var ubiquitousObserver: NSObjectProtocol?
     private var applyingCloudFavorites = false
     private var applyingCloudScenes = false
@@ -484,7 +487,7 @@ final class DriftlyEngine: ObservableObject {
            let mode = DriftMode(rawValue: raw) {
             currentMode = mode
         } else {
-            currentMode = .nebulaLake
+            currentMode = Self.fallbackMode
         }
 
         let initialChromeVisible: Bool = {
@@ -645,7 +648,7 @@ final class DriftlyEngine: ObservableObject {
 
         // Migrate off retired modes if an older persisted mode is still active.
         if !userFacingModes.contains(currentMode) {
-            currentMode = userFacingModes.first ?? .nebulaLake
+            currentMode = userFacingModes.first ?? Self.fallbackMode
         }
 
         isInitializing = false
@@ -678,11 +681,11 @@ final class DriftlyEngine: ObservableObject {
     func goToNextMode() {
         let modes = modePickerModes
         guard let index = modes.firstIndex(of: currentMode) else {
-            currentMode = modes.first ?? .nebulaLake
+            currentMode = modes.first ?? Self.fallbackMode
             return
         }
         let nextIndex = modes.index(after: index)
-        currentMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        currentMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? Self.fallbackMode
     }
 
     /// minutes = nil → turn timer off (not persisted)
@@ -804,13 +807,13 @@ final class DriftlyEngine: ObservableObject {
             if let first = modes.first(where: { $0 != current }) {
                 selectedMode = first
             } else {
-                selectedMode = modes.first ?? .nebulaLake
+                selectedMode = modes.first ?? Self.fallbackMode
             }
             return selectedMode
         }
 
         let nextIndex = modes.index(after: idx)
-        selectedMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        selectedMode = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? Self.fallbackMode
         if selectedMode == current,
            let fallback = modes.first(where: { $0 != current }) {
             selectedMode = fallback
@@ -827,11 +830,11 @@ final class DriftlyEngine: ObservableObject {
 
         let modes = autoDriftCandidates(startingAt: current)
         guard let idx = modes.firstIndex(of: current) else {
-            return modes.first(where: { $0 != current }) ?? modes.first ?? .nebulaLake
+            return modes.first(where: { $0 != current }) ?? modes.first ?? Self.fallbackMode
         }
 
         let nextIndex = modes.index(after: idx)
-        let selected = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? .nebulaLake
+        let selected = nextIndex < modes.endIndex ? modes[nextIndex] : modes.first ?? Self.fallbackMode
         if selected == current,
            let fallback = modes.first(where: { $0 != current }) {
             return fallback

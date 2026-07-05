@@ -77,8 +77,8 @@ struct SceneSyncTests {
         let localScene = DriftScene(
             id: UUID(),
             name: "Local Fallback",
-            modeIDs: [.nebulaLake, .starlitMist],
-            lastModeID: .nebulaLake,
+            modeIDs: [.glassTides, .starlitMist],
+            lastModeID: .glassTides,
             settings: DriftSceneSettings(
                 brightness: 0.72,
                 animationSpeed: 1.0,
@@ -141,8 +141,8 @@ struct SceneSyncTests {
         let scene = TestRawScene(
             id: UUID(),
             name: "Retired Modes",
-            modeIDs: ["cosmicTide", DriftMode.auroraVeil.rawValue, "voxelMirage"],
-            lastModeID: "lunarDrift",
+            modeIDs: ["cosmicTide", DriftMode.auroraVeil.rawValue, "nebulaLake", "voxelMirage"],
+            lastModeID: "nebulaLake",
             settings: DriftSceneSettings(
                 brightness: 0.7,
                 animationSpeed: 1.0,

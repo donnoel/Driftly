@@ -50,6 +50,13 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 
 A curated mix of currently user-facing ambient modes:
 
+- **Glass Tides**
+- **Koi Current**
+- **Rain Window**
+- **Paper Lantern**
+- **Caustic Silk**
+- **Obsidian Monolith**
+- **Lumen Vault**
 - **Velvet Eclipse**
 - **Ember Drift**
 - **Photon Rain**
@@ -70,7 +77,6 @@ A curated mix of currently user-facing ambient modes:
 - **Gravity Rings**
 - **Drift Grid**
 - **Quiet Signal**
-- **Nebula Lake**
 - **Signal Drift**
 
 ---

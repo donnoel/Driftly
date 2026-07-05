@@ -42,6 +42,8 @@ enum DriftModePresentationCatalog {
     static let signatureModes: [DriftMode] = [
         .glassTides,
         .koiCurrent,
+        .rainWindow,
+        .paperLantern,
         .causticSilk,
         .obsidianMonolith,
         .lumenVault,
@@ -71,7 +73,6 @@ enum DriftModePresentationCatalog {
         .gravityRings,
         .driftGrid,
         .quietSignal,
-        .nebulaLake,
         .signalDrift
     ]
 
@@ -93,12 +94,14 @@ enum DriftModePresentationCatalog {
             return "Layered translucent tides."
         case .koiCurrent:
             return "Warm strokes in a cool current."
+        case .rainWindow:
+            return "Soft rain trails and refracted light."
+        case .paperLantern:
+            return "Warm lantern bloom in dusk parallax."
         case .auroraVeil:
             return "Silk aurora ribbons."
         case .velvetEclipse:
             return "Deep gradient eclipse bloom."
-        case .nebulaLake:
-            return "Glassy nebula calm."
         case .starlitMist:
             return "Soft starfield haze."
         case .gravityRings:

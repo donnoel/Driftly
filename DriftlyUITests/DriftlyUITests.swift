@@ -120,7 +120,7 @@ final class DriftlyUITests: XCTestCase {
 
         ensureModePickerOpen(app)
 
-        selectMode(app, identifier: "modeRow-nebulaLake", expectedLabel: "Nebula Lake")
+        selectMode(app, identifier: "modeRow-glassTides", expectedLabel: "Glass Tides")
     }
 
     @MainActor
@@ -342,7 +342,7 @@ final class DriftlyUITests: XCTestCase {
         tapModePicker()
 
         let table = app.tables.firstMatch
-        let primaryRow = app.buttons["modeRow-nebulaLake"].firstMatch
+        let primaryRow = app.buttons["modeRow-glassTides"].firstMatch
 
         // Retry a few times in case the first tap races with UI animation
         for _ in 0..<4 where !navBar.exists && !table.exists && !primaryRow.exists && !sheetMarker.exists {

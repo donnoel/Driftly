@@ -67,7 +67,7 @@ struct DriftlyTVTests {
         #expect(engine.nextAutoDriftMode(after: .auroraVeil) == .abyssGlow)
 
         // Non-favorite current mode should lead into the favorite cycle
-        engine.currentMode = .nebulaLake
-        #expect(engine.nextAutoDriftMode(after: .nebulaLake) == .abyssGlow)
+        engine.currentMode = .glassTides
+        #expect(engine.nextAutoDriftMode(after: .glassTides) == .abyssGlow)
     }
 }

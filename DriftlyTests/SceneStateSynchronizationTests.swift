@@ -57,7 +57,7 @@ struct SceneStateSynchronizationTests {
         let sceneA = engine.createScene(name: "Scene A", modeIDs: [.auroraVeil, .plasmaReef])
         engine.activeSceneID = nil
 
-        engine.currentMode = .nebulaLake
+        engine.currentMode = .glassTides
         engine.brightness = 0.44
         engine.animationSpeed = 0.7
         engine.clockEnabled = false
@@ -65,7 +65,7 @@ struct SceneStateSynchronizationTests {
         engine.autoDriftEnabled = false
         engine.autoDriftIntervalMinutes = 15
         engine.autoDriftShuffleEnabled = false
-        _ = engine.createScene(name: "Scene B", modeIDs: [.nebulaLake, .starlitMist])
+        _ = engine.createScene(name: "Scene B", modeIDs: [.glassTides, .starlitMist])
 
         engine.activateScene(id: sceneA.id)
 
@@ -118,7 +118,7 @@ struct SceneStateSynchronizationTests {
         let sceneA = engine.createScene(name: "A", modeIDs: [.auroraVeil, .plasmaReef])
 
         engine.currentMode = .starlitMist
-        let sceneB = engine.createScene(name: "B", modeIDs: [.starlitMist, .nebulaLake])
+        let sceneB = engine.createScene(name: "B", modeIDs: [.starlitMist, .glassTides])
 
         engine.activateScene(id: sceneA.id)
         engine.autoDriftSource = .scene(sceneB.id)

@@ -10,9 +10,10 @@ struct DriftPalette: Equatable {
 }
 
 enum DriftMode: String, CaseIterable, Identifiable, Codable {
-    case nebulaLake
     case glassTides
     case koiCurrent
+    case rainWindow
+    case paperLantern
     case auroraVeil
     case abyssGlow
     case starlitMist
@@ -47,9 +48,10 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
-        case .nebulaLake:  return "Nebula Lake"
-        case .glassTides:  return "Glass Tides"
-        case .koiCurrent:  return "Koi Current"
+        case .glassTides:    return "Glass Tides"
+        case .koiCurrent:    return "Koi Current"
+        case .rainWindow:    return "Rain Window"
+        case .paperLantern:  return "Paper Lantern"
         case .auroraVeil:  return "Aurora Veil"
         case .abyssGlow:   return "Abyss Glow"
         case .starlitMist: return "Starlit Mist"
@@ -80,20 +82,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
     var config: DriftModeConfig {
         switch self {
 
-        case .nebulaLake:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 32,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.15, green: 0.80, blue: 0.85),
-                    secondary:    Color(red: 0.60, green: 0.35, blue: 1.00),
-                    tertiary:     Color(red: 0.40, green: 0.80, blue: 1.00),
-                    backgroundTop:    Color(red: 0.02, green: 0.03, blue: 0.09),
-                    backgroundBottom: Color(red: 0.01, green: 0.02, blue: 0.05)
-                )
-            )
-
         case .glassTides:
             return DriftModeConfig(
                 id: self,
@@ -119,6 +107,34 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     tertiary:     Color(red: 1.00, green: 0.92, blue: 0.68),
                     backgroundTop:    Color(red: 0.02, green: 0.05, blue: 0.07),
                     backgroundBottom: Color(red: 0.00, green: 0.02, blue: 0.04)
+                )
+            )
+
+        case .rainWindow:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 50,
+                palette: DriftPalette(
+                    primary:      Color(red: 0.72, green: 0.86, blue: 0.94),
+                    secondary:    Color(red: 0.44, green: 0.60, blue: 0.72),
+                    tertiary:     Color(red: 0.96, green: 0.82, blue: 0.58),
+                    backgroundTop:    Color(red: 0.03, green: 0.05, blue: 0.07),
+                    backgroundBottom: Color(red: 0.01, green: 0.02, blue: 0.035)
+                )
+            )
+
+        case .paperLantern:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 56,
+                palette: DriftPalette(
+                    primary:      Color(red: 1.00, green: 0.74, blue: 0.38),
+                    secondary:    Color(red: 0.88, green: 0.46, blue: 0.38),
+                    tertiary:     Color(red: 0.48, green: 0.58, blue: 0.86),
+                    backgroundTop:    Color(red: 0.045, green: 0.035, blue: 0.090),
+                    backgroundBottom: Color(red: 0.015, green: 0.010, blue: 0.030)
                 )
             )
 

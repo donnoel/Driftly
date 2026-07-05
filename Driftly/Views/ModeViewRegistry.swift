@@ -3,9 +3,10 @@ import SwiftUI
 /// Central registry for mapping `DriftMode` to its SwiftUI view builder.
 enum ModeViewRegistry {
     static let builders: [DriftMode: (DriftModeConfig) -> AnyView] = [
-        .nebulaLake: { AnyView(NebulaLakeView(config: $0)) },
         .glassTides: { AnyView(GlassTidesView(config: $0)) },
         .koiCurrent: { AnyView(KoiCurrentView(config: $0)) },
+        .rainWindow: { AnyView(RainWindowView(config: $0)) },
+        .paperLantern: { AnyView(PaperLanternView(config: $0)) },
         .auroraVeil: { AnyView(AuroraVeilView(config: $0)) },
         .abyssGlow: { AnyView(AbyssGlowView(config: $0)) },
         .starlitMist: { AnyView(StarlitMistView(config: $0)) },
