@@ -41,6 +41,7 @@ struct DriftModePresentation: Identifiable, Equatable {
 enum DriftModePresentationCatalog {
     static let signatureModes: [DriftMode] = [
         .glassTides,
+        .koiCurrent,
         .causticSilk,
         .obsidianMonolith,
         .lumenVault,
@@ -90,6 +91,8 @@ enum DriftModePresentationCatalog {
         switch mode {
         case .glassTides:
             return "Layered translucent tides."
+        case .koiCurrent:
+            return "Warm strokes in a cool current."
         case .auroraVeil:
             return "Silk aurora ribbons."
         case .velvetEclipse:

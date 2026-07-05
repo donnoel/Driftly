@@ -5,6 +5,7 @@ enum ModeViewRegistry {
     static let builders: [DriftMode: (DriftModeConfig) -> AnyView] = [
         .nebulaLake: { AnyView(NebulaLakeView(config: $0)) },
         .glassTides: { AnyView(GlassTidesView(config: $0)) },
+        .koiCurrent: { AnyView(KoiCurrentView(config: $0)) },
         .auroraVeil: { AnyView(AuroraVeilView(config: $0)) },
         .abyssGlow: { AnyView(AbyssGlowView(config: $0)) },
         .starlitMist: { AnyView(StarlitMistView(config: $0)) },

@@ -12,6 +12,7 @@ struct DriftPalette: Equatable {
 enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case nebulaLake
     case glassTides
+    case koiCurrent
     case auroraVeil
     case abyssGlow
     case starlitMist
@@ -48,6 +49,7 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .nebulaLake:  return "Nebula Lake"
         case .glassTides:  return "Glass Tides"
+        case .koiCurrent:  return "Koi Current"
         case .auroraVeil:  return "Aurora Veil"
         case .abyssGlow:   return "Abyss Glow"
         case .starlitMist: return "Starlit Mist"
@@ -103,6 +105,20 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     tertiary:     Color(red: 0.90, green: 0.98, blue: 0.94),
                     backgroundTop:    Color(red: 0.01, green: 0.05, blue: 0.08),
                     backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.04)
+                )
+            )
+
+        case .koiCurrent:
+            return DriftModeConfig(
+                id: self,
+                displayName: displayName,
+                cycleDuration: 44,
+                palette: DriftPalette(
+                    primary:      Color(red: 1.00, green: 0.62, blue: 0.34),
+                    secondary:    Color(red: 0.35, green: 0.86, blue: 0.92),
+                    tertiary:     Color(red: 1.00, green: 0.92, blue: 0.68),
+                    backgroundTop:    Color(red: 0.02, green: 0.05, blue: 0.07),
+                    backgroundBottom: Color(red: 0.00, green: 0.02, blue: 0.04)
                 )
             )
 
