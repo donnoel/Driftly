@@ -14,7 +14,7 @@ struct SceneStateSynchronizationTests {
         let persistedScene = DriftScene(
             id: sceneID,
             name: "Persisted Out-of-Range Scene",
-            modeIDs: [.auroraVeil, .cosmicTide],
+            modeIDs: [.auroraVeil, .plasmaReef],
             lastModeID: .auroraVeil,
             settings: DriftSceneSettings(
                 brightness: 0.8,
@@ -54,7 +54,7 @@ struct SceneStateSynchronizationTests {
         engine.autoDriftEnabled = true
         engine.autoDriftIntervalMinutes = 5
         engine.autoDriftShuffleEnabled = true
-        let sceneA = engine.createScene(name: "Scene A", modeIDs: [.auroraVeil, .cosmicTide])
+        let sceneA = engine.createScene(name: "Scene A", modeIDs: [.auroraVeil, .plasmaReef])
         engine.activeSceneID = nil
 
         engine.currentMode = .nebulaLake
@@ -65,7 +65,7 @@ struct SceneStateSynchronizationTests {
         engine.autoDriftEnabled = false
         engine.autoDriftIntervalMinutes = 15
         engine.autoDriftShuffleEnabled = false
-        _ = engine.createScene(name: "Scene B", modeIDs: [.nebulaLake, .lunarDrift])
+        _ = engine.createScene(name: "Scene B", modeIDs: [.nebulaLake, .starlitMist])
 
         engine.activateScene(id: sceneA.id)
 
@@ -92,15 +92,15 @@ struct SceneStateSynchronizationTests {
         engine.brightness = 0.7
         engine.animationSpeed = 1.2
 
-        let scene = engine.createScene(name: "Original", modeIDs: [.auroraVeil, .cosmicTide])
+        let scene = engine.createScene(name: "Original", modeIDs: [.auroraVeil, .plasmaReef])
         engine.activateScene(id: scene.id)
 
-        engine.currentMode = .lunarDrift
+        engine.currentMode = .starlitMist
         engine.brightness = 0.42
         engine.animationSpeed = 0.8
-        engine.updateScene(id: scene.id, name: "Edited", modeIDs: [.cosmicTide])
+        engine.updateScene(id: scene.id, name: "Edited", modeIDs: [.plasmaReef])
 
-        #expect(engine.currentMode == .cosmicTide)
+        #expect(engine.currentMode == .plasmaReef)
         #expect(engine.brightness == 0.42)
         #expect(engine.animationSpeed == 0.8)
         #expect(engine.availableScenes.contains(where: { $0.id == scene.id && $0.name == "Edited" }))
@@ -115,10 +115,10 @@ struct SceneStateSynchronizationTests {
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
 
         engine.currentMode = .auroraVeil
-        let sceneA = engine.createScene(name: "A", modeIDs: [.auroraVeil, .cosmicTide])
+        let sceneA = engine.createScene(name: "A", modeIDs: [.auroraVeil, .plasmaReef])
 
-        engine.currentMode = .lunarDrift
-        let sceneB = engine.createScene(name: "B", modeIDs: [.lunarDrift, .nebulaLake])
+        engine.currentMode = .starlitMist
+        let sceneB = engine.createScene(name: "B", modeIDs: [.starlitMist, .nebulaLake])
 
         engine.activateScene(id: sceneA.id)
         engine.autoDriftSource = .scene(sceneB.id)

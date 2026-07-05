@@ -11,7 +11,7 @@ struct DriftlyPreferencesWiringTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
-        let scene = engine.createScene(name: "Scene", modeIDs: [.auroraVeil, .cosmicTide])
+        let scene = engine.createScene(name: "Scene", modeIDs: [.auroraVeil, .plasmaReef])
 
         engine.preferences.animationSpeed = 1.35
         engine.preferences.preventAutoLock = true

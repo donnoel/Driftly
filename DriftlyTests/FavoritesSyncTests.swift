@@ -13,12 +13,12 @@ struct FavoritesSyncTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let mockStore = MockUbiquitousKeyValueStore()
-        mockStore.storage[favoriteKey] = [DriftMode.cosmicTide.rawValue]
+        mockStore.storage[favoriteKey] = [DriftMode.plasmaReef.rawValue]
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
 
-        #expect(engine.favoriteModes == [.cosmicTide])
-        #expect(defaults.array(forKey: favoriteKey) as? [String] == [DriftMode.cosmicTide.rawValue])
+        #expect(engine.favoriteModes == [.plasmaReef])
+        #expect(defaults.array(forKey: favoriteKey) as? [String] == [DriftMode.plasmaReef.rawValue])
     }
 
     @Test func pushesLocalFavoritesToCloudOnChange() async throws {
@@ -63,7 +63,7 @@ struct FavoritesSyncTests {
         let mockStore = MockUbiquitousKeyValueStore()
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: mockStore)
 
-        engine.favoriteModes = [.lunarDrift]
+        engine.favoriteModes = [.starlitMist]
 
         mockStore.set(nil, forKey: favoriteKey)
         mockStore.sendServerChange(for: [favoriteKey])

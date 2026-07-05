@@ -18,8 +18,8 @@ struct SceneSyncTests {
         let scene = DriftScene(
             id: UUID(),
             name: "Cloud Scene",
-            modeIDs: [.auroraVeil, .cosmicTide],
-            lastModeID: .cosmicTide,
+            modeIDs: [.auroraVeil, .plasmaReef],
+            lastModeID: .plasmaReef,
             settings: DriftSceneSettings(
                 brightness: 0.75,
                 animationSpeed: 1.1,
@@ -56,7 +56,7 @@ struct SceneSyncTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
-        let scene = engine.createScene(name: "Local Scene", modeIDs: [.auroraVeil, .cosmicTide])
+        let scene = engine.createScene(name: "Local Scene", modeIDs: [.auroraVeil, .plasmaReef])
         engine.flushPendingScenePersistence()
 
         let storedData = try await waitForScenesPersistence(defaults: defaults)
@@ -77,7 +77,7 @@ struct SceneSyncTests {
         let localScene = DriftScene(
             id: UUID(),
             name: "Local Fallback",
-            modeIDs: [.nebulaLake, .lunarDrift],
+            modeIDs: [.nebulaLake, .starlitMist],
             lastModeID: .nebulaLake,
             settings: DriftSceneSettings(
                 brightness: 0.72,
@@ -135,6 +135,32 @@ struct SceneSyncTests {
         #expect(engine.scenes.contains(where: { $0.id == localScene.id && $0.name == "Local Scene" }))
         #expect((mockStore.storage[scenesKey] as? Data) == unsupportedCloudData)
         #expect(defaults.data(forKey: scenesKey) == localData)
+    }
+
+    @Test func dropsRetiredModeIDsWhenDecodingScenes() async throws {
+        let scene = TestRawScene(
+            id: UUID(),
+            name: "Retired Modes",
+            modeIDs: ["cosmicTide", DriftMode.auroraVeil.rawValue, "voxelMirage"],
+            lastModeID: "lunarDrift",
+            settings: DriftSceneSettings(
+                brightness: 0.7,
+                animationSpeed: 1.0,
+                clockEnabled: false,
+                preventAutoLock: false,
+                autoDriftEnabled: false,
+                autoDriftIntervalMinutes: 10,
+                autoDriftShuffleEnabled: false
+            ),
+            updatedAt: Date(timeIntervalSince1970: 123),
+            deletedAt: nil
+        )
+
+        let data = try JSONEncoder().encode([scene])
+        let decoded = try JSONDecoder().decode([DriftScene].self, from: data)
+
+        #expect(decoded.first?.modeIDs == [.auroraVeil])
+        #expect(decoded.first?.lastModeID == nil)
     }
 
     @Test func mergePrefersNewerNonDeletedSceneBetweenCloudAndLocal() async throws {
@@ -223,7 +249,7 @@ private func makeScene(
     DriftScene(
         id: id,
         name: name,
-        modeIDs: [.auroraVeil, .cosmicTide],
+        modeIDs: [.auroraVeil, .plasmaReef],
         lastModeID: .auroraVeil,
         settings: DriftSceneSettings(
             brightness: 0.7,
@@ -237,6 +263,16 @@ private func makeScene(
         updatedAt: updatedAt,
         deletedAt: deletedAt
     )
+}
+
+private struct TestRawScene: Codable {
+    let id: UUID
+    let name: String
+    let modeIDs: [String]
+    let lastModeID: String?
+    let settings: DriftSceneSettings
+    let updatedAt: Date
+    let deletedAt: Date?
 }
 
 private extension Data {

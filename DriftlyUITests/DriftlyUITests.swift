@@ -244,17 +244,6 @@ final class DriftlyUITests: XCTestCase {
     }
 
     @MainActor
-    func testSnapshotVoxelMirage() throws {
-        let app = launchApp(arguments: [
-            "UITestingReset",
-            "UITestingForceChromeVisible",
-            "UITestingSetMode=voxelMirage"
-        ])
-        ensureChromeVisible(in: app)
-        snapshotView(app, name: "VoxelMirage")
-    }
-
-    @MainActor
     func testSnapshotInkTopography() throws {
         let app = launchApp(arguments: [
             "UITestingReset",

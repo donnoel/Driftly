@@ -40,6 +40,7 @@ struct DriftModePresentation: Identifiable, Equatable {
 
 enum DriftModePresentationCatalog {
     static let signatureModes: [DriftMode] = [
+        .glassTides,
         .causticSilk,
         .obsidianMonolith,
         .lumenVault,
@@ -87,18 +88,16 @@ enum DriftModePresentationCatalog {
 
     static func descriptor(for mode: DriftMode) -> String {
         switch mode {
+        case .glassTides:
+            return "Layered translucent tides."
         case .auroraVeil:
             return "Silk aurora ribbons."
-        case .lunarDrift:
-            return "Moonlit, slow phase drift."
         case .velvetEclipse:
             return "Deep gradient eclipse bloom."
         case .nebulaLake:
             return "Glassy nebula calm."
         case .starlitMist:
             return "Soft starfield haze."
-        case .cosmicTide:
-            return "Color tide pulse."
         case .gravityRings:
             return "Orbital ring resonance."
         case .ribbonOrbit:
@@ -107,8 +106,6 @@ enum DriftModePresentationCatalog {
             return "Arc sweeps and contour flow."
         case .quietSignal:
             return "Low-noise signal shimmer."
-        case .solarBloom:
-            return "Warm spectrum bloom."
         case .emberDrift:
             return "Ember trails and glow."
         case .pulseAurora:
@@ -125,8 +122,6 @@ enum DriftModePresentationCatalog {
             return "Flowing energy wave."
         case .echoBloom:
             return "Glow bloom trails."
-        case .cosmicHeart:
-            return "Celestial heart pulse."
         case .signalDrift:
             return "Signal weave drift."
         case .horizonPulse:
@@ -139,14 +134,6 @@ enum DriftModePresentationCatalog {
             return "Fluid contour layers."
         case .prismShards:
             return "Prismatic shard field."
-        case .lissajousBloom:
-            return "Harmonic bloom curves."
-        case .spectralLoom:
-            return "Spectral woven light."
-        case .voxelMirage:
-            return "Voxel mirage depth."
-        case .haloInterference:
-            return "Halo interference field."
         case .causticSilk:
             return "Liquid caustic linework."
         case .obsidianMonolith:

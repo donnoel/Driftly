@@ -4,12 +4,10 @@ import SwiftUI
 enum ModeViewRegistry {
     static let builders: [DriftMode: (DriftModeConfig) -> AnyView] = [
         .nebulaLake: { AnyView(NebulaLakeView(config: $0)) },
-        .cosmicTide: { AnyView(CosmicTideView(config: $0)) },
+        .glassTides: { AnyView(GlassTidesView(config: $0)) },
         .auroraVeil: { AnyView(AuroraVeilView(config: $0)) },
         .abyssGlow: { AnyView(AbyssGlowView(config: $0)) },
         .starlitMist: { AnyView(StarlitMistView(config: $0)) },
-        .lunarDrift: { AnyView(LunarDriftView(config: $0)) },
-        .solarBloom: { AnyView(SolarBloomView(config: $0)) },
         .plasmaReef: { AnyView(PlasmaReefView(config: $0)) },
         .velvetEclipse: { AnyView(VelvetEclipseView(config: $0)) },
         .neonKelp: { AnyView(NeonKelpView(config: $0)) },
@@ -17,7 +15,6 @@ enum ModeViewRegistry {
         .pulseAurora: { AnyView(PulseAuroraView(config: $0)) },
         .vitalWave: { AnyView(VitalWaveView(config: $0)) },
         .echoBloom: { AnyView(EchoBloomView(config: $0)) },
-        .cosmicHeart: { AnyView(CosmicHeartView(config: $0)) },
         .signalDrift: { AnyView(SignalDriftView(config: $0)) },
         .horizonPulse: { AnyView(HorizonPulseView(config: $0)) },
         .photonRain: { AnyView(PhotonRainView(config: $0)) },
@@ -28,11 +25,7 @@ enum ModeViewRegistry {
         .ribbonOrbit: { AnyView(RibbonOrbitView(config: $0)) },
         .inkTopography: { AnyView(InkTopographyView(config: $0)) },
         .prismShards: { AnyView(PrismShardsView(config: $0)) },
-        .lissajousBloom: { AnyView(LissajousBloomView(config: $0)) },
         .meridianArcs: { AnyView(MeridianArcsView(config: $0)) },
-        .spectralLoom: { AnyView(SpectralLoomView(config: $0)) },
-        .voxelMirage: { AnyView(VoxelMirageView(config: $0)) },
-        .haloInterference: { AnyView(HaloInterferenceView(config: $0)) },
         .causticSilk: { AnyView(CausticSilkView(config: $0)) },
         .obsidianMonolith: { AnyView(ObsidianMonolithView(config: $0)) },
         .lumenVault: { AnyView(LumenVaultView(config: $0)) }

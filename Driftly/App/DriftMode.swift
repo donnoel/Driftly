@@ -11,13 +11,11 @@ struct DriftPalette: Equatable {
 
 enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case nebulaLake
-    case cosmicTide
+    case glassTides
     case auroraVeil
     case abyssGlow
     case starlitMist
-    case lunarDrift
     // Batch 1 (new)
-    case solarBloom
     case plasmaReef
     case velvetEclipse
     case neonKelp
@@ -26,7 +24,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case pulseAurora
     case vitalWave
     case echoBloom
-    case cosmicHeart
     case signalDrift
     // Batch 3 (new)
     case horizonPulse
@@ -39,11 +36,7 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
     case ribbonOrbit
     case inkTopography
     case prismShards
-    case lissajousBloom
     case meridianArcs
-    case spectralLoom
-    case voxelMirage
-    case haloInterference
     // Premium set
     case causticSilk
     case obsidianMonolith
@@ -54,12 +47,10 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
     var displayName: String {
         switch self {
         case .nebulaLake:  return "Nebula Lake"
-        case .cosmicTide:  return "Cosmic Tide"
+        case .glassTides:  return "Glass Tides"
         case .auroraVeil:  return "Aurora Veil"
         case .abyssGlow:   return "Abyss Glow"
         case .starlitMist: return "Starlit Mist"
-        case .lunarDrift:  return "Lunar Drift"
-        case .solarBloom:     return "Solar Bloom"
         case .plasmaReef:     return "Plasma Reef"
         case .velvetEclipse:  return "Velvet Eclipse"
         case .neonKelp:       return "Neon Kelp"
@@ -67,7 +58,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
         case .pulseAurora:    return "Pulse Aurora"
         case .vitalWave:      return "Vital Wave"
         case .echoBloom:      return "Glow Bloom"
-        case .cosmicHeart:    return "Cosmic Heart"
         case .signalDrift:    return "Signal Drift"
         case .horizonPulse:   return "Horizon Pulse"
         case .photonRain:     return "Photon Rain"
@@ -78,11 +68,7 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
         case .ribbonOrbit:       return "Ribbon Orbit"
         case .inkTopography:     return "Ink Topography"
         case .prismShards:       return "Prism Shards"
-        case .lissajousBloom:    return "Lissajous Bloom"
         case .meridianArcs:      return "Meridian Arcs"
-        case .spectralLoom:      return "Spectral Loom"
-        case .voxelMirage:       return "Voxel Mirage"
-        case .haloInterference:  return "Halo Interference"
         case .causticSilk:       return "Caustic Silk"
         case .obsidianMonolith:  return "Obsidian Monolith"
         case .lumenVault:        return "Lumen Vault"
@@ -106,17 +92,17 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                 )
             )
 
-        case .cosmicTide:
+        case .glassTides:
             return DriftModeConfig(
                 id: self,
                 displayName: displayName,
-                cycleDuration: 18,
+                cycleDuration: 48,
                 palette: DriftPalette(
-                    primary:      Color(red: 0.85, green: 0.40, blue: 1.00),
-                    secondary:    Color(red: 0.35, green: 0.75, blue: 1.00),
-                    tertiary:     Color(red: 0.95, green: 0.55, blue: 0.95),
-                    backgroundTop:    Color(red: 0.04, green: 0.01, blue: 0.10),
-                    backgroundBottom: Color(red: 0.01, green: 0.01, blue: 0.06)
+                    primary:      Color(red: 0.60, green: 0.95, blue: 1.00),
+                    secondary:    Color(red: 0.36, green: 0.68, blue: 0.96),
+                    tertiary:     Color(red: 0.90, green: 0.98, blue: 0.94),
+                    backgroundTop:    Color(red: 0.01, green: 0.05, blue: 0.08),
+                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.04)
                 )
             )
 
@@ -159,34 +145,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     tertiary:     Color(red: 0.75, green: 0.85, blue: 1.00),
                     backgroundTop:    Color(red: 0.02, green: 0.04, blue: 0.10),
                     backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.05)
-                )
-            )
-
-        case .lunarDrift:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 22,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.90, green: 0.90, blue: 1.00),
-                    secondary:    Color(red: 0.60, green: 0.60, blue: 0.95),
-                    tertiary:     Color(red: 0.80, green: 0.75, blue: 1.00),
-                    backgroundTop:    Color(red: 0.05, green: 0.05, blue: 0.10),
-                    backgroundBottom: Color(red: 0.02, green: 0.02, blue: 0.05)
-                )
-            )
-
-        case .solarBloom:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 28,
-                palette: DriftPalette(
-                    primary:      Color(red: 1.00, green: 0.55, blue: 0.35),
-                    secondary:    Color(red: 1.00, green: 0.30, blue: 0.70),
-                    tertiary:     Color(red: 0.45, green: 0.95, blue: 0.88),
-                    backgroundTop:    Color(red: 0.06, green: 0.02, blue: 0.10),
-                    backgroundBottom: Color(red: 0.02, green: 0.01, blue: 0.06)
                 )
             )
 
@@ -285,20 +243,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     tertiary:     Color(red: 1.00, green: 0.55, blue: 0.60),
                     backgroundTop:    Color(red: 0.03, green: 0.02, blue: 0.08),
                     backgroundBottom: Color(red: 0.01, green: 0.01, blue: 0.05)
-                )
-            )
-
-        case .cosmicHeart:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 20,
-                palette: DriftPalette(
-                    primary:      Color(red: 1.00, green: 0.45, blue: 0.78),
-                    secondary:    Color(red: 0.35, green: 0.85, blue: 1.00),
-                    tertiary:     Color(red: 0.85, green: 0.85, blue: 1.00),
-                    backgroundTop:    Color(red: 0.04, green: 0.01, blue: 0.10),
-                    backgroundBottom: Color(red: 0.01, green: 0.01, blue: 0.06)
                 )
             )
 
@@ -442,20 +386,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                 )
             )
 
-        case .lissajousBloom:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 32,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.35, green: 0.80, blue: 1.00),
-                    secondary:    Color(red: 0.85, green: 0.40, blue: 1.00),
-                    tertiary:     Color(red: 0.35, green: 0.95, blue: 0.88),
-                    backgroundTop:    Color(red: 0.02, green: 0.02, blue: 0.06),
-                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
-                )
-            )
-
         case .meridianArcs:
             return DriftModeConfig(
                 id: self,
@@ -466,48 +396,6 @@ enum DriftMode: String, CaseIterable, Identifiable, Codable {
                     secondary:    Color(red: 0.45, green: 0.95, blue: 0.90),
                     tertiary:     Color(red: 0.95, green: 0.95, blue: 1.00),
                     backgroundTop:    Color(red: 0.01, green: 0.02, blue: 0.06),
-                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
-                )
-            )
-
-        case .spectralLoom:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 28,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.40, green: 0.98, blue: 0.55),
-                    secondary:    Color(red: 0.25, green: 0.85, blue: 0.98),
-                    tertiary:     Color(red: 0.75, green: 0.45, blue: 0.98),
-                    backgroundTop:    Color(red: 0.00, green: 0.04, blue: 0.08),
-                    backgroundBottom: Color(red: 0.00, green: 0.01, blue: 0.04)
-                )
-            )
-
-        case .voxelMirage:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 24,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.85, green: 0.95, blue: 1.00),
-                    secondary:    Color(red: 0.55, green: 0.65, blue: 1.00),
-                    tertiary:     Color(red: 0.25, green: 0.95, blue: 0.85),
-                    backgroundTop:    Color(red: 0.02, green: 0.04, blue: 0.10),
-                    backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.05)
-                )
-            )
-
-        case .haloInterference:
-            return DriftModeConfig(
-                id: self,
-                displayName: displayName,
-                cycleDuration: 42,
-                palette: DriftPalette(
-                    primary:      Color(red: 0.35, green: 0.85, blue: 1.00),
-                    secondary:    Color(red: 1.00, green: 0.55, blue: 0.85),
-                    tertiary:     Color(red: 0.75, green: 0.80, blue: 1.00),
-                    backgroundTop:    Color(red: 0.02, green: 0.01, blue: 0.08),
                     backgroundBottom: Color(red: 0.00, green: 0.00, blue: 0.03)
                 )
             )

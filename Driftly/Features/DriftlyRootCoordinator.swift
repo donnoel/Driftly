@@ -341,7 +341,7 @@ final class DriftlyRootCoordinator: ObservableObject {
             return
         }
 
-        let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .voxelMirage, .inkTopography]
+        let heavyPrewarmModes: Set<DriftMode> = [.photonRain, .inkTopography]
         let next = engine.peekNextAutoDriftMode(after: engine.currentMode)
         prewarmMode = heavyPrewarmModes.contains(next) ? nil : next
         DriftProfiling.event(

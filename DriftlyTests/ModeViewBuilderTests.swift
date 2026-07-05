@@ -74,7 +74,7 @@ struct ActiveModeHostTransitionDecisionTests {
         #expect(
             ActiveModeHostTransitionDecisions.shouldCleanupPreviousLayer(
                 expectedPreviousMode: .auroraVeil,
-                currentPreviousMode: .cosmicTide
+                currentPreviousMode: .plasmaReef
             ) == false
         )
 

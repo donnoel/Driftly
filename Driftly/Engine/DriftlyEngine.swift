@@ -49,6 +49,61 @@ struct DriftScene: Codable, Equatable, Identifiable {
     var settings: DriftSceneSettings
     var updatedAt: Date
     var deletedAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case modeIDs
+        case lastModeID
+        case settings
+        case updatedAt
+        case deletedAt
+    }
+
+    init(
+        id: UUID,
+        name: String,
+        modeIDs: [DriftMode],
+        lastModeID: DriftMode?,
+        settings: DriftSceneSettings,
+        updatedAt: Date,
+        deletedAt: Date?
+    ) {
+        self.id = id
+        self.name = name
+        self.modeIDs = modeIDs
+        self.lastModeID = lastModeID
+        self.settings = settings
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        let rawModeIDs = try container.decode([String].self, forKey: .modeIDs)
+        modeIDs = rawModeIDs.compactMap(DriftMode.init(rawValue:))
+        if let rawLastModeID = try container.decodeIfPresent(String.self, forKey: .lastModeID) {
+            lastModeID = DriftMode(rawValue: rawLastModeID)
+        } else {
+            lastModeID = nil
+        }
+        settings = try container.decode(DriftSceneSettings.self, forKey: .settings)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(modeIDs.map(\.rawValue), forKey: .modeIDs)
+        try container.encodeIfPresent(lastModeID?.rawValue, forKey: .lastModeID)
+        try container.encode(settings, forKey: .settings)
+        try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
+    }
 }
 
 private struct DriftScenePayloadEnvelope: Codable, Equatable {
