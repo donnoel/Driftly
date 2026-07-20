@@ -223,7 +223,7 @@ Or run tests in Xcode with the `Driftly` scheme (`Product` → `Test`).
 
 ## ❤️ Credits
 
-Built with care by **Don Noel** and my AI collaborator.
+Built with care by Don Noel and Codex collaboration.
 
 ---
 
