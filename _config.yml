@@ -1,0 +1,23 @@
+title: Driftly
+description: A premium ambient liquid-lamp experience for iPhone, iPad, and Apple TV.
+tagline: Slow motion. Liquid color. A screen that changes the room.
+project_label: Don Noel / Projects
+status_label: iOS + tvOS
+github_url: https://github.com/donnoel/Driftly
+url: https://donnoel.github.io
+baseurl: /Driftly
+lang: en-US
+
+remote_theme: donnoel/projects-theme@v1.0.0
+plugins:
+  - jekyll-remote-theme
+
+exclude:
+  - AGENTS.md
+  - AGENTS.project.md
+  - Driftly
+  - Driftly.xcodeproj
+  - DriftlyTV
+  - DriftlyTests
+  - DriftlyUITests
+
