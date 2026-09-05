@@ -32,7 +32,7 @@ Key policies:
   - what is assumed
   - what would change the recommendation
 - Surface risks early (perf regressions, focus issues, cross-platform behavior).
-- Pause points are required: after each meaningful change, instruct Don to build/run and verify.
+- Carry the approved task through available builds, focused tests, and simulator checks without handing routine validation back to Don after each change. Request human visual or physical-device verification when it is needed to assess the result, normally after a coherent change is ready for review; state exactly what remains unverified and preserve tvOS performance and visual-quality acceptance.
 
 ## Performance rules (non-negotiable)
 
