@@ -56,6 +56,8 @@ struct SceneSyncTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let engine = DriftlyEngine(defaults: defaults, ubiquitousStore: nil)
+        // Persistence captures the engine weakly; keep it alive until the round trip finishes.
+        defer { withExtendedLifetime(engine) {} }
         let scene = engine.createScene(name: "Local Scene", modeIDs: [.auroraVeil, .plasmaReef])
         engine.flushPendingScenePersistence()
 
@@ -224,7 +226,9 @@ struct SceneSyncTests {
     }
 
     private func waitForScenesPersistence(defaults: UserDefaults) async throws -> Data {
-        for _ in 0..<20 {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while clock.now < deadline {
             if let data = defaults.data(forKey: scenesKey) {
                 return data
             }
