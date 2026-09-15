@@ -208,6 +208,7 @@ private struct SignalDreamGlowVignette: View {
                         startPoint: .top,
                         endPoint: .bottom
                     )
+                    .accessibilityHidden(true)
                     .blendMode(.multiply)
                 )
                 .ignoresSafeArea()

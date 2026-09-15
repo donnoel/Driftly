@@ -44,6 +44,7 @@ struct GravityRingsView: View {
                             startRadius: 0,
                             endRadius: max(size.width, size.height) * 0.90
                         )
+                        .accessibilityHidden(true)
                         .blendMode(.screen)
                     )
                     .ignoresSafeArea()
