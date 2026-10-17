@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		5A61008D2F1ED8ED006BC5E4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5A61008C2F1ED8ED006BC5E4 /* PrivacyInfo.xcprivacy */; };
 		5A61008E2F1ED8ED006BC5E4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5A61008C2F1ED8ED006BC5E4 /* PrivacyInfo.xcprivacy */; };
+		A01700000000000000000001 /* DriftlyTopShelf.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A01700000000000000000002; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A01700000000000000000012 /* ContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01700000000000000000013; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,7 +42,12 @@
 			remoteGlobalIDString = 5A9C9B0C2EECB0E200396FFB;
 			remoteInfo = DriftlyTV;
 		};
+		A01700000000000000000003 = {isa = PBXContainerItemProxy; containerPortal = 5A8726E22EEB4C0D00415B9A; proxyType = 1; remoteGlobalIDString = A01700000000000000000004; remoteInfo = DriftlyTopShelf; };
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A01700000000000000000005 /* Embed App Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (A01700000000000000000001, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		5A61008C2F1ED8ED006BC5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -50,6 +57,8 @@
 		5A9C9B0D2EECB0E200396FFB /* DriftlyTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DriftlyTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A9C9B1D2EECB0E300396FFB /* DriftlyTVTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DriftlyTVTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A9C9B272EECB0E300396FFB /* DriftlyTVUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DriftlyTVUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A01700000000000000000002 /* DriftlyTopShelf.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DriftlyTopShelf.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A01700000000000000000013 /* ContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftlyTopShelf/ContentProvider.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -74,6 +83,7 @@
 			);
 			target = 5A9C9B0C2EECB0E200396FFB /* DriftlyTV */;
 		};
+		A01700000000000000000006 = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist, ); target = A01700000000000000000004; };
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -114,6 +124,7 @@
 			path = DriftlyTVUITests;
 			sourceTree = "<group>";
 		};
+		A01700000000000000000007 /* DriftlyTopShelf */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A01700000000000000000006, ); path = DriftlyTopShelf; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +170,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A01700000000000000000008 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -170,6 +182,7 @@
 				5A8726FD2EEB4C0E00415B9A /* DriftlyTests */,
 				5A8727072EEB4C0E00415B9A /* DriftlyUITests */,
 				5A9C9B0E2EECB0E200396FFB /* DriftlyTV */,
+				A01700000000000000000007 /* DriftlyTopShelf */,
 				5A9C9B202EECB0E300396FFB /* DriftlyTVTests */,
 				5A9C9B2A2EECB0E300396FFB /* DriftlyTVUITests */,
 				5A8726EB2EEB4C0D00415B9A /* Products */,
@@ -183,6 +196,7 @@
 				5A8726FA2EEB4C0E00415B9A /* DriftlyTests.xctest */,
 				5A8727042EEB4C0E00415B9A /* DriftlyUITests.xctest */,
 				5A9C9B0D2EECB0E200396FFB /* DriftlyTV.app */,
+				A01700000000000000000002 /* DriftlyTopShelf.appex */,
 				5A9C9B1D2EECB0E300396FFB /* DriftlyTVTests.xctest */,
 				5A9C9B272EECB0E300396FFB /* DriftlyTVUITests.xctest */,
 			);
@@ -267,10 +281,12 @@
 				5A9C9B092EECB0E200396FFB /* Sources */,
 				5A9C9B0A2EECB0E200396FFB /* Frameworks */,
 				5A9C9B0B2EECB0E200396FFB /* Resources */,
+				A01700000000000000000005 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A0170000000000000000000C,
 			);
 			fileSystemSynchronizedGroups = (
 				5A8726EC2EEB4C0D00415B9A /* Driftly */,
@@ -329,6 +345,18 @@
 			productReference = 5A9C9B272EECB0E300396FFB /* DriftlyTVUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		A01700000000000000000004 /* DriftlyTopShelf */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = A01700000000000000000009;
+            buildPhases = (A0170000000000000000000A, A01700000000000000000008, A0170000000000000000000B, );
+            buildRules = ();
+            dependencies = ();
+            fileSystemSynchronizedGroups = (A01700000000000000000007, );
+            name = DriftlyTopShelf;
+            productName = DriftlyTopShelf;
+            productReference = A01700000000000000000002;
+            productType = "com.apple.product-type.app-extension";
+        };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -381,6 +409,7 @@
 				5A8726F92EEB4C0E00415B9A /* DriftlyTests */,
 				5A8727032EEB4C0E00415B9A /* DriftlyUITests */,
 				5A9C9B0C2EECB0E200396FFB /* DriftlyTV */,
+				A01700000000000000000004 /* DriftlyTopShelf */,
 				5A9C9B1C2EECB0E300396FFB /* DriftlyTVTests */,
 				5A9C9B262EECB0E300396FFB /* DriftlyTVUITests */,
 			);
@@ -432,6 +461,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A0170000000000000000000B = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -467,6 +497,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A01700000000000000000012,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -477,6 +508,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A0170000000000000000000A = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -500,6 +532,7 @@
 			target = 5A9C9B0C2EECB0E200396FFB /* DriftlyTV */;
 			targetProxy = 5A9C9B282EECB0E300396FFB /* PBXContainerItemProxy */;
 		};
+		A0170000000000000000000C = {isa = PBXTargetDependency; target = A01700000000000000000004; targetProxy = A01700000000000000000003; };
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -510,7 +543,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Driftly/Driftly.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -528,7 +561,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.1;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -552,7 +585,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Driftly/Driftly.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -570,7 +603,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.1;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -817,7 +850,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = DriftlyTV/DriftlyTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -832,7 +865,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.2;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
@@ -856,7 +889,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = DriftlyTV/DriftlyTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -871,7 +904,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.2;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
@@ -978,6 +1011,46 @@
 			};
 			name = Release;
 		};
+		A0170000000000000000000D = {isa = XCBuildConfiguration; buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 4;
+                DEVELOPMENT_TEAM = H7LG8SK72M;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = DriftlyTopShelf/Info.plist;
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+                MARKETING_VERSION = 2.2;
+                PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV.TopShelf;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = appletvos;
+                SKIP_INSTALL = YES;
+                SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+                SWIFT_VERSION = 5.0;
+                SWIFT_STRICT_CONCURRENCY = complete;
+                TARGETED_DEVICE_FAMILY = 3;
+                TVOS_DEPLOYMENT_TARGET = 18.0;
+
+            }; name = Debug; };
+		A0170000000000000000000E = {isa = XCBuildConfiguration; buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 4;
+                DEVELOPMENT_TEAM = H7LG8SK72M;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = DriftlyTopShelf/Info.plist;
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+                MARKETING_VERSION = 2.2;
+                PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV.TopShelf;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = appletvos;
+                SKIP_INSTALL = YES;
+                SUPPORTED_PLATFORMS = "appletvos appletvsimulator";
+                SWIFT_VERSION = 5.0;
+                SWIFT_STRICT_CONCURRENCY = complete;
+                TARGETED_DEVICE_FAMILY = 3;
+                TVOS_DEPLOYMENT_TARGET = 18.0;
+
+            }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1044,6 +1117,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A01700000000000000000009 = {isa = XCConfigurationList; buildConfigurations = (A0170000000000000000000D, A0170000000000000000000E, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = 5A8726E22EEB4C0D00415B9A /* Project object */;

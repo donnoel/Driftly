@@ -142,6 +142,11 @@ struct DriftlyRootView: View {
             updateIdleTimer()
         }
 #if os(tvOS)
+        .onOpenURL { url in
+            if coordinator.openTopShelfURL(url, engine: engine, scenePhase: scenePhase) {
+                updateIdleTimer()
+            }
+        }
         .onChange(of: preferences.isChromeVisible) { _, isVisible in
             DispatchQueue.main.async {
                 if isVisible {

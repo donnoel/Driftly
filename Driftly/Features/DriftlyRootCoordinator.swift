@@ -118,6 +118,22 @@ final class DriftlyRootCoordinator: ObservableObject {
         updateAutoDriftScheduling(engine: engine, scenePhase: scenePhase)
     }
 
+#if os(tvOS)
+    @discardableResult
+    func openTopShelfURL(_ url: URL, engine: DriftlyEngine, scenePhase: ScenePhase) -> Bool {
+        guard let route = TVTopShelfRoute(url: url) else { return false }
+        isSettingsPresented = false
+        isSleepTimerDialogPresented = false
+        isCustomSleepTimerPresented = false
+        if engine.currentMode != .auroraVeil {
+            engine.currentMode = .auroraVeil
+        }
+        wakeFromSleep(engine: engine, scenePhase: scenePhase)
+        isModePickerPresented = route == .display
+        return true
+    }
+#endif
+
     func processSleepTimerTick(now: Date, engine: DriftlyEngine, scenePhase: ScenePhase) -> SleepTransition {
         guard SleepAndDriftController.shouldSleepTick(sleepDrift: engine.sleepDrift, state: sleepState) else { return .none }
         let actions = SleepAndDriftController.handleTick(
