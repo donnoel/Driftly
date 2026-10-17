@@ -1,0 +1,152 @@
+[
+  {
+    "file" : "iphone\/01-aurora.png",
+    "hasAlpha" : false,
+    "height" : 2868,
+    "platform" : "iphone",
+    "source" : "raw\/iphone-aurora.png",
+    "subtitle" : "Ambient visuals for quieter moments.",
+    "title" : "Light,\nin motion.",
+    "width" : 1320
+  },
+  {
+    "file" : "iphone\/02-glassTides.png",
+    "hasAlpha" : false,
+    "height" : 2868,
+    "platform" : "iphone",
+    "source" : "raw\/iphone-glassTides.png",
+    "subtitle" : "Explore the flowing layers of Glass Tides.",
+    "title" : "Change\nthe atmosphere.",
+    "width" : 1320
+  },
+  {
+    "file" : "iphone\/03-lumenVault.png",
+    "hasAlpha" : false,
+    "height" : 2868,
+    "platform" : "iphone",
+    "source" : "raw\/iphone-lumenVault.png",
+    "subtitle" : "Discover the sculpted lines of Lumen Vault.",
+    "title" : "Light\ntakes shape.",
+    "width" : 1320
+  },
+  {
+    "file" : "iphone\/04-timer.png",
+    "hasAlpha" : false,
+    "height" : 2868,
+    "platform" : "iphone",
+    "source" : "raw\/iphone-timer.png",
+    "subtitle" : "Choose a duration. Let Driftly wind down.",
+    "title" : "Set a\nsleep timer.",
+    "width" : 1320
+  },
+  {
+    "file" : "iphone\/05-clock.png",
+    "hasAlpha" : false,
+    "height" : 2868,
+    "platform" : "iphone",
+    "source" : "raw\/iphone-clock.png",
+    "subtitle" : "Keep the clock in view as the light drifts.",
+    "title" : "Time,\nsoftly lit.",
+    "width" : 1320
+  },
+  {
+    "file" : "ipad\/01-aurora.png",
+    "hasAlpha" : false,
+    "height" : 2752,
+    "platform" : "ipad",
+    "source" : "raw\/ipad-aurora.png",
+    "subtitle" : "Ambient visuals for quieter moments.",
+    "title" : "Light,\nin motion.",
+    "width" : 2064
+  },
+  {
+    "file" : "ipad\/02-glassTides.png",
+    "hasAlpha" : false,
+    "height" : 2752,
+    "platform" : "ipad",
+    "source" : "raw\/ipad-glassTides.png",
+    "subtitle" : "Explore the flowing layers of Glass Tides.",
+    "title" : "Change\nthe atmosphere.",
+    "width" : 2064
+  },
+  {
+    "file" : "ipad\/03-lumenVault.png",
+    "hasAlpha" : false,
+    "height" : 2752,
+    "platform" : "ipad",
+    "source" : "raw\/ipad-lumenVault.png",
+    "subtitle" : "Discover the sculpted lines of Lumen Vault.",
+    "title" : "Light\ntakes shape.",
+    "width" : 2064
+  },
+  {
+    "file" : "ipad\/04-timer.png",
+    "hasAlpha" : false,
+    "height" : 2752,
+    "platform" : "ipad",
+    "source" : "raw\/ipad-timer.png",
+    "subtitle" : "Choose a duration. Let Driftly wind down.",
+    "title" : "Set a\nsleep timer.",
+    "width" : 2064
+  },
+  {
+    "file" : "ipad\/05-clock.png",
+    "hasAlpha" : false,
+    "height" : 2752,
+    "platform" : "ipad",
+    "source" : "raw\/ipad-clock.png",
+    "subtitle" : "Keep the clock in view as the light drifts.",
+    "title" : "Time,\nsoftly lit.",
+    "width" : 2064
+  },
+  {
+    "file" : "tv\/01-aurora.png",
+    "hasAlpha" : false,
+    "height" : 1080,
+    "platform" : "tv",
+    "source" : "raw\/tv-aurora.png",
+    "subtitle" : "Ambient visuals for quieter moments.",
+    "title" : "Light,\nin motion.",
+    "width" : 1920
+  },
+  {
+    "file" : "tv\/02-glassTides.png",
+    "hasAlpha" : false,
+    "height" : 1080,
+    "platform" : "tv",
+    "source" : "raw\/tv-glassTides.png",
+    "subtitle" : "Explore the flowing layers of Glass Tides.",
+    "title" : "Change\nthe atmosphere.",
+    "width" : 1920
+  },
+  {
+    "file" : "tv\/03-lumenVault.png",
+    "hasAlpha" : false,
+    "height" : 1080,
+    "platform" : "tv",
+    "source" : "raw\/tv-lumenVault.png",
+    "subtitle" : "Discover the sculpted lines of Lumen Vault.",
+    "title" : "Light\ntakes shape.",
+    "width" : 1920
+  },
+  {
+    "file" : "tv\/04-timer.png",
+    "hasAlpha" : false,
+    "height" : 1080,
+    "platform" : "tv",
+    "source" : "raw\/tv-timer.png",
+    "subtitle" : "Choose a duration. Let Driftly wind down.",
+    "title" : "Set a\nsleep timer.",
+    "width" : 1920
+  },
+  {
+    "file" : "tv\/05-top-shelf.png",
+    "hasAlpha" : false,
+    "height" : 1080,
+    "platform" : "tv",
+    "source" : "raw\/tv-top-shelf.png",
+    "subtitle" : "Open Aurora Veil from Top Shelf.",
+    "title" : "Begin on your Home Screen.",
+    "width" : 1920
+  }
+]

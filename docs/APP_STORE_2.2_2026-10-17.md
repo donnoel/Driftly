@@ -51,3 +51,7 @@ Both final uploads succeeded through Xcode Organizer using existing Cloud Manage
 Submitted is distinct from approved or publicly released.
 
 Both versions preserve English (U.S.), existing screenshots/previews, description, promotional text, keywords, URLs, copyright, review details/no-sign-in setting, privacy, age rating, pricing, availability, automatic release after approval, immediate automatic updates, and existing ratings. Only binaries/build selection, versions, and What's New are changed. User confirmed acceptance of the updated Apple Developer agreement; the agent did not accept an agreement. Automation remains paused/manual; no scheduling or review monitor enabled.
+
+## Subsequent screenshot resubmission
+
+Later on October 17, Don approved redesigned screenshot sets for iPhone, iPad, and Apple TV and explicitly requested their upload and resubmission. The two submissions above were removed to unlock screenshot editing. Their immutable 2.2 (4) builds were reused, with no additional binary upload or version increment. Both replacement submissions were verified Waiting for Review. See [the screenshot resubmission record](APP_STORE_SCREENSHOTS_2026-10-17.md) for current submission links and approved assets.

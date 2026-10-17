@@ -1,0 +1,156 @@
+{
+  "status": "PASS",
+  "sourceCommit": "fa5423115c7a74f49fc40c609dc6705b30cf9b1d",
+  "assets": [
+    {
+      "file": "iphone/01-aurora.png",
+      "width": 1320,
+      "height": 2868,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "c2393c606e2ec19a3e2686e480b97dd2375303d34d6f5a8ca6886f5275832677",
+      "rawSha256": "9ce75683f5d50a809405c70c5d9886933904c22819a09c09f3bf2da75102aed4"
+    },
+    {
+      "file": "iphone/02-glassTides.png",
+      "width": 1320,
+      "height": 2868,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "1b88ac50f8787a917c712e116050e530140b95171e5fffa6a95467ad76a647fe",
+      "rawSha256": "5e232bf9caf8da342225f4c8b6211b1005c386b211cf7b564570f04e2ba967fd"
+    },
+    {
+      "file": "iphone/03-lumenVault.png",
+      "width": 1320,
+      "height": 2868,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "62d1f1b48df1bc4039f462a92f46712e4f7c6fd72ed74b3ad445ea7d02a51856",
+      "rawSha256": "f593ae6a1aa5d660c47ff3456fbae4b4bad623bcfedbc23e67f4997c26a08213"
+    },
+    {
+      "file": "iphone/04-timer.png",
+      "width": 1320,
+      "height": 2868,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "c70f0777f820b46e43a29f7acf423c9366ea41968c5b0f149d07f3753a1a2c73",
+      "rawSha256": "4b41e97dd20c9ffe5157a6c39455691b8e1e18117da563d45e8715f6ee12aa1c"
+    },
+    {
+      "file": "iphone/05-clock.png",
+      "width": 1320,
+      "height": 2868,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "594bef762ed3976df14ae477de05ff2e43522f2ee1dc8bff7f6e5f8f337462bc",
+      "rawSha256": "8a3d93ebbf6e89796d64ec2772473c2f1be723f73430389f3c1033b1a1dae2c3"
+    },
+    {
+      "file": "ipad/01-aurora.png",
+      "width": 2064,
+      "height": 2752,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "96e56a40848b704eb20b181e982fac11d2e8bce10acec8a02fb156fe81ccc576",
+      "rawSha256": "a5db7f1adc509dd6c0ad5b6cba47332fe4f2c8b6bf0a7804b6cd7b5c0707aef2"
+    },
+    {
+      "file": "ipad/02-glassTides.png",
+      "width": 2064,
+      "height": 2752,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "79c6fbd7419d8ef92349d3f6e625b415b6358239ebef1bea4e665a37d86faf25",
+      "rawSha256": "c71a44364db40c70c0d3a29dd745e308927b6cdccc3afcd674746641989e24f9"
+    },
+    {
+      "file": "ipad/03-lumenVault.png",
+      "width": 2064,
+      "height": 2752,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "0bd1786eae697b7f4f97efc4609d804a41c3cb5a625a4e5f7348014acc26aa1d",
+      "rawSha256": "201e8e637984511f3a52ef56194709938a9aa67818500d7b79f1fb70e8750be4"
+    },
+    {
+      "file": "ipad/04-timer.png",
+      "width": 2064,
+      "height": 2752,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "bbc470b9951054524b66975f9a8712324f8f9342990b9fbfa8fdd5df2e710bd7",
+      "rawSha256": "951c8bfc50f4d4be93de6bb9d59b6606d48e955e71547603bead0917c0286525"
+    },
+    {
+      "file": "ipad/05-clock.png",
+      "width": 2064,
+      "height": 2752,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "8b75380b542cc957c778b6ae2ffd8dea5b33a4d6d5080c5910592776c57ab822",
+      "rawSha256": "7937c88b9a44bb5e94c4a7300b5b31d5cd88d3440aa9250d254e72b47aa250fe"
+    },
+    {
+      "file": "tv/01-aurora.png",
+      "width": 1920,
+      "height": 1080,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "15abf5d5cb6bf7d97f9977e10f3d990108adf38f281eeace1e57be3769246f80",
+      "rawSha256": "0738b53374f4d39bd4a9274d6c54664a0a4210cfb4f789ab3d983e96e23c899e"
+    },
+    {
+      "file": "tv/02-glassTides.png",
+      "width": 1920,
+      "height": 1080,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "88a9d6cd9a2c4773e0f281a1a1ac9950938f180abfaa82678989971d65454f46",
+      "rawSha256": "da73c2f90cb97ff088319531d56f034c74428d105a3852d242c0ea22ddd57860"
+    },
+    {
+      "file": "tv/03-lumenVault.png",
+      "width": 1920,
+      "height": 1080,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "3871992d9e2c31c93939f2218f3d525bd03b96370e5f77bfa4545dff6fef126d",
+      "rawSha256": "82ae1ac904666d57504a6b11e2c40a1fd205cb668aad85df7c9780f6c9abcb57"
+    },
+    {
+      "file": "tv/04-timer.png",
+      "width": 1920,
+      "height": 1080,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "c7ab5552319114f092297270a58c689fe531178a8e3826d92ee4035987ce1785",
+      "rawSha256": "d5df0a89f0a3d3bb8f298a8002c82cc089861eea286feb14fb61dc49d47e30ef"
+    },
+    {
+      "file": "tv/05-top-shelf.png",
+      "width": 1920,
+      "height": 1080,
+      "bitDepth": 8,
+      "colorType": "RGB",
+      "alpha": false,
+      "sha256": "d6485443d95669023adc84cc246d342220d02fde2692d675b6879bc7b37bc8f9",
+      "rawSha256": "1415fc136666d2dc714010741d4ef9ab58a18e1fba411ba72e348ce160f5c0c3"
+    }
+  ]
+}
