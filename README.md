@@ -10,7 +10,7 @@
 
 ---
 
-## ✨ Overview
+## 🧭 Overview
 
 <a id="-what-is-driftly"></a>
 <a id="what-is-driftly"></a>
