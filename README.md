@@ -1,23 +1,38 @@
-# 🌌 **Driftly**
+# **Driftly Night**
+
 ### *A premium ambient “lava-lamp” app for cosmic gradients, slow motion, and calm.*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/SwiftUI-Canvas-orange?logo=swift">
-  <img src="https://img.shields.io/badge/Platforms-iOS_26.1_|_tvOS_18-blue">
-  <img src="https://img.shields.io/badge/Modes-22-purple">
+  <img src="https://img.shields.io/badge/SwiftUI-Canvas-orange?logo=swift" alt="SwiftUI: Canvas">
+  <img src="https://img.shields.io/badge/Platforms-iOS_26.1_|_tvOS_18-blue" alt="Platforms: iOS 26.1 | tvOS 18">
+  <img src="https://img.shields.io/badge/Modes-22-purple" alt="Modes: 22">
 </p>
 
 ---
 
-## ✨ What is Driftly?
+## ✨ Overview
 
-**Driftly** is a fullscreen ambient light object — a pocket-sized “nebula lamp” that slowly shifts through **cosmic gradients**, **liquid motion**, and **abstract generative visuals**.
+<a id="-what-is-driftly"></a>
+<a id="what-is-driftly"></a>
+
+**Driftly Night** (repository: `Driftly`) is a fullscreen ambient light object — a pocket-sized “nebula lamp” that slowly shifts through **cosmic gradients**, **liquid motion**, and **abstract generative visuals**.
 
 It’s intentionally not a utility. Driftly is the app you leave running on a nightstand, on an iPad dock, or on a TV when you want your space to feel *different*.
 
----
-
 ## 💎 Core Features
+
+| Feature | What it does |
+| --- | --- |
+| **Ambient visuals** | Explore slow gradients, liquid motion, and generative modes. |
+| **Simple controls** | Keep the experience focused with a small control surface. |
+| **Apple platforms** | Use the ambient experience on iPhone, iPad, and Apple TV. |
+| **Session behavior** | Use the documented sleep, drift, and presentation controls. |
+
+<details>
+<summary>Feature details and controls</summary>
+
+<a id="-core-features"></a>
+<a id="core-features"></a>
 
 | Feature | Description |
 |--------|-------------|
@@ -34,19 +49,21 @@ It’s intentionally not a utility. Driftly is the app you leave running on a ni
 | 💾 **Persistence** | Remembers mode, brightness, chrome visibility, auto-drift settings, favorites, and ordering. |
 | 📺 **tvOS Support** | Includes a tvOS target for big-screen ambient Driftly vibes with shared favorites. |
 
----
+<a id="-controls-by-design-tiny"></a>
+<a id="controls-by-design-tiny"></a>
 
-## 🎛 Controls (by design: tiny)
+### Controls (by design: tiny)
 
-- **Tap** to show/hide controls  
-- **Tap mode name** to open the mode picker  
-- **Drag screen edges** to adjust brightness  
-- **Auto Drift** to let Driftly “DJ” the modes for you  
+- **Tap** to show/hide controls
+- **Tap mode name** to open the mode picker
+- **Drag screen edges** to adjust brightness
+- **Auto Drift** to let Driftly “DJ” the modes for you
 - **Sleep Timer** when it’s time for the lights to go out
 
----
+<a id="-modes"></a>
+<a id="modes"></a>
 
-## 🎨 Modes
+### Modes
 
 A curated mix of currently user-facing ambient modes:
 
@@ -79,9 +96,64 @@ A curated mix of currently user-facing ambient modes:
 - **Quiet Signal**
 - **Signal Drift**
 
+</details>
+
 ---
 
-## 🛠 Built With
+## 🚀 Getting Started
+
+<a id="-tests"></a>
+<a id="tests"></a>
+
+### Tests
+
+`DriftlyTests` covers core behavior such as:
+- Auto-drift timing
+- Sleep timer state transitions
+- Brightness clamping
+- Motion sampling + phase handling (including paused/resume continuity)
+- Idle timer policy behavior
+- Root view initialization (test overrides)
+- Favorites sync behaviors (local ↔︎ iCloud key-value store)
+- Mode builder coverage (all modes have a view builder)
+
+<a id="-how-to-run-tests"></a>
+<a id="how-to-run-tests"></a>
+
+### How To Run Tests
+
+Run iOS tests from the command line:
+
+```bash
+xcodebuild \
+  -project Driftly.xcodeproj \
+  -scheme Driftly \
+  -destination "platform=iOS Simulator,OS=latest,name=iPhone 17 Pro Max" \
+  clean test
+```
+
+Or run tests in Xcode with the `Driftly` scheme (`Product` → `Test`).
+
+<a id="-getting-started"></a>
+<a id="getting-started"></a>
+
+1. Open `Driftly.xcodeproj` in Xcode
+2. Select a scheme:
+   - **Driftly** (iOS / iPadOS)
+   - **DriftlyTV** (tvOS)
+3. Build & run on a simulator or device
+
+> Tip: Driftly is designed to feel best at full-screen brightness in a dim room. (Yes, that’s a feature request disguised as vibes.)
+
+## 🧠 How It Works
+
+<details>
+<summary>Architecture and component reference</summary>
+
+<a id="-built-with"></a>
+<a id="built-with"></a>
+
+### Built With
 
 - **SwiftUI**
 - **Canvas** + **TimelineView** (smooth infinite animation)
@@ -90,11 +162,12 @@ A curated mix of currently user-facing ambient modes:
 - **UserDefaults** + iCloud key-value store (favorites sync) via `DriftlyEngine`
 - **Environment-driven animation** (`driftAnimationSpeed`, `driftPhaseAnchorDate`, `driftAnimationsPaused`) for consistent speed/phase control
 
----
+<a id="-architecture-overview"></a>
+<a id="architecture-overview"></a>
 
-## 🧠 Architecture Overview
+### Architecture Overview
 
-### **DriftlyEngine**
+#### **DriftlyEngine**
 The single source of truth for the app:
 - Current mode
 - Brightness
@@ -106,19 +179,19 @@ The single source of truth for the app:
 - Sleep timer end date
 - Favorites sync propagation to iCloud key-value store (shared between iOS/tvOS)
 
-### **SleepAndDriftController**
+#### **SleepAndDriftController**
 Owns the logic for:
 - Auto drift timing
 - Sleep timer expiration
 - Tick decision/action logic consumed by `DriftlyRootCoordinator`
 
-### **DriftlyRootCoordinator**
+#### **DriftlyRootCoordinator**
 Owns runtime orchestration for:
 - Sleep/clock tick timer lifecycles
 - Auto-drift scheduling + prewarm timing
 - Scene phase handling for pause/resume continuity
 
-### **DriftlyRootView**
+#### **DriftlyRootView**
 The full-screen shell:
 - Renders the active mode view
 - Presents the mode picker + settings
@@ -127,13 +200,14 @@ The full-screen shell:
 - Runs stacked crossfades between modes and pre-warms the upcoming auto-drift mode to avoid first-frame hitches
 - Injects a shared phase anchor + animation speed into mode views so they stay in sync across pauses and switches
 
-### **Mode Views**
+#### **Mode Views**
 Each mode is its own `SwiftUI.View` (mostly Canvas-driven), enabling a clean “gallery” architecture.
 - Mode animations use `PhaseController` with a shared anchor and `PausableTimelineView` so pausing/resuming doesn’t snap phases.
 
----
+<a id="-project-structure"></a>
+<a id="project-structure"></a>
 
-## 📁 Project Structure
+### Project Structure
 
 ```
 Driftly/
@@ -167,51 +241,23 @@ Also included:
 - `DriftlyTV/` (tvOS target)
 - `DriftlyTests/` + `DriftlyUITests/` + tvOS test targets
 
----
+</details>
 
-## 🧪 Tests
+## 🔒 Data and Privacy
 
-`DriftlyTests` covers core behavior such as:
-- Auto-drift timing
-- Sleep timer state transitions
-- Brightness clamping
-- Motion sampling + phase handling (including paused/resume continuity)
-- Idle timer policy behavior
-- Root view initialization (test overrides)
-- Favorites sync behaviors (local ↔︎ iCloud key-value store)
-- Mode builder coverage (all modes have a view builder)
+Favorites persist locally and synchronize through iCloud key-value storage.
+The app uses `UserDefaults` for local settings; see the component reference for
+the favorites-sync and presentation-state boundaries.
 
----
+## 📚 Documentation
 
-## ▶️ How To Run Tests
-
-Run iOS tests from the command line:
-
-```bash
-xcodebuild \
-  -project Driftly.xcodeproj \
-  -scheme Driftly \
-  -destination "platform=iOS Simulator,OS=latest,name=iPhone 17 Pro Max" \
-  clean test
-```
-
-Or run tests in Xcode with the `Driftly` scheme (`Product` → `Test`).
-
----
-
-## 🚀 Getting Started
-
-1. Open `Driftly.xcodeproj` in Xcode  
-2. Select a scheme:
-   - **Driftly** (iOS / iPadOS)
-   - **DriftlyTV** (tvOS)
-3. Build & run on a simulator or device
-
-> Tip: Driftly is designed to feel best at full-screen brightness in a dim room. (Yes, that’s a feature request disguised as vibes.)
-
----
+- [Repository guidance](AGENTS.md)
+- [Project guide](AGENTS.project.md)
 
 ## 🗺️ Roadmap
+
+<a id="-roadmap"></a>
+<a id="roadmap"></a>
 
 - [ ] **Share** (export a “moment” as an image / short loop)
 - [ ] More curated mode sets (Night, Deep Space, Minimal, etc.)
@@ -221,10 +267,10 @@ Or run tests in Xcode with the `Driftly` scheme (`Product` → `Test`).
 
 ---
 
-## Credits
+## 🤝 Credits
+
+<a id="credits"></a>
 
 Built with care by **Don Noel** and Codex collaboration.
-
----
 
 > *Driftly should feel like a lava lamp found in deep space — slow, hypnotic, and weirdly comforting.*
