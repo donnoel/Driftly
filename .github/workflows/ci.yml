@@ -3,13 +3,26 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.mdx'
+      - 'LICENSE'
+      - 'LICENSE.*'
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: ${{ matrix.scheme }}
     runs-on: macos-26
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +38,10 @@ jobs:
             deployment_flag: TVOS_DEPLOYMENT_TARGET
             deployment_target: "26.4"
     env:
+      SIMULATOR_VERSION: '26.5'
+      TZ: UTC
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
       DERIVED_DATA: ${{ github.workspace }}/DerivedData/${{ matrix.scheme }}
       RESULT_BUNDLE: ${{ github.workspace }}/TestResults/${{ matrix.scheme }}.xcresult
     steps:
@@ -41,10 +58,9 @@ jobs:
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
-            ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
-          key: spm-${{ runner.os }}-${{ hashFiles('**/Package.resolved') }}
+          key: spm-${{ runner.os }}-${{ runner.arch }}-xcode-26.4.1-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            spm-${{ runner.os }}-
+            spm-${{ runner.os }}-${{ runner.arch }}-xcode-26.4.1-
 
       - name: Resolve packages
         run: xcodebuild -resolvePackageDependencies -project Driftly.xcodeproj
@@ -78,9 +94,10 @@ jobs:
           platform_runtimes = [
               runtime for runtime in runtimes
               if runtime.get("platform") == platform and runtime.get("isAvailable")
+              and runtime.get("version") == os.environ["SIMULATOR_VERSION"]
           ]
           if not platform_runtimes:
-              raise SystemExit(f"No available {platform} simulator runtimes.")
+              raise SystemExit(f"Required {platform} 26.5 simulator runtime is unavailable.")
 
           def version_key(runtime):
               parts = []
@@ -145,22 +162,14 @@ jobs:
           xcrun simctl boot "${SIMULATOR_ID}" || true
           xcrun simctl bootstatus "${SIMULATOR_ID}" -b
 
-      - name: Build and test
-        run: |
-          set -euo pipefail
-          mkdir -p "$(dirname "$RESULT_BUNDLE")"
-          rm -rf "$RESULT_BUNDLE"
-          xcodebuild \
-            -project Driftly.xcodeproj \
-            -scheme '${{ matrix.scheme }}' \
-            -configuration Debug \
-            -destination 'platform=${{ matrix.platform }} Simulator,id=${{ steps.simulator.outputs.id }}' \
-            -derivedDataPath "$DERIVED_DATA" \
-            -resultBundlePath "$RESULT_BUNDLE" \
-            -parallel-testing-enabled NO \
-            -maximum-concurrent-test-simulator-destinations 1 \
-            ${{ matrix.deployment_flag }}=${{ matrix.deployment_target }} \
-            clean test
+      - name: Build for testing
+        run: bash scripts/ci.sh build '${{ steps.simulator.outputs.id }}' '${{ matrix.scheme }}'
+
+      - name: Unit tests
+        run: bash scripts/ci.sh unit '${{ steps.simulator.outputs.id }}' '${{ matrix.scheme }}'
+
+      - name: UI tests
+        run: bash scripts/ci.sh ui '${{ steps.simulator.outputs.id }}' '${{ matrix.scheme }}'
 
       - name: Upload xcodebuild artifacts
         if: failure()
@@ -169,4 +178,5 @@ jobs:
           name: xcodebuild-artifacts-${{ matrix.scheme }}
           path: |
             ${{ env.RESULT_BUNDLE }}
+            TestResults/**/*.xcresult
             ${{ env.DERIVED_DATA }}/Logs/Test

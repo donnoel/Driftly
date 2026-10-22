@@ -116,3 +116,11 @@ If you cannot confidently identify the root cause:
 - propose the smallest diagnostic change that confirms/denies the top hypothesis
 - include where to observe it (log points, Instruments markers, reproduction steps)
 - do not proceed with broad refactors
+
+## CI reliability and pre-push validation
+
+- GitHub uses Xcode 26.4.1 and an explicitly selected 26.5 simulator runtime. Select that compiler through `DEVELOPER_DIR`, then run `bash scripts/ci.sh all <fresh-simulator-UDID> <Driftly-or-DriftlyTV>` for the same clean build and complete unit/UI suite locally. Toolchain mismatches fail explicitly; report checks with another compiler separately.
+- Keep the build, unit-test, and UI-test phases and all existing assertions. Before publishing CI, harness, or shared test-fixture changes, run the full relevant suite; focused/unit-only passes are partial evidence.
+- Use explicit calendars/timezones for date fixtures, deterministic verified text replacement and readiness conditions for UI, and isolated cloud/Keychain fixtures where those services are not being tested. Repair a failing assumption across related tests rather than retrying or disabling it.
+- Classify zero-step payment/spending-limit failures as unavailable execution evidence, separately from compilation, assertions, and deployment. Inspect annotations before editing code for an account block.
+- Documentation-only pushes skip expensive CI; pull-request checks remain present for required statuses. Superseded same-ref runs are cancelled. Change pinned compiler/runtime versions deliberately and validate the complete suite.
