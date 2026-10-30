@@ -1,253 +1,178 @@
 import SwiftUI
 import os
 
-enum ActiveModeHostTransitionDecisions {
-    static func shouldRenderPrewarmLayer(
-        reduceMotion: Bool,
-        hasPreviousMode: Bool,
-        modeCrossfade: Double
-    ) -> Bool {
-        !reduceMotion && !hasPreviousMode && modeCrossfade >= 1
-    }
-
-    static func shouldCleanupPreviousLayer(
-        expectedPreviousMode: DriftMode,
-        currentPreviousMode: DriftMode?
-    ) -> Bool {
-        currentPreviousMode == expectedPreviousMode
-    }
-}
-
-/// Hosts the active Drift mode with crossfade and optional prewarm layer.
+/// Retains two live scene renderers through a complete, brightness-preserving dissolve.
 struct ActiveModeHost: View {
-    let currentMode: DriftMode
+    static let crossfadeDuration: TimeInterval = 2.0
+
+    let presentation: DriftScenePresentation
     let prewarmMode: DriftMode?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var previousMode: DriftMode?
-    @State private var previousModeLayerID: UUID?
-    @State private var currentModeLayerID = UUID()
-    @State private var prewarmLayerID: UUID?
-    @State private var warmedMode: DriftMode?
-    @State private var modeCrossfade: Double = 1.0
-    @State private var modeFadeCleanupWorkItem: DispatchWorkItem?
+    @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @State private var transition: DriftSceneTransitionState
+    @State private var warmedLayer: DriftSceneTransitionState.Layer?
+    @State private var blendProgress: Double = 1
     @State private var modeTransitionInterval: OSSignpostIntervalState?
 
-    private let crossfadeDuration: TimeInterval = 1.1
-    private let cleanupDelay: TimeInterval = 1.0
+    init(presentation: DriftScenePresentation, prewarmMode: DriftMode?) {
+        self.presentation = presentation
+        self.prewarmMode = prewarmMode
+        _transition = State(initialValue: DriftSceneTransitionState(presentation: presentation))
+    }
 
     var body: some View {
         ZStack {
-            if let previousMode, let previousModeLayerID {
-                ModeViewRegistry.view(for: previousMode)
-                    .id(previousModeLayerID)
-                    .opacity(1 - modeCrossfade)
-                    .environment(\.driftAnimationsPaused, true)
-            }
-
-            ModeViewRegistry.view(for: currentMode)
-                .id(currentModeLayerID)
-                .opacity(modeCrossfade)
-
-            if shouldRenderPrewarmLayer,
-               let prewarmMode,
-               prewarmMode != currentMode,
-               let prewarmLayerID {
-                ModeViewRegistry.view(for: prewarmMode)
-                    .id(prewarmLayerID)
-                    .opacity(0)
-                    .environment(\.driftAnimationsPaused, true)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+            // Keep a renderer at the same structural location as it becomes the outgoing layer.
+            // Moving it into a separate conditional branch discards its local animation state.
+            ForEach(renderLayers) { layer in
+                ModeViewRegistry.view(for: layer.presentation.mode)
+                    .environment(\.driftAnimationSpeed, layer.presentation.animationSpeed)
+                    .environment(\.driftAnimationsPaused, animationsPaused || isPrewarm(layer))
+                    .background(Color.black)
+                    .compositingGroup()
+                    .opacity(opacity(for: layer))
+                    .allowsHitTesting(layer.id == transition.layers.last?.id)
+                    .accessibilityHidden(layer.id != transition.layers.last?.id)
             }
         }
-        .onChange(of: currentMode) { oldMode, newMode in
-            guard oldMode != newMode else { return }
-            beginModeCrossfade(from: oldMode, to: newMode)
+        .onChange(of: presentation) { _, newValue in
+            request(newValue)
         }
-        .onChange(of: prewarmMode) { _, newValue in
-            updatePrewarmLayer(for: newValue)
+        .onChange(of: prewarmMode) { _, _ in updatePrewarmLayer() }
+        .onChange(of: transition.transitionID) { _, id in
+            if id == nil { updatePrewarmLayer() }
+        }
+        .onChange(of: reduceMotion) { _, enabled in
+            if enabled { settleImmediately() } else { updatePrewarmLayer() }
+        }
+        .onChange(of: animationsPaused) { _, paused in
+            if paused { settleImmediately() } else { updatePrewarmLayer() }
+        }
+        .task(id: transition.transitionID) {
+            guard let id = transition.transitionID else { return }
+            // Mount the incoming tree before changing its opacity, including prewarm promotion.
+            await Task.yield()
+            guard !Task.isCancelled, transition.transitionID == id else { return }
+            withAnimation(
+                .easeInOut(duration: Self.crossfadeDuration),
+                completionCriteria: .removed
+            ) {
+                blendProgress = 1
+            } completion: {
+                finishTransition(id)
+            }
         }
         .onAppear {
             DriftProfiling.event(
                 DriftProfiling.Signpost.rendererSetup,
-                message: "activeModeHost current=\(currentMode.rawValue)"
+                message: "activeModeHost current=\(presentation.mode.rawValue)"
             )
-            updatePrewarmLayer(for: prewarmMode)
+            updatePrewarmLayer()
         }
         .onDisappear {
-            modeFadeCleanupWorkItem?.cancel()
-            if let interval = modeTransitionInterval {
-                DriftProfiling.end(
-                    DriftProfiling.Signpost.modeTransition,
-                    interval,
-                    message: "status=teardown to=\(currentMode.rawValue)"
-                )
-                modeTransitionInterval = nil
-            }
+            settleImmediately()
             DriftProfiling.event(
                 DriftProfiling.Signpost.rendererTeardown,
-                message: "activeModeHost current=\(currentMode.rawValue)"
+                message: "activeModeHost current=\(presentation.mode.rawValue)"
             )
         }
     }
 
-    /// Keep hidden prewarm work scoped to idle windows where it can help the next transition.
-    /// Avoid carrying an extra full-screen tree while a crossfade is running or when motion is reduced.
-    private var shouldRenderPrewarmLayer: Bool {
-        ActiveModeHostTransitionDecisions.shouldRenderPrewarmLayer(
-            reduceMotion: reduceMotion,
-            hasPreviousMode: previousMode != nil,
-            modeCrossfade: modeCrossfade
-        )
+    private var renderLayers: [DriftSceneTransitionState.Layer] {
+        if let warmedLayer { return transition.layers + [warmedLayer] }
+        return transition.layers
     }
 
-    private func beginModeCrossfade(from oldMode: DriftMode, to newMode: DriftMode) {
-#if DEBUG
-        debugValidateSinglePreviousLayer(context: "begin.before")
-#endif
-        if let interval = modeTransitionInterval {
-            DriftProfiling.end(
-                DriftProfiling.Signpost.modeTransition,
-                interval,
-                message: "status=interrupted from=\(oldMode.rawValue) to=\(newMode.rawValue)"
-            )
-            modeTransitionInterval = nil
+    private func isPrewarm(_ layer: DriftSceneTransitionState.Layer) -> Bool {
+        layer.id == warmedLayer?.id
+    }
+
+    private func opacity(for layer: DriftSceneTransitionState.Layer) -> Double {
+        if isPrewarm(layer) { return 0 }
+        if transition.transitionID != nil, layer.id == transition.layers.last?.id {
+            return blendProgress
         }
+        // The outgoing layer stays opaque underneath. Its visible contribution falls as the
+        // incoming layer covers it; fading both opacities would expose black at the midpoint.
+        return 1
+    }
+
+    private func request(_ newPresentation: DriftScenePresentation) {
+        guard !reduceMotion, !animationsPaused else {
+            settleImmediately(to: newPresentation)
+            return
+        }
+
+        let oldMode = transition.layers.last?.presentation.mode
+        let preparedID = warmedLayer?.presentation.mode == newPresentation.mode ? warmedLayer?.id : nil
+        var startedID: UUID?
+        withoutAnimation {
+            startedID = transition.request(newPresentation, animated: true, preparedLayerID: preparedID)
+            if startedID != nil {
+                warmedLayer = nil
+                blendProgress = 0
+            }
+        }
+        guard startedID != nil else { return }
         modeTransitionInterval = DriftProfiling.begin(
             DriftProfiling.Signpost.modeTransition,
-            message: "source=renderer from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+            message: "source=renderer from=\(oldMode?.rawValue ?? "none") to=\(newPresentation.mode.rawValue)"
         )
         DriftProfiling.event(
             DriftProfiling.Signpost.rendererReconfigure,
-            message: "crossfade prepare from=\(oldMode.rawValue) to=\(newMode.rawValue)"
+            message: "crossfade start duration=\(Self.crossfadeDuration) layers=\(transition.layers.count)"
         )
-
-        previousMode = oldMode
-        previousModeLayerID = currentModeLayerID
-        if warmedMode == newMode, let prewarmLayerID {
-            currentModeLayerID = prewarmLayerID
-        } else {
-            currentModeLayerID = UUID()
-        }
-        prewarmLayerID = nil
-        warmedMode = nil
-
-#if DEBUG
-        debugTransitionEvent(
-            "start from=\(oldMode.rawValue) to=\(newMode.rawValue) previousTracked=\(previousMode?.rawValue ?? "none")"
-        )
-        debugValidateSinglePreviousLayer(context: "begin.afterAssign")
-#endif
-
-        modeFadeCleanupWorkItem?.cancel()
-
-        if reduceMotion {
-            // Skip crossfade when Reduce Motion is enabled.
-            modeCrossfade = 1
-            previousMode = nil
-            previousModeLayerID = nil
-#if DEBUG
-            debugTransitionEvent("cleanup.reduceMotion from=\(oldMode.rawValue) to=\(newMode.rawValue)")
-            debugValidateSinglePreviousLayer(context: "cleanup.reduceMotion")
-#endif
-            if let interval = modeTransitionInterval {
-                DriftProfiling.end(
-                    DriftProfiling.Signpost.modeTransition,
-                    interval,
-                    message: "source=renderer reduceMotion from=\(oldMode.rawValue) to=\(newMode.rawValue)"
-                )
-                modeTransitionInterval = nil
-            }
-            return
-        }
-
-        modeCrossfade = 0
-        // Defer the animation a tick so the new layer can render once before we start fading.
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: crossfadeDuration)) {
-                modeCrossfade = 1
-            }
-        }
-
-        let cleanup = DispatchWorkItem {
-            guard ActiveModeHostTransitionDecisions.shouldCleanupPreviousLayer(
-                expectedPreviousMode: oldMode,
-                currentPreviousMode: previousMode
-            ) else {
-#if DEBUG
-                debugTransitionEvent(
-                    "cleanup.skip expected=\(oldMode.rawValue) actual=\(previousMode?.rawValue ?? "none") to=\(newMode.rawValue)"
-                )
-                debugValidateSinglePreviousLayer(context: "cleanup.skip")
-#endif
-                return
-            }
-#if DEBUG
-            debugValidateSinglePreviousLayer(context: "cleanup.before")
-#endif
-            previousMode = nil
-            previousModeLayerID = nil
-#if DEBUG
-            debugTransitionEvent("cleanup.complete from=\(oldMode.rawValue) to=\(newMode.rawValue)")
-            debugValidateSinglePreviousLayer(context: "cleanup.after")
-#endif
-            if let interval = modeTransitionInterval {
-                DriftProfiling.end(
-                    DriftProfiling.Signpost.modeTransition,
-                    interval,
-                    message: "source=renderer complete from=\(oldMode.rawValue) to=\(newMode.rawValue)"
-                )
-                modeTransitionInterval = nil
-            }
-        }
-        modeFadeCleanupWorkItem = cleanup
-        DispatchQueue.main.asyncAfter(deadline: .now() + cleanupDelay, execute: cleanup)
     }
 
-    private func updatePrewarmLayer(for mode: DriftMode?) {
-        guard let mode, mode != currentMode else {
-            if warmedMode != nil || prewarmLayerID != nil {
-                DriftProfiling.event(
-                    DriftProfiling.Signpost.rendererReconfigure,
-                    message: "prewarm clear current=\(currentMode.rawValue)"
-                )
-            }
-            prewarmLayerID = nil
-            warmedMode = nil
+    private func finishTransition(_ id: UUID) {
+        guard transition.transitionID == id else { return }
+        var pending: DriftScenePresentation?
+        withoutAnimation {
+            pending = transition.complete(id)
+            blendProgress = 1
+        }
+        endTransition(status: "complete")
+        if let pending { request(pending) }
+    }
+
+    private func settleImmediately(to target: DriftScenePresentation? = nil) {
+        withoutAnimation {
+            transition.request(target ?? presentation, animated: false)
+            blendProgress = 1
+            warmedLayer = nil
+        }
+        endTransition(status: "settled")
+    }
+
+    private func updatePrewarmLayer() {
+        guard !reduceMotion, !animationsPaused, transition.transitionID == nil,
+              let prewarmMode, prewarmMode != transition.layers.last?.presentation.mode else {
+            warmedLayer = nil
             return
         }
-        if warmedMode == mode, prewarmLayerID != nil {
-            return
-        }
-        warmedMode = mode
-        prewarmLayerID = prewarmLayerID ?? UUID()
-        DriftProfiling.event(
-            DriftProfiling.Signpost.rendererReconfigure,
-            message: "prewarm set mode=\(mode.rawValue)"
+        let prepared = DriftScenePresentation(
+            mode: prewarmMode,
+            sceneID: presentation.sceneID,
+            animationSpeed: presentation.animationSpeed
         )
+        let preparedID = warmedLayer.flatMap { $0.presentation.mode == prewarmMode ? $0.id : nil }
+        warmedLayer = DriftSceneTransitionState.Layer(
+            id: preparedID ?? UUID(),
+            presentation: prepared
+        )
+    }
+
+    private func endTransition(status: String) {
+        if let interval = modeTransitionInterval {
+            DriftProfiling.end(DriftProfiling.Signpost.modeTransition, interval, message: "source=renderer status=\(status)")
+            modeTransitionInterval = nil
+        }
+    }
+
+    private func withoutAnimation(_ changes: () -> Void) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction, changes)
     }
 }
-
-#if DEBUG
-private extension ActiveModeHost {
-    func debugValidateSinglePreviousLayer(context: StaticString) {
-        let hasMode = previousMode != nil
-        let hasLayerID = previousModeLayerID != nil
-        if hasMode != hasLayerID {
-            assertionFailure("ActiveModeHost previous-layer state mismatch at \(context)")
-            DriftProfiling.event(
-                DriftProfiling.Signpost.rendererReconfigure,
-                message: "debug invariantFailure context=\(context) hasMode=\(hasMode) hasLayerID=\(hasLayerID)"
-            )
-        }
-    }
-
-    func debugTransitionEvent(_ message: String) {
-        DriftProfiling.event(
-            DriftProfiling.Signpost.rendererReconfigure,
-            message: "debug transition \(message)"
-        )
-    }
-}
-#endif

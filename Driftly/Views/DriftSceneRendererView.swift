@@ -3,6 +3,8 @@ import SwiftUI
 /// Isolated renderer so per-frame updates stay scoped to the animated scene.
 struct DriftSceneRendererView: View {
     let currentMode: DriftMode
+    let sceneID: UUID?
+    let animationSpeed: Double
     let prewarmMode: DriftMode?
     let scenePhase: ScenePhase
     let reduceMotion: Bool
@@ -16,7 +18,10 @@ struct DriftSceneRendererView: View {
     @State private var lastAllowMotion: Bool?
 
     var body: some View {
-        ActiveModeHost(currentMode: currentMode, prewarmMode: prewarmMode)
+        ActiveModeHost(
+            presentation: DriftScenePresentation(mode: currentMode, sceneID: sceneID, animationSpeed: animationSpeed),
+            prewarmMode: prewarmMode
+        )
             .offset(effectiveOffset)
             .scaleEffect(effectiveScale)
             .ignoresSafeArea()

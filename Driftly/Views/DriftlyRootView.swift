@@ -412,6 +412,8 @@ struct DriftlyRootView: View {
     private var brightnessDarkeningOverlay: some View {
         Color.black
             .opacity(coordinator.sleepState.sleepTimerHasExpired ? 1 : (1 - preferences.brightness))
+            // Scene brightness follows the dissolve; ordinary brightness gestures remain immediate.
+            .animation(reduceMotion ? nil : .easeInOut(duration: ActiveModeHost.crossfadeDuration), value: engine.activeSceneID)
             .ignoresSafeArea()
             .allowsHitTesting(false)
     }
@@ -556,6 +558,8 @@ struct DriftlyRootView: View {
             if !coordinator.sleepState.sleepTimerHasExpired {
                 DriftSceneRendererView(
                     currentMode: engine.currentMode,
+                    sceneID: engine.activeSceneID,
+                    animationSpeed: effectiveAnimationSpeed,
                     prewarmMode: coordinator.prewarmMode,
                     scenePhase: scenePhase,
                     reduceMotion: reduceMotion,
