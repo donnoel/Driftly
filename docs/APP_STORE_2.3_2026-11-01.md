@@ -29,6 +29,16 @@ tvOS:
 
 ## Submission
 
-Submission pending upload and live verification. This document will record exact final review states after both final Submit for Review steps. Uploaded, submitted, approved, and publicly released are separate states.
+Both uploads succeeded through Xcode Organizer with existing Cloud Managed Apple Distribution and matching Store provisioning. Manage version/build remained off; internal-only distribution remained off. Exported uploaded packages pass strict signature verification with production `get-task-allow=false`, correct app/extension identity, matching versions and existing privacy manifest. Both processed builds report **Validated**, with no non-exempt encryption.
+
+- iOS processed build `06f7b041-640d-43da-ab16-c8b4b8225124`; final status **Waiting for Review**, **Items Submitted (1)**, exact **iOS App 2.3 / 2.3 (5)**, November 1, 2026 at 5:36 PM PST. [Submission receipt](https://appstoreconnect.apple.com/apps/6758164205/distribution/reviewsubmissions/details/050e5a20-3e53-4096-a971-3d1a78875dc2).
+- tvOS processed build `b628f050-9712-4917-9e58-95a280ce7fe2`; final status **Waiting for Review**, **Items Submitted (1)**, exact **tvOS App 2.3 / 2.3 (5)**, November 1, 2026 at 5:39 PM PST. [Submission receipt](https://appstoreconnect.apple.com/apps/6758164205/distribution/reviewsubmissions/details/476109b5-dfad-4c10-98a1-c1d26cb59f0a).
+- Both Add for Review and final Submit for Review completed. No other app version, event, purchase, or asset was submitted.
+- App Store Connect blocked review until new age-rating feature questions were answered. The app has no social media or under-13 social-media capability; those required answers were saved. Existing questionnaire answers and **4+** rating retained. No legal agreement, banking, account-role, or distribution changes.
+- All 178 recorded source hashes match release commit **500fcc6bf7dd324d5e77260ab8caf4586f478920**, pushed to configured `github/main` at `https://github.com/donnoel/Driftly.git`. The later submission-record commit changes this uncompiled document only. Source proof, final live AX/PNG receipts, archive inspection, and signed package hashes are in the evidence directory above.
+- Uploaded iOS IPA SHA-256: `28371631023806b169d378e6b4b8d6ec43f86b09c5d7491fd3e8916203f107e4`.
+- Uploaded tvOS IPA SHA-256: `13a8a05b04e8e2e1f05837d610f4232402f9b6003a497c6b65f823a693fa20ad`.
+
+No remaining user action. Submitted is distinct from approved or publicly released.
 
 Automation stays paused/manual; no review monitor or scheduling is created.
