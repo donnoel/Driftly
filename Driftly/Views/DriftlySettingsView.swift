@@ -8,6 +8,8 @@ struct DriftlySettingsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 #if os(tvOS)
+    @State private var isRemoteGuidePresented = false
+
     private enum TVFocus: Hashable {
         case autoDriftEnabled
         case autoDriftShuffle
@@ -15,6 +17,7 @@ struct DriftlySettingsView: View {
         case driftEvery
         case stayAwake
         case showClock
+        case remoteGuide
     }
 
     @FocusState private var tvFocus: TVFocus?
@@ -371,6 +374,18 @@ struct DriftlySettingsView: View {
                                 .listRowBackground(Color.clear)
                         }
 
+                        Section("Help") {
+                            Button {
+                                isRemoteGuidePresented = true
+                            } label: {
+                                Label("Remote Guide", systemImage: "appletvremote.gen2")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .focused($tvFocus, equals: .remoteGuide)
+                            .accessibilityIdentifier("remoteGuideReplay")
+                            .accessibilityHint("Replay the Apple TV remote tutorial")
+                        }
+
                     }
                     .frame(maxWidth: 1580)
                     .background(Color.clear)
@@ -391,6 +406,9 @@ struct DriftlySettingsView: View {
             }
         }
         .onExitCommand { dismiss() }
+        .fullScreenCover(isPresented: $isRemoteGuidePresented) {
+            TVRemoteGuideView { isRemoteGuidePresented = false }
+        }
         .preferredColorScheme(.dark)
     }
 

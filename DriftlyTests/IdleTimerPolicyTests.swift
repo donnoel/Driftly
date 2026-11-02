@@ -5,28 +5,28 @@ import Testing
 struct IdleTimerPolicyTests {
 
     @Test func preventsLockOnlyWhenActiveAndAllowed() async throws {
-        let activePrevent = shouldPreventLock(
+        let activePrevent = await shouldPreventLock(
             preventAutoLock: true,
             sleepTimerAllowsLock: false,
             scenePhase: .active
         )
         #expect(activePrevent == true)
 
-        let inactivePrevent = shouldPreventLock(
+        let inactivePrevent = await shouldPreventLock(
             preventAutoLock: true,
             sleepTimerAllowsLock: false,
             scenePhase: .inactive
         )
         #expect(inactivePrevent == false)
 
-        let sleepAllowsLock = shouldPreventLock(
+        let sleepAllowsLock = await shouldPreventLock(
             preventAutoLock: true,
             sleepTimerAllowsLock: true,
             scenePhase: .active
         )
         #expect(sleepAllowsLock == false)
 
-        let backgroundAllowsLock = shouldPreventLock(
+        let backgroundAllowsLock = await shouldPreventLock(
             preventAutoLock: true,
             sleepTimerAllowsLock: false,
             scenePhase: .background
@@ -35,28 +35,28 @@ struct IdleTimerPolicyTests {
     }
 
     @Test func tvOSPreventAutoLockRespectsToggleAndState() async throws {
-        let prevent = shouldPreventLockTvOS(
+        let prevent = await shouldPreventLockTvOS(
             preventAutoLock: true,
             sleepTimerAllowsLock: false,
             scenePhase: .active
         )
         #expect(prevent == true)
 
-        let allowWhenToggleOff = shouldPreventLockTvOS(
+        let allowWhenToggleOff = await shouldPreventLockTvOS(
             preventAutoLock: false,
             sleepTimerAllowsLock: false,
             scenePhase: .active
         )
         #expect(allowWhenToggleOff == false)
 
-        let allowWhenSleepTimerAllows = shouldPreventLockTvOS(
+        let allowWhenSleepTimerAllows = await shouldPreventLockTvOS(
             preventAutoLock: true,
             sleepTimerAllowsLock: true,
             scenePhase: .active
         )
         #expect(allowWhenSleepTimerAllows == false)
 
-        let allowWhenInactive = shouldPreventLockTvOS(
+        let allowWhenInactive = await shouldPreventLockTvOS(
             preventAutoLock: true,
             sleepTimerAllowsLock: false,
             scenePhase: .inactive
