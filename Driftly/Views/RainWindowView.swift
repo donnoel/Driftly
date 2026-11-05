@@ -41,7 +41,8 @@ struct RainWindowView: View {
 
         var rainLayer = context
         drawCondensation(in: &rainLayer, size: size, time: time)
-        drawRunningDrops(in: &rainLayer, size: size, time: time)
+        // Let the rain linger on the glass while the distant light keeps drifting.
+        drawRunningDrops(in: &rainLayer, size: size, time: time * 0.60)
         if !reduceMotion {
             // Keep the occasional surprise about 15 seconds apart even at a slow rain setting.
             drawWanderingDrop(in: rainLayer, size: size, time: flourishTime)
@@ -71,9 +72,14 @@ struct RainWindowView: View {
         )
         for index in 0..<6 {
             let phase = Double(index) * 1.71
-            let center = CGPoint(x: size.width * CGFloat(0.06 + 0.18 * Double(index)),
-                                 y: size.height * CGFloat(0.62 + 0.16 * sin(phase)))
-            let radius = min(size.width, size.height) * CGFloat(0.10 + 0.05 * cos(phase))
+            // Independent, continuous drift makes the out-of-focus world feel alive behind the glass.
+            let drift = time * (0.085 + 0.007 * Double(index % 3))
+            let center = CGPoint(
+                x: size.width * CGFloat(0.06 + 0.18 * Double(index) + 0.09 * sin(drift + phase)),
+                y: size.height * CGFloat(0.62 + 0.16 * sin(phase) + 0.075 * cos(drift * 0.83 + phase * 1.3))
+            )
+            let breathing = 1 + 0.07 * sin(drift * 0.71 + phase)
+            let radius = min(size.width, size.height) * CGFloat((0.10 + 0.05 * cos(phase)) * breathing)
             let color: Color
             switch index % 3 {
             case 0: color = Color(red: 1, green: 0.62, blue: 0.28)
