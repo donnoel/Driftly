@@ -447,7 +447,7 @@ struct ObsidianMonolithView: View {
     ) {
         let seed = 3100 + index * 17
         let phase = DriftNoise.hash(index, 3, seed: seed) * .pi * 2
-        let rate = 0.13 + 0.05 * DriftNoise.hash(index, 5, seed: seed)
+        let rate = (0.13 + 0.05 * DriftNoise.hash(index, 5, seed: seed)) * 0.40
         let travel = CGFloat(0.14 + 0.72 * (0.5 - 0.5 * cos(time * rate + phase)))
         let lateral = panelWidth * CGFloat(-0.16 + 0.32 * DriftNoise.hash(index, 7, seed: seed))
         let center = CGPoint(
