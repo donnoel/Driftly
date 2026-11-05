@@ -243,6 +243,7 @@ struct ObsidianMonolithView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused) { date in
@@ -345,6 +346,17 @@ struct ObsidianMonolithView: View {
             )
         )
 
+        drawInnerLight(
+            index: index,
+            panel: panel,
+            top: CGPoint(x: (leftTop.x + rightTop.x) * 0.5, y: topY),
+            bottom: CGPoint(x: (leftBottom.x + rightBottom.x) * 0.5, y: bottomY),
+            panelWidth: panelWidth,
+            panelHeight: panelHeight,
+            in: context,
+            time: reduceMotion ? 0 : t
+        )
+
         let edgeColor = index % 3 == 0 ? config.palette.primary : config.palette.secondary
         context.stroke(panel, with: .color(edgeColor.opacity(0.10 + 0.08 * pulse)), lineWidth: 5.5)
         context.stroke(panel, with: .color(Color.white.opacity(0.075 + 0.04 * pulse)), lineWidth: 1.2)
@@ -361,6 +373,62 @@ struct ObsidianMonolithView: View {
             glint.addLine(to: CGPoint(x: glintX - skew * 0.2, y: bottomY - panelHeight * 0.14))
             context.stroke(glint, with: .color(Color.white.opacity(0.08 + 0.08 * pulse)), lineWidth: 1.1)
         }
+    }
+
+    /// Each column carries one quiet light, reversing gently rather than resetting at an edge.
+    private func drawInnerLight(
+        index: Int,
+        panel: Path,
+        top: CGPoint,
+        bottom: CGPoint,
+        panelWidth: CGFloat,
+        panelHeight: CGFloat,
+        in context: GraphicsContext,
+        time: Double
+    ) {
+        let seed = 3100 + index * 17
+        let phase = DriftNoise.hash(index, 3, seed: seed) * .pi * 2
+        let rate = 0.13 + 0.05 * DriftNoise.hash(index, 5, seed: seed)
+        let travel = CGFloat(0.14 + 0.72 * (0.5 - 0.5 * cos(time * rate + phase)))
+        let lateral = panelWidth * CGFloat(-0.16 + 0.32 * DriftNoise.hash(index, 7, seed: seed))
+        let center = CGPoint(
+            x: top.x + (bottom.x - top.x) * travel + lateral,
+            y: top.y + (bottom.y - top.y) * travel
+        )
+        let tint = index % 2 == 0 ? config.palette.primary : config.palette.tertiary
+        var light = context
+        light.clip(to: panel)
+
+        // Scale the shading with the ellipse so the glow has no hard rectangular cutoff.
+        var halo = light
+        halo.translateBy(x: center.x, y: center.y)
+        halo.scaleBy(x: max(2, panelWidth * 0.46), y: max(8, panelHeight * 0.085))
+        halo.fill(
+            Path(ellipseIn: CGRect(x: -1, y: -1, width: 2, height: 2)),
+            with: .radialGradient(
+                Gradient(colors: [tint.opacity(0.14), tint.opacity(0.045), Color.clear]),
+                center: .zero,
+                startRadius: 0,
+                endRadius: 1
+            )
+        )
+
+        let length = max(8, min(25, panelHeight * 0.034))
+        var filament = Path()
+        filament.move(to: CGPoint(x: center.x, y: center.y - length))
+        filament.addQuadCurve(
+            to: CGPoint(x: center.x, y: center.y + length),
+            control: CGPoint(x: center.x + panelWidth * 0.08, y: center.y)
+        )
+        light.stroke(
+            filament,
+            with: .linearGradient(
+                Gradient(colors: [Color.clear, tint.opacity(0.24), Color.white.opacity(0.26), tint.opacity(0.16), Color.clear]),
+                startPoint: CGPoint(x: center.x, y: center.y - length),
+                endPoint: CGPoint(x: center.x, y: center.y + length)
+            ),
+            style: StrokeStyle(lineWidth: max(1, panelWidth * 0.034), lineCap: .round)
+        )
     }
 
     private func drawFloorReflection(in context: inout GraphicsContext, size: CGSize, time t: Double) {

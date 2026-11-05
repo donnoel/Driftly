@@ -4,6 +4,7 @@ struct PaperLanternView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused) { date in
@@ -38,6 +39,7 @@ struct PaperLanternView: View {
 
         var lanternLayer = context
         lanternLayer.blendMode = .plusLighter
+        drawDistantStars(in: &lanternLayer, size: size, time: reduceMotion ? 0 : time)
         drawLanterns(in: &lanternLayer, size: size, time: time)
         drawSoftMotes(in: &lanternLayer, size: size, time: time)
 
@@ -195,6 +197,72 @@ struct PaperLanternView: View {
                 )
             )
         }
+    }
+
+    /// A handful of long, staggered glimmers, rather than a flickering particle field.
+    private func drawDistantStars(in context: inout GraphicsContext, size: CGSize, time: Double) {
+        let base = min(size.width, size.height)
+        for index in 0..<7 {
+            let seed = 2700 + index * 31
+            let phase = DriftNoise.hash(index, 3, seed: seed) * .pi * 2
+            let period = 10.0 + 6.0 * DriftNoise.hash(index, 5, seed: seed)
+            let rise = max(0, sin(time * .pi * 2 / period + phase))
+            let glow = rise * rise
+            let tint = starTint(index: index, seed: seed, time: time)
+            // Spread stars across the whole viewport without clusters or a rigid diagonal.
+            let column = Double((index * 3 + 1) % 7)
+            let row = Double(index)
+            let x = 0.05 + 0.90 * (column + 0.15 + 0.70 * DriftNoise.hash(index, 7, seed: seed)) / 7
+            let y = 0.05 + 0.90 * (row + 0.15 + 0.70 * DriftNoise.hash(index, 9, seed: seed)) / 7
+            let center = CGPoint(x: size.width * CGFloat(x), y: size.height * CGFloat(y))
+            let radius = max(3.2, base * CGFloat(0.008 + 0.005 * DriftNoise.hash(index, 11, seed: seed)))
+                * CGFloat(0.72 + 0.28 * glow)
+            let halo = radius * 3.0
+            context.fill(
+                Path(ellipseIn: CGRect(x: center.x - halo, y: center.y - halo, width: halo * 2, height: halo * 2)),
+                with: .radialGradient(
+                    Gradient(colors: [tint.opacity(0.075 * glow), Color.clear]),
+                    center: center,
+                    startRadius: 0,
+                    endRadius: halo
+                )
+            )
+
+            // Concave four-point silhouette: mostly a tiny warm pinprick at viewing distance.
+            let inner = radius * 0.15
+            var star = Path()
+            star.move(to: CGPoint(x: center.x, y: center.y - radius))
+            star.addQuadCurve(to: CGPoint(x: center.x + radius * 0.65, y: center.y), control: CGPoint(x: center.x + inner, y: center.y - inner))
+            star.addQuadCurve(to: CGPoint(x: center.x, y: center.y + radius), control: CGPoint(x: center.x + inner, y: center.y + inner))
+            star.addQuadCurve(to: CGPoint(x: center.x - radius * 0.65, y: center.y), control: CGPoint(x: center.x - inner, y: center.y + inner))
+            star.addQuadCurve(to: CGPoint(x: center.x, y: center.y - radius), control: CGPoint(x: center.x - inner, y: center.y - inner))
+            star.closeSubpath()
+            context.fill(star, with: .color(tint.opacity(0.31 * glow)))
+        }
+    }
+
+    private func starTint(index: Int, seed: Int, time: Double) -> Color {
+        let period = 36.0 + 14.0 * DriftNoise.hash(index, 13, seed: seed)
+        let phase = DriftNoise.fract(time / period + DriftNoise.hash(index, 15, seed: seed)) * 3
+        let segment = floor(phase)
+        let fraction = phase - segment
+        let blend = fraction * fraction * (3 - 2 * fraction)
+        // Similar luminance keeps this a gentle hue shift rather than another brightness pulse.
+        let gold = (red: 1.0, green: 0.91, blue: 0.73)
+        let rose = (red: 1.0, green: 0.89, blue: 0.94)
+        let lavender = (red: 0.90, green: 0.913, blue: 1.0)
+        let from: (red: Double, green: Double, blue: Double)
+        let to: (red: Double, green: Double, blue: Double)
+        switch Int(segment) {
+        case 0: (from, to) = (gold, rose)
+        case 1: (from, to) = (rose, lavender)
+        default: (from, to) = (lavender, gold)
+        }
+        return Color(
+            red: from.red + (to.red - from.red) * blend,
+            green: from.green + (to.green - from.green) * blend,
+            blue: from.blue + (to.blue - from.blue) * blend
+        )
     }
 
     private func drawDuskVignette(in context: GraphicsContext, size: CGSize) {
