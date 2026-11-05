@@ -532,161 +532,127 @@ struct LumenVaultView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        PausableTimelineView(paused: animationsPaused) { date in
-            let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
-
+        PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
+            let time = date.timeIntervalSinceReferenceDate * max(0.25, speed)
             GeometryReader { proxy in
-                let size = proxy.size
-
                 Canvas { context, _ in
-                    render(in: context, size: size, time: t)
+                    render(in: context, size: proxy.size, time: time)
                 }
                 .ignoresSafeArea()
             }
         }
     }
 
-    private func render(in context: GraphicsContext, size: CGSize, time t: Double) {
+    private func render(in context: GraphicsContext, size: CGSize, time: Double) {
         let rect = CGRect(origin: .zero, size: size)
-        context.fill(
-            Path(rect),
-            with: .linearGradient(
-                Gradient(colors: [
-                    config.palette.backgroundTop,
-                    config.palette.backgroundBottom
-                ]),
-                startPoint: .zero,
-                endPoint: CGPoint(x: 0, y: size.height)
-            )
-        )
-
-        drawLightShafts(in: context, size: size, time: t)
-
-        var glow = context
-        glow.blendMode = .plusLighter
-        drawVaultArches(in: &glow, size: size, time: t)
-        drawApertureGlow(in: &glow, size: size, time: t)
-        drawVignette(in: context, size: size)
-    }
-
-    private func drawLightShafts(in context: GraphicsContext, size: CGSize, time t: Double) {
-        let count = 5
-        for index in 0..<count {
-            let p = Double(index) / Double(max(1, count - 1))
-            let phase = t * 0.035 + p * 2.4
-            let centerX = size.width * CGFloat(0.22 + 0.56 * p + 0.035 * sin(phase))
-            let topWidth = size.width * CGFloat(0.04 + 0.02 * DriftNoise.hash(index, 4, seed: 900))
-            let bottomWidth = size.width * CGFloat(0.18 + 0.06 * DriftNoise.hash(index, 6, seed: 900))
-
-            var shaft = Path()
-            shaft.move(to: CGPoint(x: centerX - topWidth, y: 0))
-            shaft.addLine(to: CGPoint(x: centerX + topWidth, y: 0))
-            shaft.addLine(to: CGPoint(x: centerX + bottomWidth, y: size.height))
-            shaft.addLine(to: CGPoint(x: centerX - bottomWidth, y: size.height))
-            shaft.closeSubpath()
-
-            context.fill(
-                shaft,
-                with: .linearGradient(
-                    Gradient(colors: [
-                        config.palette.primary.opacity(0.06),
-                        config.palette.secondary.opacity(0.018),
-                        Color.clear
-                    ]),
-                    startPoint: CGPoint(x: centerX, y: 0),
-                    endPoint: CGPoint(x: centerX, y: size.height)
-                )
-            )
+        context.fill(Path(rect), with: .linearGradient(
+            Gradient(colors: [Color(red: 0.018, green: 0.027, blue: 0.085),
+                              Color(red: 0.025, green: 0.055, blue: 0.080),
+                              Color(red: 0.012, green: 0.017, blue: 0.045)]),
+            startPoint: .zero, endPoint: CGPoint(x: size.width * 0.8, y: size.height)
+        ))
+        for index in 0..<3 {
+            let phase = Double(index) * 2.1
+            let center = CGPoint(x: size.width * CGFloat(0.5 + 0.36 * sin(time * 0.021 + phase)),
+                                 y: size.height * CGFloat(0.5 + 0.30 * cos(time * 0.018 + phase)))
+            let radius = max(size.width, size.height) * 0.64
+            context.fill(Path(rect), with: .radialGradient(
+                Gradient(colors: [lumenTint(phase: phase + time * 0.018).opacity(0.10), .clear]),
+                center: center, startRadius: 0, endRadius: radius
+            ))
         }
-    }
 
-    private func drawVaultArches(in context: inout GraphicsContext, size: CGSize, time t: Double) {
-        let archCount = min(14, max(8, Int(size.height / 86)))
-        let centerX = size.width * 0.5
-        let bottomY = size.height * 0.88
-
-        for index in 0..<archCount {
-            let p = Double(index) / Double(max(1, archCount - 1))
-            let width = size.width * CGFloat(0.24 + 0.74 * p)
-            let height = size.height * CGFloat(0.18 + 0.54 * p)
-            let lift = size.height * CGFloat(0.024 * sin(t * 0.065 + p * 4.0))
-            let arch = archPath(
-                centerX: centerX,
-                bottomY: bottomY + lift,
-                width: width,
-                height: height
-            )
-
-            let shimmer = 0.5 + 0.5 * sin(t * 0.14 + p * 5.6)
-            let color = index % 3 == 0 ? config.palette.primary : (index % 3 == 1 ? config.palette.secondary : config.palette.tertiary)
-
-            context.stroke(arch, with: .color(color.opacity(0.09 + 0.06 * shimmer)), lineWidth: 8.0)
-            context.stroke(arch, with: .color(color.opacity(0.18 + 0.08 * shimmer)), lineWidth: 2.4)
-            context.stroke(arch, with: .color(Color.white.opacity(0.07 + 0.05 * shimmer)), lineWidth: 0.9)
+        // A small field of luminous membranes, at different depths, replaces the architectural rings.
+        for index in 0..<6 {
+            drawLightForm(index: index, in: context, size: size, time: time)
         }
+        context.fill(Path(rect), with: .radialGradient(
+            Gradient(colors: [.clear, Color.black.opacity(0.30)]),
+            center: CGPoint(x: size.width * 0.5, y: size.height * 0.5),
+            startRadius: min(size.width, size.height) * 0.25,
+            endRadius: max(size.width, size.height) * 0.78
+        ))
     }
 
-    private func drawApertureGlow(in context: inout GraphicsContext, size: CGSize, time t: Double) {
+    private func drawLightForm(index: Int, in context: GraphicsContext, size: CGSize, time: Double) {
+        let phase = Double(index) * 1.91
+        let base = min(size.width, size.height)
+        let x = DriftNoise.fract(0.11 + Double(index) * 0.381966)
+        let y = DriftNoise.fract(0.17 + Double(index) * 0.754878)
         let center = CGPoint(
-            x: size.width * (0.50 + 0.03 * sin(t * 0.045)),
-            y: size.height * (0.34 + 0.025 * cos(t * 0.05))
+            x: size.width * CGFloat(0.08 + 0.84 * x + 0.065 * sin(time * 0.048 + phase)),
+            y: size.height * CGFloat(0.08 + 0.84 * y + 0.070 * cos(time * 0.041 + phase * 1.3))
         )
-        let radius = min(size.width, size.height) * CGFloat(0.12 + 0.018 * sin(t * 0.09))
+        let radius = base * CGFloat(0.18 + 0.065 * DriftNoise.hash(index, 7, seed: 5100))
+        let fold = CGFloat(sin(time * 0.115 + phase))
+        let breath = 1 + 0.045 * sin(time * 0.083 + phase)
+        let color = lumenTint(phase: phase + time * 0.027)
+        let accent = lumenTint(phase: phase + time * 0.027 + 2.0)
+        var glass = context
+        glass.translateBy(x: center.x, y: center.y)
+        glass.rotate(by: .radians(phase * 0.74 + 0.32 * sin(time * 0.055 + phase)))
+        glass.scaleBy(x: radius * CGFloat(breath), y: radius * CGFloat(0.72 + 0.08 * cos(phase)))
+        glass.blendMode = .plusLighter
 
-        context.fill(
-            Path(ellipseIn: CGRect(
-                x: center.x - radius,
-                y: center.y - radius,
-                width: radius * 2,
-                height: radius * 2
-            )),
-            with: .radialGradient(
-                Gradient(colors: [
-                    config.palette.primary.opacity(0.20),
-                    config.palette.secondary.opacity(0.08),
-                    Color.clear
-                ]),
-                center: center,
-                startRadius: 0,
-                endRadius: radius
-            )
+        let left = CGPoint(x: -1, y: -0.12)
+        let right = CGPoint(x: 0.96, y: 0.10)
+        var shell = Path()
+        shell.move(to: left)
+        shell.addCurve(to: right,
+                       control1: CGPoint(x: -0.48, y: -1.06 + fold * 0.14),
+                       control2: CGPoint(x: 0.67, y: -0.72 - fold * 0.12))
+        shell.addCurve(to: left,
+                       control1: CGPoint(x: 0.62, y: 0.94 + fold * 0.16),
+                       control2: CGPoint(x: -0.65, y: 0.70 - fold * 0.18))
+        shell.closeSubpath()
+        glass.fill(shell, with: .linearGradient(
+            Gradient(colors: [color.opacity(0.04), color.opacity(0.24),
+                              accent.opacity(0.19), accent.opacity(0.025)]),
+            startPoint: CGPoint(x: -0.7, y: -0.7), endPoint: CGPoint(x: 0.7, y: 0.8)
+        ))
+        glass.fill(shell, with: .radialGradient(
+            Gradient(colors: [accent.opacity(0.13), color.opacity(0.03), .clear]),
+            center: CGPoint(x: -0.16 + fold * 0.16, y: -0.25), startRadius: 0, endRadius: 1.25
+        ))
+
+        // A second translucent face folds across the first; its seam flexes without a hard reset.
+        var face = Path()
+        face.move(to: left)
+        face.addCurve(to: right,
+                      control1: CGPoint(x: -0.38, y: 0.40 + fold * 0.30),
+                      control2: CGPoint(x: 0.34, y: -0.48 + fold * 0.22))
+        face.addCurve(to: left,
+                      control1: CGPoint(x: 0.30, y: 0.72 + fold * 0.10),
+                      control2: CGPoint(x: -0.54, y: 0.48))
+        face.closeSubpath()
+        glass.fill(face, with: .linearGradient(
+            Gradient(colors: [.clear, accent.opacity(0.18), color.opacity(0.05)]),
+            startPoint: CGPoint(x: -0.3, y: 0.8), endPoint: CGPoint(x: 0.3, y: -0.4)
+        ))
+        var seam = Path()
+        seam.move(to: left)
+        seam.addCurve(to: right,
+                      control1: CGPoint(x: -0.38, y: 0.40 + fold * 0.30),
+                      control2: CGPoint(x: 0.34, y: -0.48 + fold * 0.22))
+        let sheen = GraphicsContext.Shading.linearGradient(
+            Gradient(colors: [.clear, accent.opacity(0.50), Color.white.opacity(0.34), color.opacity(0.30), .clear]),
+            startPoint: left, endPoint: right
         )
+        glass.stroke(seam, with: .color(color.opacity(0.08)),
+                     style: StrokeStyle(lineWidth: 0.065, lineCap: .round))
+        glass.stroke(seam, with: sheen, style: StrokeStyle(lineWidth: 0.008, lineCap: .round))
+        glass.stroke(shell, with: .linearGradient(
+            Gradient(colors: [.clear, color.opacity(0.16), accent.opacity(0.25), .clear]),
+            startPoint: CGPoint(x: -0.8, y: -0.4), endPoint: CGPoint(x: 0.8, y: 0.6)
+        ), style: StrokeStyle(lineWidth: 0.006, lineCap: .round))
     }
 
-    private func archPath(centerX: CGFloat, bottomY: CGFloat, width: CGFloat, height: CGFloat) -> Path {
-        var path = Path()
-        let left = CGPoint(x: centerX - width * 0.5, y: bottomY)
-        let right = CGPoint(x: centerX + width * 0.5, y: bottomY)
-        let apex = CGPoint(x: centerX, y: bottomY - height)
-
-        path.move(to: left)
-        path.addCurve(
-            to: apex,
-            control1: CGPoint(x: left.x, y: bottomY - height * 0.50),
-            control2: CGPoint(x: centerX - width * 0.28, y: apex.y)
-        )
-        path.addCurve(
-            to: right,
-            control1: CGPoint(x: centerX + width * 0.28, y: apex.y),
-            control2: CGPoint(x: right.x, y: bottomY - height * 0.50)
-        )
-        return path
-    }
-
-    private func drawVignette(in context: GraphicsContext, size: CGSize) {
-        context.fill(
-            Path(CGRect(origin: .zero, size: size)),
-            with: .radialGradient(
-                Gradient(colors: [
-                    Color.clear,
-                    Color.black.opacity(0.30)
-                ]),
-                center: CGPoint(x: size.width * 0.5, y: size.height * 0.48),
-                startRadius: min(size.width, size.height) * 0.22,
-                endRadius: max(size.width, size.height) * 0.82
-            )
-        )
+    private func lumenTint(phase: Double) -> Color {
+        Color(red: 0.30 + 0.50 * (0.5 + 0.5 * sin(phase)),
+              green: 0.46 + 0.34 * (0.5 + 0.5 * sin(phase + 2.1)),
+              blue: 0.72 + 0.25 * (0.5 + 0.5 * sin(phase + 4.2)))
     }
 }
