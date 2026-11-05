@@ -5,8 +5,10 @@ struct CausticSilkView: View {
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        PausableTimelineView(paused: animationsPaused) { date in
+        PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
             let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
 
             GeometryReader { proxy in
@@ -51,11 +53,11 @@ struct CausticSilkView: View {
         var glow = context
         glow.blendMode = .plusLighter
 
-        drawCausticCells(
+        drawMusicalNotes(
             in: &glow,
             size: size,
             time: t,
-            count: lineCount(for: size, divisor: 46, minimum: 24, maximum: 42)
+            count: lineCount(for: size, divisor: 110, minimum: 10, maximum: 16)
         )
         drawCausticFamily(
             in: &glow,
@@ -69,43 +71,100 @@ struct CausticSilkView: View {
         drawVignette(in: context, size: size)
     }
 
-    private func drawCausticCells(
+    /// Slender, calligraphic notes float through the silk like a quiet, unwritten melody.
+    private func drawMusicalNotes(
         in context: inout GraphicsContext,
         size: CGSize,
         time t: Double,
         count: Int
     ) {
         let base = min(size.width, size.height)
-
         for index in 0..<count {
-            let rx = DriftNoise.hash(index, 7, seed: 1200)
-            let ry = DriftNoise.hash(index, 11, seed: 1200)
-            let phase = Double(index) * 0.83
+            let phase = Double(index) * 1.73
+            let rx = DriftNoise.fract((Double(index) + 0.5) * 0.61803398875)
+            let ry = DriftNoise.fract((Double(index) + 0.5) * 0.754877666 + 0.23)
             let center = CGPoint(
-                x: size.width * CGFloat(rx) + CGFloat(20.0 * sin(t * 0.035 + phase)),
-                y: size.height * CGFloat(ry) + CGFloat(24.0 * cos(t * 0.030 + phase * 1.2))
+                x: size.width * CGFloat(0.12 + 0.76 * rx + 0.075 * sin(t * (0.078 + 0.006 * Double(index % 3)) + phase)),
+                y: size.height * CGFloat(0.15 + 0.71 * ry + 0.075 * cos(t * 0.071 + phase * 1.3))
             )
-            let width = base * CGFloat(0.12 + 0.18 * DriftNoise.hash(index, 19, seed: 1200))
-            let height = width * CGFloat(0.12 + 0.16 * DriftNoise.hash(index, 23, seed: 1200))
-            let angle = CGFloat(Double.pi * DriftNoise.hash(index, 31, seed: 1200) + t * 0.018)
-            let pulse = 0.5 + 0.5 * sin(t * 0.20 + phase)
+            let unit = max(3.8, base * CGFloat(0.010 + 0.003 * DriftNoise.hash(index, 19, seed: 1200)))
+            let pulse = 0.5 + 0.5 * sin(t * 0.14 + phase)
+            let color = musicalTint(phase: t * 0.045 + phase)
+            let accent = musicalTint(phase: t * 0.045 + phase + 2.1)
+            let kind = index % 6
+            var note = context
+            note.translateBy(x: center.x, y: center.y)
+            note.rotate(by: .radians(0.15 * sin(phase) + 0.10 * sin(t * 0.085 + phase)))
+            note.scaleBy(x: unit, y: unit)
 
-            var cell = Path(ellipseIn: CGRect(
-                x: -width * 0.5,
-                y: -height * 0.5,
-                width: width,
-                height: height
-            ))
-            cell = cell.applying(
-                CGAffineTransform(translationX: center.x, y: center.y)
-                    .rotated(by: angle)
+            var head = Path(ellipseIn: CGRect(x: -1.25, y: -0.72, width: 2.5, height: 1.44))
+                .applying(CGAffineTransform(rotationAngle: -0.32))
+            let tip = CGPoint(x: 1.08, y: -6.1)
+            var stem = Path()
+            stem.move(to: CGPoint(x: 1.05, y: -0.28))
+            stem.addQuadCurve(to: tip, control: CGPoint(x: 1.18, y: -3.4))
+            var flag = Path()
+            if kind == 2 || kind == 3 {
+                flag.move(to: tip)
+                flag.addCurve(to: CGPoint(x: 2.72, y: -3.85),
+                              control1: CGPoint(x: 1.25, y: -5.15),
+                              control2: CGPoint(x: 3.12, y: -5.10))
+                flag.addCurve(to: CGPoint(x: 1.68, y: -2.05),
+                              control1: CGPoint(x: 2.96, y: -3.12),
+                              control2: CGPoint(x: 2.05, y: -2.58))
+                flag.addCurve(to: CGPoint(x: 2.24, y: -3.76),
+                              control1: CGPoint(x: 2.03, y: -2.86),
+                              control2: CGPoint(x: 2.50, y: -3.21))
+                flag.addCurve(to: tip,
+                              control1: CGPoint(x: 2.07, y: -4.48),
+                              control2: CGPoint(x: 0.94, y: -4.66))
+                flag.closeSubpath()
+            }
+            if kind == 3 {
+                // A second swept flag makes a sixteenth note without crowding the stem.
+                flag.addPath(flag.applying(CGAffineTransform(translationX: 0, y: 1.05)))
+            }
+            if kind == 4 {
+                let secondHead = head.applying(CGAffineTransform(translationX: 3.6, y: -0.65))
+                head.addPath(secondHead)
+                stem.move(to: CGPoint(x: 4.65, y: -0.93))
+                stem.addQuadCurve(to: CGPoint(x: 4.68, y: -6.75), control: CGPoint(x: 4.78, y: -4.05))
+                // A gently sloping, tapered beam joins a pair of eighth notes.
+                flag.move(to: CGPoint(x: 1.0, y: -6.12))
+                flag.addLine(to: CGPoint(x: 4.72, y: -6.79))
+                flag.addLine(to: CGPoint(x: 4.72, y: -6.31))
+                flag.addLine(to: CGPoint(x: 1.0, y: -5.72))
+                flag.closeSubpath()
+            }
+            var silhouette = head
+            silhouette.addPath(stem)
+            silhouette.addPath(flag)
+            // A restrained halo, with crisp engraving-like edges rather than a fuzzy music glyph.
+            note.stroke(silhouette, with: .color(color.opacity(0.035 + 0.025 * pulse)),
+                        style: StrokeStyle(lineWidth: 0.62, lineCap: .round, lineJoin: .round))
+            let ink = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: [color.opacity(0.45 + 0.10 * pulse),
+                                  accent.opacity(0.62 + 0.08 * pulse), color.opacity(0.38)]),
+                startPoint: CGPoint(x: -1.2, y: 0.8), endPoint: tip
             )
-
-            let color = causticColor(index: index, family: 0)
-            context.stroke(cell, with: .color(color.opacity(0.05 + 0.08 * pulse)), lineWidth: 7.0)
-            context.stroke(cell, with: .color(color.opacity(0.12 + 0.12 * pulse)), lineWidth: 2.0)
-            context.stroke(cell, with: .color(Color.white.opacity(0.035 + 0.055 * pulse)), lineWidth: 0.75)
+            if kind == 0 {
+                note.stroke(head, with: ink, style: StrokeStyle(lineWidth: 0.19, lineCap: .round))
+            } else {
+                note.fill(head, with: ink)
+            }
+            note.stroke(stem, with: ink, style: StrokeStyle(lineWidth: 0.16, lineCap: .round))
+            note.fill(flag, with: ink)
+            if kind == 5 {
+                note.fill(Path(ellipseIn: CGRect(x: 2.0, y: -0.25, width: 0.40, height: 0.40)), with: ink)
+            }
         }
+    }
+
+    private func musicalTint(phase: Double) -> Color {
+        // Similar lightness keeps the pearl/rose/lavender/blue cycle soft instead of flashing.
+        Color(red: 0.68 + 0.30 * (0.5 + 0.5 * sin(phase)),
+              green: 0.67 + 0.28 * (0.5 + 0.5 * sin(phase + 2.1)),
+              blue: 0.72 + 0.27 * (0.5 + 0.5 * sin(phase + 4.2)))
     }
 
     private func drawCausticFamily(
