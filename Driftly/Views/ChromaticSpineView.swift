@@ -8,7 +8,7 @@ struct ChromaticSpineView: View {
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
-            let time = date.timeIntervalSinceReferenceDate * max(0.25, speed)
+            let time = date.timeIntervalSinceReferenceDate * max(0.25, speed) * 0.60
             GeometryReader { proxy in
                 Canvas { context, _ in
                     render(in: context, size: proxy.size, time: time)
