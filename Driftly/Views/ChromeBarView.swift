@@ -17,6 +17,8 @@ struct ChromeBarView: View {
     let onSleepTimer: () -> Void
     let onSettings: () -> Void
     let onNextMode: () -> Void
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -38,76 +40,78 @@ struct ChromeBarView: View {
 #endif
     }
 
+    private var strongerChrome: Bool { reduceTransparency || colorSchemeContrast == .increased }
+
     private var nowPlayingBackgroundTvOS: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThinMaterial)
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.52))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(chromeTint.opacity(0.07))
+                    .fill(chromeTint.opacity(strongerChrome ? 0.07 : 0.035))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    .stroke(Color.white.opacity(strongerChrome ? 0.16 : 0.12), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.14), radius: 10, x: 0, y: 8)
     }
 
     private var actionsBackgroundTvOS: some View {
         RoundedRectangle(cornerRadius: 13, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.82))
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.46))
             .overlay(
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    .stroke(Color.white.opacity(strongerChrome ? 0.14 : 0.10), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.20), radius: 9, x: 0, y: 7)
+            .shadow(color: Color.black.opacity(0.12), radius: 9, x: 0, y: 7)
     }
 
     private var iPhoneShellBackground: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.72))
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.50))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(chromeTint.opacity(0.045))
+                    .fill(chromeTint.opacity(strongerChrome ? 0.045 : 0.025))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.white.opacity(strongerChrome ? 0.12 : 0.09), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 5)
+            .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 5)
     }
 
     private var iPadNowPlayingBackground: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.74))
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.54))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(chromeTint.opacity(0.06))
+                    .fill(chromeTint.opacity(strongerChrome ? 0.06 : 0.03))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.white.opacity(strongerChrome ? 0.12 : 0.09), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.18), radius: 9, x: 0, y: 6)
+            .shadow(color: .black.opacity(0.12), radius: 9, x: 0, y: 6)
     }
 
     private var actionsBackgroundIOS: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.60))
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.42))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color.white.opacity(0.085), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.11), radius: 5, x: 0, y: 3)
+            .shadow(color: .black.opacity(0.08), radius: 5, x: 0, y: 3)
     }
 
     private var actionsBackgroundIPhone: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.68))
+            .fill(.ultraThinMaterial.opacity(strongerChrome ? 1 : 0.40))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.white.opacity(strongerChrome ? 0.12 : 0.09), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.16), radius: 6, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.10), radius: 6, x: 0, y: 4)
     }
 
     private var nowPlayingLabelIOS: some View {
@@ -317,6 +321,8 @@ private struct CircleButton: View {
     var isPadOS: Bool = false
     var isFocused: Bool = false
     var tintColor: Color? = nil
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     var body: some View {
         Button(action: action) {
@@ -357,7 +363,9 @@ private struct CircleButton: View {
 
     private func buttonFill(isFocused: Bool, isTvOS: Bool) -> Color {
         guard isTvOS else { return Color.white.opacity(0.05) }
-        return isFocused ? Color(red: 0.12, green: 0.14, blue: 0.19).opacity(0.94) : Color(red: 0.10, green: 0.11, blue: 0.15).opacity(0.88)
+        let stronger = reduceTransparency || colorSchemeContrast == .increased
+        return isFocused ? Color(red: 0.12, green: 0.14, blue: 0.19).opacity(stronger ? 0.94 : 0.70)
+            : Color(red: 0.10, green: 0.11, blue: 0.15).opacity(stronger ? 0.88 : 0.38)
     }
 
     private func buttonHighlight(isFocused: Bool, isTvOS: Bool) -> LinearGradient {
