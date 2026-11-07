@@ -5,56 +5,63 @@ struct VitalWaveView: View {
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var residentRoute: VitalWaveResident.Route?
 
     var body: some View {
         PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
             let time = date.timeIntervalSinceReferenceDate * max(0.25, speed)
-            Canvas { context, size in
-                let bounds = Path(CGRect(origin: .zero, size: size))
-                context.fill(bounds, with: .linearGradient(
-                    Gradient(colors: [config.palette.backgroundTop, Color(red: 0.018, green: 0.035, blue: 0.065),
-                                      config.palette.backgroundBottom]),
-                    startPoint: .zero, endPoint: CGPoint(x: size.width, y: size.height)
-                ))
-                let unit = VitalWaveSurface.unit(in: size)
-                let columns = Int(ceil(size.width / unit))
-                let rows = Int(ceil(size.height / unit))
-                for row in -1...rows {
-                    for column in -1...columns {
-                        drawCell(column: column, row: row, unit: unit, in: context, time: time)
+            GeometryReader { proxy in
+                Canvas { context, size in
+                    let bounds = Path(CGRect(origin: .zero, size: size))
+                    context.fill(bounds, with: .linearGradient(
+                        Gradient(colors: [config.palette.backgroundTop, Color(red: 0.018, green: 0.035, blue: 0.065),
+                                          config.palette.backgroundBottom]),
+                        startPoint: .zero, endPoint: CGPoint(x: size.width, y: size.height)
+                    ))
+                    let unit = VitalWaveSurface.unit(in: size)
+                    let columns = Int(ceil(size.width / unit))
+                    let rows = Int(ceil(size.height / unit))
+                    let resident = residentRoute.map { VitalWaveResident.pose(size: size, time: time, route: $0) }
+                    for row in -1...rows {
+                        for column in -1...columns {
+                            drawCell(column: column, row: row, unit: unit, in: context,
+                                     size: size, time: time, resident: resident)
+                        }
+                    }
+                    if let resident, resident.occupiedCell == nil {
+                        VitalWaveResidentArtwork.draw(in: context, pose: resident, size: size, time: time)
+                    }
+                    context.fill(bounds, with: .radialGradient(
+                        Gradient(colors: [.clear, .black.opacity(0.34)]),
+                        center: CGPoint(x: size.width * 0.52, y: size.height * 0.46),
+                        startRadius: min(size.width, size.height) * 0.22,
+                        endRadius: max(size.width, size.height) * 0.80
+                    ))
+                }
+                .task(id: VitalWaveResident.Layout(size: proxy.size)) {
+                    let layout = VitalWaveResident.Layout(size: proxy.size)
+                    if residentRoute?.layout != layout {
+                        residentRoute = VitalWaveResident.Route(size: proxy.size)
                     }
                 }
-                context.fill(bounds, with: .radialGradient(
-                    Gradient(colors: [.clear, .black.opacity(0.34)]),
-                    center: CGPoint(x: size.width * 0.52, y: size.height * 0.46),
-                    startRadius: min(size.width, size.height) * 0.22,
-                    endRadius: max(size.width, size.height) * 0.80
-                ))
+                .blur(radius: 0.65)
             }
-            .blur(radius: 0.65)
             .ignoresSafeArea()
         }
     }
 
-    private func drawCell(column: Int, row: Int, unit: Double, in context: GraphicsContext, time: Double) {
+    private func drawCell(column: Int, row: Int, unit: Double, in context: GraphicsContext,
+                          size: CGSize, time: Double, resident: VitalWaveResident.Pose?) {
         let cell = VitalWaveSurface.cell(column: column, row: row, unit: unit, time: time)
-        let corners = cell.corners
         let center = cell.center
-        let opening = 0.78 + 0.08 * cell.lift
-        let points = corners.map { CGPoint(x: center.x + ($0.x - center.x) * opening,
-                                          y: center.y + ($0.y - center.y) * opening) }
+        let id = VitalWaveResident.CellID(column: column, row: row)
+        let wobble = resident.map { VitalWaveResident.deformation(for: id, pose: $0) } ?? 0
+        let points = cell.points(wobble: wobble)
         func blend(_ a: CGPoint, _ b: CGPoint, _ mix: Double) -> CGPoint {
             CGPoint(x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix)
         }
         // Rounded, uneven cells leave dark channels between the moving opalescent surfaces.
-        var membrane = Path()
-        membrane.move(to: blend(points[0], points[1], 0.28))
-        for corner in 1...4 {
-            let index = corner % 4
-            membrane.addLine(to: blend(points[index], points[(index + 3) % 4], 0.28))
-            membrane.addQuadCurve(to: blend(points[index], points[(index + 1) % 4], 0.28), control: points[index])
-        }
-        membrane.closeSubpath()
+        let membrane = cell.membrane(wobble: wobble)
         let phase = time * 0.022 + 0.65 * sin(Double(column) * 1.3 + Double(row) * 0.8)
         let tint = color(phase), edge = color(phase + 1.2)
         let start = blend(points[0], center, 0.15)
@@ -67,6 +74,10 @@ struct VitalWaveView: View {
                 .init(color: edge.opacity(0.07), location: 1)
             ]), startPoint: start, endPoint: end
         ))
+        // The resident sits under the cell's translucent folds; there is only one drawing host.
+        if let resident, resident.occupiedCell == id {
+            VitalWaveResidentArtwork.draw(in: context, pose: resident, size: size, time: time)
+        }
         context.stroke(membrane, with: .linearGradient(
             Gradient(colors: [edge.opacity(0.02), tint.opacity(0.20 + cell.lift * 0.12), .clear]),
             startPoint: start, endPoint: end
@@ -115,6 +126,28 @@ enum VitalWaveSurface {
         let center: CGPoint
         let phase: Double
         let lift: Double
+
+        func points(wobble: Double = 0) -> [CGPoint] {
+            let opening = 0.78 + 0.08 * lift
+            return corners.map { CGPoint(x: center.x + ($0.x - center.x) * opening * (1 + wobble),
+                                         y: center.y + ($0.y - center.y) * opening * (1 - wobble)) }
+        }
+
+        func membrane(wobble: Double = 0) -> Path {
+            let points = points(wobble: wobble)
+            func blend(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
+                CGPoint(x: a.x + (b.x - a.x) * 0.28, y: a.y + (b.y - a.y) * 0.28)
+            }
+            var path = Path()
+            path.move(to: blend(points[0], points[1]))
+            for corner in 1...4 {
+                let index = corner % 4
+                path.addLine(to: blend(points[index], points[(index + 3) % 4]))
+                path.addQuadCurve(to: blend(points[index], points[(index + 1) % 4]), control: points[index])
+            }
+            path.closeSubpath()
+            return path
+        }
     }
     static func unit(in size: CGSize) -> Double { max(60, min(size.width, size.height) * 0.24) }
 
