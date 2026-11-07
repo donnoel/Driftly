@@ -543,7 +543,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Driftly/Driftly.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -561,7 +561,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -585,7 +585,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Driftly/Driftly.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -603,7 +603,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -850,7 +850,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = DriftlyTV/DriftlyTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -865,7 +865,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
@@ -889,7 +889,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = DriftlyTV/DriftlyTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = H7LG8SK72M;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -904,7 +904,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
@@ -1014,12 +1014,12 @@
 		A0170000000000000000000D = {isa = XCBuildConfiguration; buildSettings = {
                 APPLICATION_EXTENSION_API_ONLY = YES;
                 CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 5;
+                CURRENT_PROJECT_VERSION = 6;
                 DEVELOPMENT_TEAM = H7LG8SK72M;
                 GENERATE_INFOPLIST_FILE = YES;
                 INFOPLIST_FILE = DriftlyTopShelf/Info.plist;
                 LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
-                MARKETING_VERSION = 2.3;
+                MARKETING_VERSION = 3.0;
                 PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV.TopShelf;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SDKROOT = appletvos;
@@ -1034,12 +1034,12 @@
 		A0170000000000000000000E = {isa = XCBuildConfiguration; buildSettings = {
                 APPLICATION_EXTENSION_API_ONLY = YES;
                 CODE_SIGN_STYLE = Automatic;
-                CURRENT_PROJECT_VERSION = 5;
+                CURRENT_PROJECT_VERSION = 6;
                 DEVELOPMENT_TEAM = H7LG8SK72M;
                 GENERATE_INFOPLIST_FILE = YES;
                 INFOPLIST_FILE = DriftlyTopShelf/Info.plist;
                 LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
-                MARKETING_VERSION = 2.3;
+                MARKETING_VERSION = 3.0;
                 PRODUCT_BUNDLE_IDENTIFIER = dn.DriftlyTV.TopShelf;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SDKROOT = appletvos;
