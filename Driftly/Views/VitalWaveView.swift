@@ -4,216 +4,133 @@ struct VitalWaveView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        PausableTimelineView(paused: animationsPaused) { date in
-            let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
-
-            ZStack {
-                DriftLiquidLampView(
-                    palette: config.palette,
-                    blobCount: 6,
-                    blur: 56,
-                    energy: 0.74,
-                    speed: speed
-                )
-
-                // Soft, premium background glow (breathing + drifting)
-                VitalWaveBackgroundGlow(palette: config.palette, t: t)
-                    .blendMode(.screen)
-                    .opacity(0.56)
-
-                // Vital waveform: smooth most of the time, with occasional spike bursts
-                VitalWaveSpikyLine(
-                    color: config.palette.secondary,
-                    baseAmplitude: 22,
-                    spikeAmplitude: 58,
-                    period: 12,
-                    t: t
-                )
-                .blendMode(.screen)
-                .opacity(0.28)
-                .blur(radius: 1.0)
-
-                // Premium random detail: drifting micro-glints
-                VitalWaveGlints(
-                    primary: config.palette.primary,
-                    secondary: config.palette.tertiary,
-                    t: t
-                )
-                .blendMode(.screen)
-                .opacity(0.13)
-            }
-        }
-    }
-}
-
-
-// MARK: - Vital Wave Enhancements
-
-private struct VitalWaveBackgroundGlow: View {
-    let palette: DriftPalette
-    let t: Double
-
-    var body: some View {
-        GeometryReader { proxy in
-            let s = proxy.size
-            Rectangle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            palette.primary.opacity(0.18),
-                            palette.secondary.opacity(0.07),
-                            palette.tertiary.opacity(0.04),
-                            Color.clear
-                        ],
-                        center: UnitPoint(
-                            x: 0.50 + 0.08 * sin(t * 0.038),
-                            y: 0.52 + 0.10 * cos(t * 0.032)
-                        ),
-                        startRadius: 0,
-                        endRadius: max(s.width, s.height) * 0.84
-                    )
-                )
-                .ignoresSafeArea()
-        }
-    }
-}
-
-private struct VitalWaveSpikyLine: View {
-    let color: Color
-    let baseAmplitude: CGFloat
-    let spikeAmplitude: CGFloat
-    let period: Double
-    let t: Double
-
-    var body: some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-
-            Canvas { context, _ in
-                let midY = size.height * 0.52
-                let width = size.width
-
-                // Smooth "random" burst + spike position (prevents visible jumps between cycles)
-                let window = 9.5
-                let cycle0 = Int(floor(t / window))
-                let u = fract(t / window) // 0..1 within window
-                let s = smoothstep(u)      // smooth crossfade
-
-                // Turn hash into a soft probability (0..1) instead of a hard on/off
-                let p0 = smoothstep(0.76, 1.00, hash01(cycle0, 941))
-                let p1 = smoothstep(0.76, 1.00, hash01(cycle0 + 1, 941))
-                let burstStrength = lerp(p0, p1, s)
-
-                // A gentle envelope that breathes during the window
-                let envelope = 0.45 + 0.55 * (0.5 + 0.5 * sin(u * Double.pi * 2.0))
-                let burstEnvelope = burstStrength * envelope
-
-                let amp = baseAmplitude
-                let spikeAmp = spikeAmplitude * CGFloat(pow(max(0.0, burstEnvelope), 1.6))
-
-                // Smooth spike center across windows too
-                let x0 = 0.20 + 0.62 * fract(0.11 * (Double(cycle0) * window) + 0.37 * hash01(cycle0, 177))
-                let x1 = 0.20 + 0.62 * fract(0.11 * (Double(cycle0 + 1) * window) + 0.37 * hash01(cycle0 + 1, 177))
-                let spikeCenter = lerp(x0, x1, s)
-
-                var path = Path()
-                path.move(to: CGPoint(x: 0, y: midY))
-
-                let step: CGFloat = 3
-                for x in stride(from: 0, through: width, by: step) {
-                    let p = Double(x / max(width, 1))
-
-                    // Base smooth wave
-                    let base = sin((t / period + p) * Double.pi * 2.0) * 0.48
-                        + cos((t / (period * 1.40) + p * 1.42) * Double.pi * 2.0) * 0.18
-
-                    // Spike pulse: a narrow gaussian-ish bump that slides across
-                    let spikeX = spikeCenter
-                    let d = (p - spikeX)
-                    let bump = exp(-pow(d * 15.0, 2.0))
-
-                    let y = midY - (CGFloat(base) * amp) - (spikeAmp * CGFloat(bump))
-                    path.addLine(to: CGPoint(x: x, y: y))
+        PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
+            let time = date.timeIntervalSinceReferenceDate * max(0.25, speed)
+            Canvas { context, size in
+                let bounds = Path(CGRect(origin: .zero, size: size))
+                context.fill(bounds, with: .linearGradient(
+                    Gradient(colors: [config.palette.backgroundTop, Color(red: 0.018, green: 0.035, blue: 0.065),
+                                      config.palette.backgroundBottom]),
+                    startPoint: .zero, endPoint: CGPoint(x: size.width, y: size.height)
+                ))
+                let unit = VitalWaveSurface.unit(in: size)
+                let columns = Int(ceil(size.width / unit))
+                let rows = Int(ceil(size.height / unit))
+                for row in -1...rows {
+                    for column in -1...columns {
+                        drawCell(column: column, row: row, unit: unit, in: context, time: time)
+                    }
                 }
-
-                // Glow underlay
-                context.stroke(path, with: .color(color.opacity(0.10)), lineWidth: 8.0)
-                context.stroke(path, with: .color(color.opacity(0.14)), lineWidth: 4.8)
-
-                // Core line
-                context.stroke(path, with: .color(color.opacity(0.24)), lineWidth: 1.5)
-                context.stroke(path, with: .color(Color.white.opacity(0.07)), lineWidth: 0.8)
+                context.fill(bounds, with: .radialGradient(
+                    Gradient(colors: [.clear, .black.opacity(0.34)]),
+                    center: CGPoint(x: size.width * 0.52, y: size.height * 0.46),
+                    startRadius: min(size.width, size.height) * 0.22,
+                    endRadius: max(size.width, size.height) * 0.80
+                ))
             }
+            .blur(radius: 0.65)
             .ignoresSafeArea()
         }
     }
 
-    private func fract(_ x: Double) -> Double { x - floor(x) }
+    private func drawCell(column: Int, row: Int, unit: Double, in context: GraphicsContext, time: Double) {
+        let cell = VitalWaveSurface.cell(column: column, row: row, unit: unit, time: time)
+        let corners = cell.corners
+        let center = cell.center
+        let opening = 0.78 + 0.08 * cell.lift
+        let points = corners.map { CGPoint(x: center.x + ($0.x - center.x) * opening,
+                                          y: center.y + ($0.y - center.y) * opening) }
+        func blend(_ a: CGPoint, _ b: CGPoint, _ mix: Double) -> CGPoint {
+            CGPoint(x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix)
+        }
+        // Rounded, uneven cells leave dark channels between the moving opalescent surfaces.
+        var membrane = Path()
+        membrane.move(to: blend(points[0], points[1], 0.28))
+        for corner in 1...4 {
+            let index = corner % 4
+            membrane.addLine(to: blend(points[index], points[(index + 3) % 4], 0.28))
+            membrane.addQuadCurve(to: blend(points[index], points[(index + 1) % 4], 0.28), control: points[index])
+        }
+        membrane.closeSubpath()
+        let phase = time * 0.022 + 0.65 * sin(Double(column) * 1.3 + Double(row) * 0.8)
+        let tint = color(phase), edge = color(phase + 1.2)
+        let start = blend(points[0], center, 0.15)
+        let end = blend(points[2], center, 0.1)
+        context.fill(membrane, with: .linearGradient(
+            Gradient(stops: [
+                .init(color: tint.opacity(0.10), location: 0),
+                .init(color: tint.opacity(0.23 + cell.lift * 0.15), location: 0.34),
+                .init(color: edge.opacity(0.32 + cell.lift * 0.16), location: 0.68),
+                .init(color: edge.opacity(0.07), location: 1)
+            ]), startPoint: start, endPoint: end
+        ))
+        context.stroke(membrane, with: .linearGradient(
+            Gradient(colors: [edge.opacity(0.02), tint.opacity(0.20 + cell.lift * 0.12), .clear]),
+            startPoint: start, endPoint: end
+        ), style: StrokeStyle(lineWidth: max(0.7, unit * 0.007), lineJoin: .round))
 
-    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) * t }
-
-    // Clamp then smoothstep
-    private func smoothstep(_ x: Double) -> Double {
-        let t = max(0.0, min(1.0, x))
-        return t * t * (3.0 - 2.0 * t)
+        // An off-center fold catches the passing wave, like light under polished sea glass.
+        let fold = CGPoint(x: center.x + unit * 0.12 * sin(cell.phase + time * 0.06),
+                           y: center.y + unit * 0.08 * cos(cell.phase - time * 0.05))
+        var facet = Path()
+        facet.move(to: blend(points[0], points[1], 0.28))
+        facet.addQuadCurve(to: blend(points[1], points[2], 0.58),
+                           control: blend(points[1], center, 0.25))
+        facet.addQuadCurve(to: blend(points[2], points[3], 0.58), control: fold)
+        facet.addQuadCurve(to: blend(points[0], points[1], 0.28), control: blend(points[0], center, 0.30))
+        context.fill(facet, with: .linearGradient(
+            Gradient(colors: [Color.white.opacity(0.015), edge.opacity(0.05 + cell.lift * 0.12), .clear]),
+            startPoint: points[0], endPoint: points[2]
+        ))
+        var lip = Path()
+        lip.move(to: blend(points[0], points[1], 0.28))
+        lip.addQuadCurve(to: blend(points[1], points[2], 0.35),
+                         control: blend(points[1], center, 0.15 + 0.07 * cell.lift))
+        context.stroke(lip, with: .linearGradient(
+            Gradient(colors: [.clear, Color.white.opacity(0.07 + cell.lift * 0.12), .clear]),
+            startPoint: points[0], endPoint: points[2]
+        ), style: StrokeStyle(lineWidth: max(0.6, unit * 0.005), lineCap: .round))
     }
 
-    private func smoothstep(_ x: Double, _ y: Double, _ v: Double) -> Double {
-        return smoothstep((v - x) / max(0.0001, (y - x)))
-    }
-
-    // Deterministic hash to 0..1
-    private func hash01(_ x: Int, _ seed: Int) -> Double {
-        var n = x &* 374761393 &+ seed &* 668265263
-        n = (n ^ (n >> 13)) &* 1274126177
-        let v = Double(n & 0x7fffffff) / 2147483647.0
-        return v
+    private static let colors: [SIMD3<Double>] = [SIMD3(0.23, 0.82, 0.77), SIMD3(0.36, 0.60, 0.99),
+                                                 SIMD3(0.78, 0.40, 0.91), SIMD3(1, 0.43, 0.51),
+                                                 SIMD3(1, 0.73, 0.36)]
+    private func color(_ phase: Double) -> Color {
+        let whole = floor(phase)
+        let index = ((Int(whole) % Self.colors.count) + Self.colors.count) % Self.colors.count
+        let fraction = phase - whole
+        let mix = fraction * fraction * (3 - 2 * fraction)
+        let rgb = Self.colors[index] * (1 - mix) + Self.colors[(index + 1) % Self.colors.count] * mix
+        return Color(red: rgb.x, green: rgb.y, blue: rgb.z)
     }
 }
 
-private struct VitalWaveGlints: View {
-    let primary: Color
-    let secondary: Color
-    let t: Double
-
-    var body: some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-
-            Canvas { context, _ in
-                let count = 58
-                let w = max(size.width, 1)
-                let h = max(size.height, 1)
-
-                for i in 0..<count {
-                    let u = Double(i) * 0.31
-                    let x = CGFloat(fract(0.055 * u + 0.008 * t)) * w
-                    let y = CGFloat(fract(0.090 * u + 0.006 * t + 0.2)) * h
-
-                    // Occasional twinkle per particle
-                    let tw = 0.5 + 0.5 * sin(t * (0.55 + 0.16 * hash01(i, 33)) + u)
-                    let r = CGFloat(0.7 + 1.8 * hash01(i, 91))
-                    let a = 0.008 + 0.032 * tw
-
-                    let c = (i % 2 == 0) ? primary : secondary
-                    context.fill(
-                        Path(ellipseIn: CGRect(x: x, y: y, width: r, height: r)),
-                        with: .color(c.opacity(a))
-                    )
-                }
-            }
-            .ignoresSafeArea()
-        }
+/// A bounded, continuously deforming mesh; neighboring cells share the same underlying corners.
+enum VitalWaveSurface {
+    struct Cell {
+        let corners: [CGPoint]
+        let center: CGPoint
+        let phase: Double
+        let lift: Double
     }
+    static func unit(in size: CGSize) -> Double { max(60, min(size.width, size.height) * 0.24) }
 
-    private func fract(_ x: Double) -> Double { x - floor(x) }
-
-    private func hash01(_ x: Int, _ seed: Int) -> Double {
-        var n = x &* 374761393 &+ seed &* 668265263
-        n = (n ^ (n >> 13)) &* 1274126177
-        let v = Double(n & 0x7fffffff) / 2147483647.0
-        return v
+    static func cell(column: Int, row: Int, unit: Double, time: Double) -> Cell {
+        func vertex(_ x: Int, _ y: Int) -> CGPoint {
+            let phase = Double(x) * 1.71 + Double(y) * 2.19
+            return CGPoint(x: (Double(x) + 0.15 * sin(time * 0.055 + phase)) * unit,
+                           y: (Double(y) + 0.14 * cos(time * 0.049 + phase * 1.31)) * unit)
+        }
+        let corners = [vertex(column, row), vertex(column + 1, row),
+                       vertex(column + 1, row + 1), vertex(column, row + 1)]
+        let center = CGPoint(x: corners.reduce(0) { $0 + $1.x } / 4,
+                             y: corners.reduce(0) { $0 + $1.y } / 4)
+        let phase = Double(column) * 0.72 + Double(row) * 0.93
+        let tide = 0.5 + 0.5 * sin(Double(column) * 0.70 + Double(row) * 0.52 - time * 0.13)
+        let lift = tide * tide * (3 - 2 * tide)
+        return Cell(corners: corners, center: center, phase: phase, lift: lift)
     }
 }
