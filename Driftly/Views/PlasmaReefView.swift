@@ -108,7 +108,7 @@ struct PlasmaReefView: View {
         let fade = min(1, min(elapsed / 1.2, (route.endTime - time) / 1.6))
         let alpha = fade * fade * (3 - 2 * fade)
         let pose = route.pose(size: size, time: time)
-        let radius = min(12, max(5, min(size.width, size.height) * 0.018))
+        let radius = PlasmaReefHopper.creatureRadius(in: size)
         if let landing = route.hops.last(where: { $0.arrival <= time }) {
             drawLandingStars(in: context, foot: pose.foot, radius: radius,
                              age: time - landing.arrival, opacity: alpha)
@@ -139,9 +139,12 @@ struct PlasmaReefView: View {
         let bodyHeight = radius * (1.35 - pose.compression * 0.55)
         let body = CGRect(x: -bodyWidth, y: -bodyHeight * 1.65, width: bodyWidth * 2, height: bodyHeight * 1.6)
         var tail = Path()
+        let tailWave = time * 0.85
         tail.move(to: CGPoint(x: -radius * 0.55, y: -radius * 0.65))
-        tail.addQuadCurve(to: CGPoint(x: -radius * 2.2, y: -radius * 0.80),
-                          control: CGPoint(x: -radius * 1.6, y: -radius * (1.5 + 0.2 * sin(time * 2))))
+        tail.addCurve(to: CGPoint(x: -radius * (2.2 + 0.10 * sin(tailWave)),
+                                  y: radius * (-0.80 + 0.28 * sin(tailWave - 0.7))),
+                      control1: CGPoint(x: -radius, y: radius * (-0.95 + 0.18 * sin(tailWave))),
+                      control2: CGPoint(x: -radius * 1.7, y: radius * (-1.25 + 0.40 * sin(tailWave - 0.4))))
         creature.stroke(tail, with: .color(config.palette.secondary.opacity(0.45)), style: StrokeStyle(lineWidth: radius * 0.24, lineCap: .round))
         creature.fill(Path(ellipseIn: body), with: .linearGradient(
             Gradient(colors: [Color.white.opacity(0.74), config.palette.tertiary.opacity(0.66), config.palette.secondary.opacity(0.45)]),
@@ -149,10 +152,13 @@ struct PlasmaReefView: View {
         ))
         for side in [-1.0, 1.0] {
             let x = radius * CGFloat(side) * 0.5
+            let feelerWave = time * 0.67 + side * 0.75
             var feeler = Path()
             feeler.move(to: CGPoint(x: x, y: body.minY + radius * 0.3))
-            feeler.addQuadCurve(to: CGPoint(x: x + radius * 0.3, y: body.minY - radius * 0.75),
-                                control: CGPoint(x: x - radius * 0.25, y: body.minY - radius * 0.25))
+            feeler.addQuadCurve(to: CGPoint(x: x + radius * (0.3 + 0.22 * sin(feelerWave)),
+                                            y: body.minY - radius * (0.75 + 0.06 * cos(feelerWave))),
+                                control: CGPoint(x: x + radius * (-0.25 + 0.18 * sin(feelerWave - 0.5)),
+                                                 y: body.minY - radius * 0.25))
             creature.stroke(feeler, with: .color(config.palette.tertiary.opacity(0.6)), style: StrokeStyle(lineWidth: radius * 0.19, lineCap: .round))
         }
         creature.fill(Path(ellipseIn: CGRect(x: radius * 0.35, y: body.minY + body.height * 0.38, width: radius * 0.28, height: radius * 0.34)), with: .color(config.palette.backgroundBottom.opacity(0.9)))
@@ -233,6 +239,14 @@ enum PlasmaReefHopper {
     static let slabCount = 26
     static let cycleDuration = 14.0
     static let flightDuration = 1.25
+
+    static func creatureRadius(in size: CGSize) -> CGFloat {
+        min(12, max(5, min(size.width, size.height) * 0.018))
+    }
+
+    private static func visibleMargin(in size: CGSize) -> CGFloat {
+        max(min(size.width, size.height) * 0.045, creatureRadius(in: size) * 3.3 + 3)
+    }
 
     struct RouteKey: Hashable {
         let width: CGFloat
@@ -334,7 +348,7 @@ enum PlasmaReefHopper {
     static func safePerch(index: Int, size: CGSize, from start: Double, through end: Double) -> Bool {
         let first = slab(index: index, size: size, time: start)
         let last = slab(index: index, size: size, time: end)
-        let margin = min(size.width, size.height) * 0.045
+        let margin = visibleMargin(in: size)
         return first.wrap == last.wrap && [first.contact, last.contact].allSatisfy {
             $0.x > margin && $0.x < size.width - margin && $0.y > margin && $0.y < size.height - margin
         }
@@ -344,13 +358,29 @@ enum PlasmaReefHopper {
         guard size.width > 1, size.height > 1 else { return nil }
         let start = floor(time / cycleDuration) * cycleDuration
         let firstDeparture = start + 2
+        // Travel through the reef instead of returning to its center every fourteen seconds.
+        let stations: [CGPoint] = [CGPoint(x: 0.50, y: 0.50), CGPoint(x: 0.82, y: 0.22),
+                                  CGPoint(x: 0.50, y: 0.16), CGPoint(x: 0.18, y: 0.22),
+                                  CGPoint(x: 0.16, y: 0.52), CGPoint(x: 0.20, y: 0.84),
+                                  CGPoint(x: 0.50, y: 0.86), CGPoint(x: 0.82, y: 0.82),
+                                  CGPoint(x: 0.84, y: 0.52)]
+        let cycle = Int(floor((start - initialPhase) / cycleDuration))
+        let station = (cycle % stations.count + stations.count) % stations.count
+        let from = stations[station]
+        let to = stations[(station + 1) % stations.count]
+        func goal(_ progress: CGFloat) -> CGPoint {
+            CGPoint(x: size.width * (from.x + (to.x - from.x) * progress),
+                    y: size.height * (from.y + (to.y - from.y) * progress))
+        }
+        func distanceToGoal(_ point: CGPoint, _ target: CGPoint) -> CGFloat {
+            hypot((point.x - target.x) / size.width, (point.y - target.y) / size.height)
+        }
         let source = (0..<slabCount).filter {
             safePerch(index: $0, size: size, from: start, through: firstDeparture)
         }.min {
             let a = slab(index: $0, size: size, time: firstDeparture).contact
             let b = slab(index: $1, size: size, time: firstDeparture).contact
-            return hypot(a.x - size.width * 0.48, a.y - size.height * 0.55)
-                < hypot(b.x - size.width * 0.48, b.y - size.height * 0.55)
+            return distanceToGoal(a, goal(0)) < distanceToGoal(b, goal(0))
         }
         guard var current = source else { return nil }
         let initialSlab = current
@@ -367,14 +397,23 @@ enum PlasmaReefHopper {
                       safePerch(index: index, size: size, from: departure, through: waitEnd) else { return false }
                 let landing = slab(index: index, size: size, time: arrival).contact
                 let dy = abs(landing.y - launch.y)
-                return abs(landing.x - launch.x) < base * 0.6 && dy > base * 0.045 && dy < base * 0.23
+                guard abs(landing.x - launch.x) < base * 0.6 && dy > base * 0.045 && dy < base * 0.23 else { return false }
+                let hop = Hop(source: current, target: index, departure: departure,
+                              launch: launch, landing: landing, gravity: Double(base) * 0.95)
+                // The flight apex needs headroom too, including the rotating tail and feelers.
+                let vy = Double(landing.y - launch.y) / flightDuration - 0.5 * hop.gravity * flightDuration
+                let apex = hop.position(at: departure + max(0, min(flightDuration, -vy / hop.gravity)))
+                return [launch, apex, landing].allSatisfy {
+                    $0.x >= visibleMargin(in: size) && $0.x <= size.width - visibleMargin(in: size)
+                        && $0.y >= visibleMargin(in: size) && $0.y <= size.height - visibleMargin(in: size)
+                }
             }
             let target = candidates.min { a, b in
                 func score(_ index: Int) -> CGFloat {
                     let point = slab(index: index, size: size, time: arrival).contact
                     let dy = point.y - launch.y
-                    let directionPenalty: CGFloat = (step % 2 == 0 ? dy > 0 : dy < 0) ? base * 0.25 : 0
-                    return abs(point.x - launch.x) * 0.7 + abs(abs(dy) - base * 0.12) + directionPenalty
+                    return distanceToGoal(point, goal(CGFloat(step + 1) / 3)) * base
+                        + abs(point.x - launch.x) * 0.08 + abs(abs(dy) - base * 0.12) * 0.15
                 }
                 return score(a) < score(b)
             }

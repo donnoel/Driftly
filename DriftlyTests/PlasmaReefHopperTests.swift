@@ -56,6 +56,35 @@ struct PlasmaReefHopperTests {
         #expect(!PlasmaReefHopper.safePerch(index: 0, size: size, from: wrapTime - 0.1, through: wrapTime + 0.1))
     }
 
+    @Test func roamingRoutesVisitAllSidesWithoutClippingTheCreature() {
+        for size in [CGSize(width: 393, height: 852), CGSize(width: 1032, height: 1376),
+                     CGSize(width: 1376, height: 1032), CGSize(width: 1920, height: 1080)] {
+            var minX = 1.0, maxX = 0.0, minY = 1.0, maxY = 0.0
+            var routeCount = 0
+            var clippedSamples = 0
+            let margin = PlasmaReefHopper.creatureRadius(in: size) * 3.3 + 3
+            for cycle in 0..<18 {
+                let time = PlasmaReefHopper.initialPhase + Double(cycle) * PlasmaReefHopper.cycleDuration
+                guard let route = PlasmaReefHopper.route(size: size, time: time) else { continue }
+                routeCount += 1
+                for sample in 0...56 {
+                    let t = route.startTime + (route.endTime - route.startTime) * Double(sample) / 56
+                    let foot = route.pose(size: size, time: t).foot
+                    minX = min(minX, foot.x / size.width)
+                    maxX = max(maxX, foot.x / size.width)
+                    minY = min(minY, foot.y / size.height)
+                    maxY = max(maxY, foot.y / size.height)
+                    if foot.x < margin || foot.x > size.width - margin
+                        || foot.y < margin || foot.y > size.height - margin { clippedSamples += 1 }
+                }
+            }
+            #expect(routeCount >= 12, "Expected frequent visible routes at \(size)")
+            #expect(clippedSamples == 0, "Creature needs room for its rotating body, tail and feelers at \(size)")
+            #expect(minX < 0.20 && maxX > 0.80, "Horizontal coverage \(minX)...\(maxX) at \(size)")
+            #expect(minY < 0.23 && maxY > 0.78, "Vertical coverage \(minY)...\(maxY) at \(size)")
+        }
+    }
+
     private func distance(_ a: CGPoint, _ b: CGPoint) -> Double {
         hypot(Double(a.x - b.x), Double(a.y - b.y))
     }
