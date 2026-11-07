@@ -53,48 +53,36 @@ struct CausticSilkView: View {
         var glow = context
         glow.blendMode = .plusLighter
 
+        drawCausticFamily(in: &glow, size: size, time: t)
         drawMusicalNotes(
             in: &glow,
             size: size,
             time: t,
             count: lineCount(for: size, divisor: 110, minimum: 10, maximum: 16)
         )
-        drawCausticFamily(
-            in: &glow,
-            size: size,
-            time: t,
-            family: 2,
-            count: lineCount(for: size, divisor: 94, minimum: 5, maximum: 10)
-        )
 
         drawGlints(in: &glow, size: size, time: t)
         drawVignette(in: context, size: size)
     }
 
-    /// Slender, calligraphic notes float through the silk like a quiet, unwritten melody.
+    /// Calligraphic notes climb and descend the shared, flowing staff like a quiet melody.
     private func drawMusicalNotes(
         in context: inout GraphicsContext,
         size: CGSize,
         time t: Double,
         count: Int
     ) {
-        let base = min(size.width, size.height)
         for index in 0..<count {
             let phase = Double(index) * 1.73
-            let rx = DriftNoise.fract((Double(index) + 0.5) * 0.61803398875)
-            let ry = DriftNoise.fract((Double(index) + 0.5) * 0.754877666 + 0.23)
-            let center = CGPoint(
-                x: size.width * CGFloat(0.12 + 0.76 * rx + 0.075 * sin(t * (0.078 + 0.006 * Double(index % 3)) + phase)),
-                y: size.height * CGFloat(0.15 + 0.71 * ry + 0.075 * cos(t * 0.071 + phase * 1.3))
-            )
-            let unit = max(3.8, base * CGFloat(0.010 + 0.003 * DriftNoise.hash(index, 19, seed: 1200)))
+            let pose = CausticSilkScore.note(index: index, size: size, time: t)
+            let center = pose.head
+            let unit = pose.unit
             let pulse = 0.5 + 0.5 * sin(t * 0.14 + phase)
             let color = musicalTint(phase: t * 0.045 + phase)
             let accent = musicalTint(phase: t * 0.045 + phase + 2.1)
             let kind = index % 6
             var note = context
             note.translateBy(x: center.x, y: center.y)
-            note.rotate(by: .radians(0.15 * sin(phase) + 0.10 * sin(t * 0.085 + phase)))
             note.scaleBy(x: unit, y: unit)
 
             var head = Path(ellipseIn: CGRect(x: -1.25, y: -0.72, width: 2.5, height: 1.44))
@@ -125,14 +113,16 @@ struct CausticSilkView: View {
                 flag.addPath(flag.applying(CGAffineTransform(translationX: 0, y: 1.05)))
             }
             if kind == 4 {
-                let secondHead = head.applying(CGAffineTransform(translationX: 3.6, y: -0.65))
-                head.addPath(secondHead)
-                stem.move(to: CGPoint(x: 4.65, y: -0.93))
-                stem.addQuadCurve(to: CGPoint(x: 4.68, y: -6.75), control: CGPoint(x: 4.78, y: -4.05))
+                let dx = (pose.secondHead.x - center.x) / unit
+                let dy = (pose.secondHead.y - center.y) / unit
+                head.addPath(head.applying(CGAffineTransform(translationX: dx, y: dy)))
+                stem.move(to: CGPoint(x: dx + 1.05, y: dy - 0.28))
+                stem.addQuadCurve(to: CGPoint(x: dx + 1.08, y: dy - 6.1),
+                                  control: CGPoint(x: dx + 1.18, y: dy - 3.4))
                 // A gently sloping, tapered beam joins a pair of eighth notes.
                 flag.move(to: CGPoint(x: 1.0, y: -6.12))
-                flag.addLine(to: CGPoint(x: 4.72, y: -6.79))
-                flag.addLine(to: CGPoint(x: 4.72, y: -6.31))
+                flag.addLine(to: CGPoint(x: dx + 1.12, y: dy - 6.14))
+                flag.addLine(to: CGPoint(x: dx + 1.12, y: dy - 5.70))
                 flag.addLine(to: CGPoint(x: 1.0, y: -5.72))
                 flag.closeSubpath()
             }
@@ -148,6 +138,7 @@ struct CausticSilkView: View {
                 startPoint: CGPoint(x: -1.2, y: 0.8), endPoint: tip
             )
             if kind == 0 {
+                note.fill(head, with: .color(color.opacity(0.10 + 0.04 * pose.climb)))
                 note.stroke(head, with: ink, style: StrokeStyle(lineWidth: 0.19, lineCap: .round))
             } else {
                 note.fill(head, with: ink)
@@ -162,87 +153,49 @@ struct CausticSilkView: View {
 
     private func musicalTint(phase: Double) -> Color {
         // Similar lightness keeps the pearl/rose/lavender/blue cycle soft instead of flashing.
-        Color(red: 0.68 + 0.30 * (0.5 + 0.5 * sin(phase)),
-              green: 0.67 + 0.28 * (0.5 + 0.5 * sin(phase + 2.1)),
-              blue: 0.72 + 0.27 * (0.5 + 0.5 * sin(phase + 4.2)))
+        Color(red: 0.63 + 0.35 * (0.5 + 0.5 * sin(phase)),
+              green: 0.54 + 0.35 * (0.5 + 0.5 * sin(phase + 2.1)),
+              blue: 0.62 + 0.35 * (0.5 + 0.5 * sin(phase + 4.2)))
     }
 
-    private func drawCausticFamily(
-        in context: inout GraphicsContext,
-        size: CGSize,
-        time t: Double,
-        family: Int,
-        count: Int
-    ) {
+    private func drawCausticFamily(in context: inout GraphicsContext, size: CGSize, time t: Double) {
+        let count = CausticSilkScore.railCount
         let steps = 86
-        let phaseOffset = Double(family) * 1.73
-
+        // Color lives inside the flowing scale, so the notes read as part of one silk surface.
+        for index in 0..<(count - 1) {
+            var ribbon = Path()
+            for step in 0...steps {
+                let point = CausticSilkScore.point(u: Double(step) / Double(steps),
+                                                   lane: Double(index), size: size, time: t)
+                if step == 0 { ribbon.move(to: point) } else { ribbon.addLine(to: point) }
+            }
+            for step in (0...steps).reversed() {
+                ribbon.addLine(to: CausticSilkScore.point(u: Double(step) / Double(steps),
+                                                         lane: Double(index + 1), size: size, time: t))
+            }
+            ribbon.closeSubpath()
+            let color = musicalTint(phase: t * 0.025 + Double(index) * 0.76)
+            context.fill(ribbon, with: .linearGradient(
+                Gradient(colors: [color.opacity(0.012), color.opacity(0.055),
+                                  musicalTint(phase: t * 0.025 + Double(index) * 0.76 + 1.8).opacity(0.025)]),
+                startPoint: CGPoint(x: size.width * 0.08, y: size.height),
+                endPoint: CGPoint(x: size.width * 0.92, y: 0)
+            ))
+        }
         for index in 0..<count {
-            let p = (Double(index) + 0.5) / Double(count)
-            let seed = family * 97 + index * 13
-            let drift = 0.5 + 0.5 * sin(t * (0.035 + 0.006 * Double(family)) + p * 5.4)
-            let thickness = CGFloat(0.65 + 1.05 * DriftNoise.hash(index, family + 3, seed: seed))
-            let brightness = 0.08 + 0.20 * drift
-            let color = causticColor(index: index, family: family).opacity(brightness)
-
+            let drift = 0.5 + 0.5 * sin(t * 0.047 + Double(index) * 0.6)
+            let thickness = CGFloat(0.65 + 1.05 * DriftNoise.hash(index, 5, seed: 194 + index * 13))
+            let color = causticColor(index: index, family: 2).opacity(0.08 + 0.20 * drift)
             var path = Path()
             for step in 0...steps {
-                let u = Double(step) / Double(steps)
-                let point = causticPoint(
-                    u: u,
-                    p: p,
-                    size: size,
-                    time: t,
-                    family: family,
-                    seed: seed,
-                    phaseOffset: phaseOffset
-                )
-
-                if step == 0 {
-                    path.move(to: point)
-                } else {
-                    path.addLine(to: point)
-                }
+                let point = CausticSilkScore.point(u: Double(step) / Double(steps),
+                                                   lane: Double(index), size: size, time: t)
+                if step == 0 { path.move(to: point) } else { path.addLine(to: point) }
             }
-
             context.stroke(path, with: .color(color.opacity(0.24)), lineWidth: thickness * 5.0)
             context.stroke(path, with: .color(color.opacity(0.52)), lineWidth: thickness * 2.0)
-            context.stroke(path, with: .color(Color.white.opacity(0.08 + 0.05 * drift)), lineWidth: max(0.5, thickness * 0.55))
-        }
-    }
-
-    private func causticPoint(
-        u: Double,
-        p: Double,
-        size: CGSize,
-        time t: Double,
-        family: Int,
-        seed: Int,
-        phaseOffset: Double
-    ) -> CGPoint {
-        let baseAmplitude = min(size.width, size.height) * CGFloat(0.030 + 0.020 * DriftNoise.hash(family, 4, seed: seed))
-        let waveA = sin(u * Double.pi * 2.0 * (1.15 + Double(family) * 0.18) + t * 0.12 + p * 7.0 + phaseOffset)
-        let waveB = cos(u * Double.pi * 2.0 * (2.30 + Double(family) * 0.12) - t * 0.075 + p * 4.0)
-        let offset = baseAmplitude * CGFloat(waveA + 0.55 * waveB)
-
-        switch family {
-        case 0:
-            return CGPoint(
-                x: size.width * CGFloat(u),
-                y: size.height * CGFloat(p) + offset
-            )
-        case 1:
-            return CGPoint(
-                x: size.width * CGFloat(p) + offset,
-                y: size.height * CGFloat(u)
-            )
-        default:
-            let diagonal = CGFloat(u)
-            let sweep = CGFloat(p - 0.5) * size.width * 0.72
-            return CGPoint(
-                x: size.width * diagonal + sweep + offset,
-                y: size.height * CGFloat(1.0 - u) + offset * 0.55
-            )
+            context.stroke(path, with: .color(Color.white.opacity(0.08 + 0.05 * drift)),
+                           lineWidth: max(0.5, thickness * 0.55))
         }
     }
 
