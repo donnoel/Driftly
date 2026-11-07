@@ -4,16 +4,17 @@ struct InkTopographyView: View {
     let config: DriftModeConfig
     @Environment(\.driftAnimationSpeed) private var speed
     @Environment(\.driftAnimationsPaused) private var animationsPaused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        PausableTimelineView(paused: animationsPaused) { date in
+        PausableTimelineView(paused: animationsPaused || reduceMotion) { date in
             let t = date.timeIntervalSinceReferenceDate * max(0.25, speed)
 
             GeometryReader { proxy in
                 let size = proxy.size
                 let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
                 let octaves = (isLowPower || max(size.width, size.height) > 1200) ? 4 : 5
-                let step = max(6.0, min(10.0, Double(size.width) / 80.0))
+                let step = InkTopographySurface.step(in: size)
 
                 Canvas { context, _ in
                     // Lifted background for daytime visibility
@@ -47,28 +48,22 @@ struct InkTopographyView: View {
                     )
 
                     // Contours
-                    let bands = 18
+                    let climber = InkTopographyClimber.pose(size: size, time: t, octaves: octaves)
+                    let bands = InkTopographySurface.bands
                     for b in 0..<bands {
-                        let yBase = Double(b) / Double(bands - 1)
                         var path = Path()
-
-                        for x in stride(from: 0.0, through: Double(size.width), by: step) {
-                            let nx = x / Double(size.width)
-                            let n = DriftNoise.fbm(
-                                x: nx * 2.2 + t * 0.03,
-                                y: yBase * 2.0 + t * 0.02,
-                                seed: 42,
-                                octaves: octaves
-                            )
-
-                            // Some bands ripple (switching pattern via band index)
-                            let rippleOn = (b % 5 == 0) || (b % 7 == 0)
-                            let rippleAmp = rippleOn ? 10.0 : 0.0
-                            let ripple = rippleAmp * sin(nx * Double.pi * 2.0 * 3.0 + t * 0.55 + Double(b) * 0.7)
-
-                            let yy = yBase * Double(size.height) + (n - 0.5) * 92.0 + ripple
-                            let pt = CGPoint(x: x, y: yy)
-                            if x == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
+                        let gap = InkTopographyClimber.gap(band: b, pose: climber, size: size, time: t, octaves: octaves)
+                        let width = Double(size.width)
+                        let ranges: [ClosedRange<Double>] = gap.map {
+                            [0.0...max(0, $0.lowerBound), min(width, $0.upperBound)...width]
+                        } ?? [0.0...width]
+                        for range in ranges {
+                            let xs = Array(stride(from: range.lowerBound, to: range.upperBound, by: step)) + [range.upperBound]
+                            for (index, x) in xs.enumerated() {
+                                let y = InkTopographySurface.y(x: x, band: b, size: size, time: t, octaves: octaves)
+                                let point = CGPoint(x: x, y: y)
+                                if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                            }
                         }
 
                         let col: Color = {
@@ -101,6 +96,7 @@ struct InkTopographyView: View {
                             endPoint: CGPoint(x: sweepRect.maxX, y: 0)
                         )
                     )
+                    InkTopographySprite.draw(in: context, pose: climber, size: size, time: t)
                 }
                 .blur(radius: 0.35)
             }
